@@ -27,6 +27,11 @@
             </div>
             <br>
             <input type="button" @click="newQuiz" value="New Quiz">
+            <select id="quizType">
+                <option value="getMissingNumberQuiz">Next Number</option>
+                <option value="get0PlusQuiz">0 + x</option>
+                <option value="get1PlusQuiz">1 + x</option>
+            </select>
         </div>
     </div>
 <script>
@@ -104,15 +109,17 @@ createApp({
         return {
             userAnswer : null,
             answerState: null,
+            createQuizFn : getMissingNumberQuiz,
             quiz : getMissingNumberQuiz()
-            // quiz : get0PlusQuiz()
-            // quiz : get1PlusQuiz()
         }
     },
     methods : {
         newQuiz(){
+            this.answerState = null;
             document.getElementById("userAnswer").value = "";
-            this.quiz = getMissingNumberQuiz();
+            const quizFnName = document.getElementById("quizType").value;
+            this.createQuizFn = window[quizFnName];
+            this.quiz = this.createQuizFn();
         },
         checkAnswer(){
             this.userAnswer = document.getElementById("userAnswer").value;
