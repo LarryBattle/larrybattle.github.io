@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Quiz</title>
+    <style>
+        #app{
+            font-size: xx-large;
+        }
+    </style>
+</head>
+<body>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <div>
+        <div id="app">
+            <h2>Math Quiz: {{quiz.name}}</h2>
+            <p>{{ quiz.question }}</p>
+            <input type="number" min="0" max="101" maxlength="4" id="userAnswer"/>
+            <input type="button" value="check" @click="checkAnswer()"/>
+            <br>
+            <div id="quiz_feedback">
+                <span v-if="answerState === null">-</span>
+                <span v-if="answerState === false">wrong: ☹️</span>
+                <span v-if="answerState === true">right: ✔️</span>
+            </div>
+            <br>
+            <input type="button" @click="newQuiz" value="New Quiz">
+        </div>
+    </div>
+<script>
+const { createApp } = Vue
+
+function getRange(start, end){
+    return Array.from({length: Math.abs(1 + end - start) }).fill(start).map((c, i) => c + i);
+}
+
+function randomNumber(x){
+    return ~~(Math.random() * x);
+}
+
+function getRandomRange(){
+    const x = randomNumber(100);
+    return getRange(x, x + 4);
+}
+
+function get0PlusQuiz(){
+
+    const i = randomNumber(100);
+
+    let question = `${i} + 0`;
+
+    if(Math.random() > 0.5){
+        question = `0 + ${i}`;
+    }
+
+    return {
+        name: "Plus 0",
+        question,
+        answer : i
+    }
+}
+
+
+function get1PlusQuiz(){
+
+    const i = randomNumber(100);
+
+    const answer = i + 1;
+
+    let question = `${i} + 1`;
+
+    if(Math.random() > 0.5){
+        question = `1 + ${i}`;
+    }
+
+    return {
+        name: "Plus 1",
+        question,
+        answer
+    }
+}
+
+function getMissingNumberQuiz(){
+    const range = getRandomRange();
+    
+    const i = randomNumber(range.length);
+    const answer = range[i];
+    range[i] = '?';
+
+    const question = range.join(', ');
+
+    return {
+        name: "Next number",
+        question,
+        answer
+    }
+}
+
+createApp({
+
+    data() {
+        return {
+            userAnswer : null,
+            answerState: null,
+            quiz : getMissingNumberQuiz()
+            // quiz : get0PlusQuiz()
+            // quiz : get1PlusQuiz()
+        }
+    },
+    methods : {
+        newQuiz(){
+            document.getElementById("userAnswer").value = "";
+            this.quiz = getMissingNumberQuiz();
+        },
+        checkAnswer(){
+            this.userAnswer = document.getElementById("userAnswer").value;
+            
+            if(this.userAnswer){
+                this.answerState = this.quiz.answer == this.userAnswer;
+            } else {
+                this.answerState = null;
+            }
+        }
+    }
+}).mount('#app')
+</script>
+</body>
+</html>
