@@ -1,137 +1,243 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Math Quiz</title>
     <style>
-        #app{
-            font-size: xx-large;
+        .wrongAnswer, .rightAnswer {
+            border-left-width: thick;
         }
+        .wrongAnswer{
+            border-color: red;
+        }
+        .rightAnswer{
+            border-color: lightgreen;
+        }
+        /* #app{
+            font-size: xx-large;
+        } */
     </style>
 </head>
+
 <body>
+    <noscript>Javascript is Disabled. Please enabled it for this site to work</noscript>
+    <!-- <script src="vue.global.js"></script> -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <div>
         <div id="app">
-            <h2>Math Quiz: {{quiz.name}}</h2>
-            <p>{{ quiz.question }}</p>
-            <input type="number" min="0" max="101" maxlength="4" id="userAnswer"/>
-            <input type="button" value="check" @click="checkAnswer()"/>
+            <template v-if="quiz">
+                <h2>Math Quiz: {{quiz.name}}</h2>
+                <p>{{ quiz.question }}</p>
+                <input type="number" placeholder="?" maxlength="4"
+                    :class="answerStateClass" :min="quizMinNumber" :max="quizMaxNumber" 
+                    v-model.number="userAnswer"
+                    @change.enter="checkAnswer" />
+                <input type="button" value="check" @click="checkAnswer()" />
+                <br>
+                <div id="quiz_feedback">
+                    <span v-if="answerState === null">-</span>
+                    <span v-if="answerState === false">wrong: ☹️</span>
+                    <span v-if="answerState === true">right: ✔️</span>
+                </div>
+            </template>
             <br>
-            <div id="quiz_feedback">
-                <span v-if="answerState === null">-</span>
-                <span v-if="answerState === false">wrong: ☹️</span>
-                <span v-if="answerState === true">right: ✔️</span>
-            </div>
             <br>
-            <input type="button" @click="newQuiz" value="New Quiz">
-            <select id="quizType">
-                <option value="getMissingNumberQuiz">Next Number</option>
-                <option value="get0PlusQuiz">0 + x</option>
-                <option value="get1PlusQuiz">1 + x</option>
-            </select>
+            <fieldset>
+                <legend>Options</legend>
+                <div>
+                    <input type="button" @click="newQuiz" value="New Quiz">
+
+                    <table>
+                        <tbody>
+                            <tr>
+                                <td>Quiz Type</td>
+                                <td>
+                                    <select v-model="quizType">
+                                        <template v-for="{name, value} in quizOptions" :key="name">
+                                            <option :value="value">{{name}}</option>
+                                        </template>
+                                    </select>
+
+
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>Range</td>
+                                <td>
+                                    <input type="number" min="0" max="999" v-model="quizMinNumber">
+                                    -
+                                    <input type="number" min="0" max="999" v-model="quizMaxNumber">
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>Difficulty</td>
+                                <td>
+                                    <input type="button" @click="setDiffEasy" value="Easy"/>
+                                    <input type="button" @click="setDiffNormal" value="Normal"/>
+                                    <input type="button" @click="setDiffHard" value="Hard"/>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </fieldset>
         </div>
     </div>
-<script>
-const { createApp } = Vue
+    <script>
+        const { createApp } = Vue
 
-function getRange(start, end){
-    return Array.from({length: Math.abs(1 + end - start) }).fill(start).map((c, i) => c + i);
-}
-
-function randomNumber(x){
-    return ~~(Math.random() * x);
-}
-
-function getRandomRange(){
-    const x = randomNumber(100);
-    return getRange(x, x + 4);
-}
-
-function get0PlusQuiz(){
-
-    const i = randomNumber(100);
-
-    let question = `${i} + 0`;
-
-    if(Math.random() > 0.5){
-        question = `0 + ${i}`;
-    }
-
-    return {
-        name: "Plus 0",
-        question,
-        answer : i
-    }
-}
-
-
-function get1PlusQuiz(){
-
-    const i = randomNumber(100);
-
-    const answer = i + 1;
-
-    let question = `${i} + 1`;
-
-    if(Math.random() > 0.5){
-        question = `1 + ${i}`;
-    }
-
-    return {
-        name: "Plus 1",
-        question,
-        answer
-    }
-}
-
-function getMissingNumberQuiz(){
-    const range = getRandomRange();
-    
-    const i = randomNumber(range.length);
-    const answer = range[i];
-    range[i] = '?';
-
-    const question = range.join(', ');
-
-    return {
-        name: "Next number",
-        question,
-        answer
-    }
-}
-
-createApp({
-
-    data() {
-        return {
-            userAnswer : null,
-            answerState: null,
-            createQuizFn : getMissingNumberQuiz,
-            quiz : getMissingNumberQuiz()
+        function getRange(start, end) {
+            return Array.from({
+                length: Math.abs(1 + end - start)
+            })
+                .fill(start)
+                .map((c, i) => c + i);
         }
-    },
-    methods : {
-        newQuiz(){
-            this.answerState = null;
-            document.getElementById("userAnswer").value = "";
-            const quizFnName = document.getElementById("quizType").value;
-            this.createQuizFn = window[quizFnName];
-            this.quiz = this.createQuizFn();
-        },
-        checkAnswer(){
-            this.userAnswer = document.getElementById("userAnswer").value;
-            
-            if(this.userAnswer){
-                this.answerState = this.quiz.answer == this.userAnswer;
-            } else {
-                this.answerState = null;
+
+        // return number in [min, max)
+        function randomNumberInRange(min, max) {
+            const x = Math.abs(max - min);
+            return min + Math.floor(Math.random() * x);
+        }
+
+        function getRandomRange(min, max, count = 4) {
+            const x = randomNumberInRange(min, max);
+            return getRange(x, Math.min(x + count, max));
+        }
+
+        function formatNumber(x) {
+            const str = x.toLocaleString();
+
+            if (/,/.test(str)) {
+                return `"${str}"`;
+            }
+            return str;
+        }
+
+        function getXPlusQuiz(x, xText, { quizMinNumber, quizMaxNumber }) {
+            const i = randomNumberInRange(quizMinNumber, quizMaxNumber);
+
+            let question = `${formatNumber(i)} + ${xText}`;
+
+            if (Math.random() > 0.5) {
+                question = `${xText} + ${formatNumber(i)}`;
+            }
+
+            const answer = x + i;
+
+            return {
+                name: `Plus ${xText}`,
+                question,
+                answer
             }
         }
-    }
-}).mount('#app')
-</script>
+
+        function get0PlusQuiz(ctx) {
+            return getXPlusQuiz(0, 0, ctx);
+        }
+
+        function get1PlusQuiz(ctx) {
+            return getXPlusQuiz(1, 1, ctx);
+        }
+
+        function get2PlusQuiz(ctx) {
+            return getXPlusQuiz(2, 2, ctx);
+        }
+
+        function get1Plus1PlusQuiz(ctx) {
+            return getXPlusQuiz(2, `1 + 1`, ctx);
+        }
+
+
+        function getMissingNumberQuiz({ quizMinNumber, quizMaxNumber }) {
+            const range = getRandomRange(quizMinNumber, quizMaxNumber);
+
+            const i = randomNumberInRange(0, range.length);
+            const answer = range[i];
+            range[i] = '?';
+
+            const question = range.map(formatNumber).join(', ');
+
+            return {
+                name: "Next number",
+                question,
+                answer
+            }
+        }
+
+        createApp({
+
+            data() {
+                return {
+                    userAnswer: null,
+                    answerState: null,
+                    quizzes: [get0PlusQuiz, get1PlusQuiz, get2PlusQuiz, get1Plus1PlusQuiz, getMissingNumberQuiz],
+                    quiz: null,
+                    quizType: "getMissingNumberQuiz",
+                    quizMinNumber: 0,
+                    quizMaxNumber: 100
+                }
+            },
+            mounted() {
+                this.newQuiz();
+            },
+            methods: {
+                setDiffEasy(){
+                    this.quizMinNumber = 0;
+                    this.quizMaxNumber = 10;
+                    this.newQuiz();
+                },
+                setDiffNormal(){
+                    this.quizMinNumber = 0;
+                    this.quizMaxNumber = 100;
+                    this.newQuiz();
+                },
+                setDiffHard(){
+                    this.quizMinNumber = 0;
+                    this.quizMaxNumber = 1000;  
+                    this.newQuiz();
+                },
+                newQuiz() {
+                    this.answerState = null;
+                    this.userAnswer = null;
+                    this.createQuizFn = this.quizzes.find(fn => fn.name == this.quizType);
+
+                    this.quiz = this.createQuizFn({
+                        quizMaxNumber: this.quizMaxNumber,
+                        quizMinNumber: this.quizMinNumber
+                    });
+                },
+                checkAnswer() {
+                    if (this.userAnswer != null) {
+                        this.answerState = this.quiz.answer == this.userAnswer;
+                    } else {
+                        this.answerState = null;
+                    }
+                }
+            },
+            computed: {
+                answerStateClass(){
+                    return {
+                        "rightAnswer" : this.answerState === true,
+                        "wrongAnswer" : this.answerState === false,
+                    };
+                },
+                quizOptions() {
+                    return this.quizzes.map((fn, i) => {
+                        return {
+                            name: fn({}).name,
+                            value: fn.name
+                        }
+                    });
+                }
+            }
+        }).mount('#app')
+    </script>
 </body>
+
 </html>
