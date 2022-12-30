@@ -7,18 +7,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Math Quiz</title>
     <style>
-        .wrongAnswer, .rightAnswer {
+        .wrongAnswer,
+        .rightAnswer {
             border-left-width: thick;
         }
-        .wrongAnswer{
+
+        .wrongAnswer {
             border-color: red;
         }
-        .rightAnswer{
+
+        .rightAnswer {
             border-color: lightgreen;
         }
-        /* #app{
-            font-size: xx-large;
-        } */
+
+        .fadein {
+            animation: fadein 1s;
+        }
+
+        @keyframes fadein {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 
@@ -30,11 +44,19 @@
         <div id="app">
             <template v-if="quiz">
                 <h2>Math Quiz: {{quiz.name}}</h2>
-                <p>{{ quiz.question }}</p>
-                <input type="number" placeholder="?" maxlength="4"
-                    :class="answerStateClass" :min="quizMinNumber" :max="quizMaxNumber" 
-                    v-model.number="userAnswer"
-                    @change.enter="checkAnswer" />
+
+                <div class="fadein">
+
+                    <p>{{ quiz.question }}</p>
+
+                    <p v-if="quiz.speech">
+                        <input type="button" value="What number? 🔊" @click="sayIt(quiz.speech)" />
+                    </p>
+
+                </div>
+
+                <input type="number" placeholder="?" maxlength="4" :class="answerStateClass" :min="quizMinNumber"
+                    :max="quizMaxNumber" v-model.number="userAnswer" @change.enter="checkAnswer" />
                 <input type="button" value="check" @click="checkAnswer()" />
                 <br>
                 <div id="quiz_feedback">
@@ -45,51 +67,86 @@
             </template>
             <br>
             <br>
-            <fieldset>
-                <legend>Options</legend>
-                <div>
-                    <input type="button" @click="newQuiz" value="New Quiz">
+            <details open>
+                <summary>Options</summary>
+                <fieldset>
+                    <div>
+                        <input type="button" @click="newQuiz" value="New Quiz">
 
-                    <table>
-                        <tbody>
-                            <tr>
-                                <td>Quiz Type</td>
-                                <td>
-                                    <select v-model="quizType">
-                                        <template v-for="{name, value} in quizOptions" :key="name">
-                                            <option :value="value">{{name}}</option>
-                                        </template>
-                                    </select>
+                        <table>
+                            <tbody>
+                                <tr>
+                                    <td>Quiz Type</td>
+                                    <td>
+                                        <select v-model="quizType">
+                                            <template v-for="{name, value} in quizOptions" :key="name">
+                                                <option :value="value">{{name}}</option>
+                                            </template>
+                                        </select>
 
 
-                                </td>
-                            </tr>
+                                    </td>
+                                </tr>
 
-                            <tr>
-                                <td>Range</td>
-                                <td>
-                                    <input type="number" min="0" max="999" v-model="quizMinNumber">
-                                    -
-                                    <input type="number" min="0" max="999" v-model="quizMaxNumber">
-                                </td>
-                            </tr>
+                                <tr>
+                                    <td>Range</td>
+                                    <td>
+                                        <input type="number" min="0" max="999" v-model="quizMinNumber">
+                                        -
+                                        <input type="number" min="0" max="999" v-model="quizMaxNumber">
+                                    </td>
+                                </tr>
 
-                            <tr>
-                                <td>Difficulty</td>
-                                <td>
-                                    <input type="button" @click="setDiffEasy" value="Easy"/>
-                                    <input type="button" @click="setDiffNormal" value="Normal"/>
-                                    <input type="button" @click="setDiffHard" value="Hard"/>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </fieldset>
+                                <tr>
+                                    <td>Difficulty</td>
+                                    <td>
+                                        <input type="button" @click="setDiffEasy" value="Easy" />
+                                        <input type="button" @click="setDiffNormal" value="Normal" />
+                                        <input type="button" @click="setDiffHard" value="Hard" />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </fieldset>
+            </details>
         </div>
     </div>
     <script>
         const { createApp } = Vue
+
+        class SpeechService {
+            static async init() {
+                window.speechSynthesis.getVoices();
+            }
+            static getRandomVoice() {
+                const voices = window.speechSynthesis.getVoices();
+                const defaultVoice = voices.find(v => v.default);
+                
+                if (!defaultVoice) {
+                    return voices[0];
+                }
+
+                const langCodePrefix = defaultVoice.lang.replace(/[A-Z]+$/, '');
+                const nativeVoices = voices.filter(v => v.lang.startsWith(langCodePrefix));
+                return getRandomElement(nativeVoices);
+            }
+            static async sayIt(text) {
+                return new Promise((resolve) => {
+                    const msg = new SpeechSynthesisUtterance();
+                    const voice = SpeechService.getRandomVoice();
+                    msg.voice = voice;
+                    msg.text = text;
+
+                    msg.onend = function (e) {
+                        console.info({ voiceName: voice?.name, voiceLang: voice?.lang, text });
+                        resolve();
+                    };
+
+                    speechSynthesis.speak(msg);
+                });
+            }
+        };
 
         function getRange(start, end) {
             return Array.from({
@@ -108,6 +165,10 @@
         function getRandomRange(min, max, count = 4) {
             const x = randomNumberInRange(min, max);
             return getRange(x, Math.min(x + count, max));
+        }
+
+        function getRandomElement(arr) {
+            return arr[~~(Math.random() * arr.length)]
         }
 
         function formatNumber(x) {
@@ -154,6 +215,16 @@
         }
 
 
+        function getWriteXQuiz({ quizMinNumber, quizMaxNumber }) {
+            const answer = randomNumberInRange(quizMinNumber, quizMaxNumber);
+
+            return {
+                name: "Write x",
+                speech: `${answer}`,
+                answer
+            }
+        }
+
         function getMissingNumberQuiz({ quizMinNumber, quizMaxNumber }) {
             const range = getRandomRange(quizMinNumber, quizMaxNumber);
 
@@ -171,14 +242,17 @@
         }
 
         createApp({
-
+            created() {
+                console.log("called");
+                SpeechService.init();
+            },
             data() {
                 return {
                     userAnswer: null,
                     answerState: null,
-                    quizzes: [get0PlusQuiz, get1PlusQuiz, get2PlusQuiz, get1Plus1PlusQuiz, getMissingNumberQuiz],
+                    quizzes: [get0PlusQuiz, get1PlusQuiz, get2PlusQuiz, get1Plus1PlusQuiz, getMissingNumberQuiz, getWriteXQuiz],
                     quiz: null,
-                    quizType: "getMissingNumberQuiz",
+                    quizType: "getWriteXQuiz",
                     quizMinNumber: 0,
                     quizMaxNumber: 100
                 }
@@ -187,19 +261,22 @@
                 this.newQuiz();
             },
             methods: {
-                setDiffEasy(){
+                sayIt(text) {
+                    SpeechService.sayIt(text);
+                },
+                setDiffEasy() {
                     this.quizMinNumber = 0;
                     this.quizMaxNumber = 10;
                     this.newQuiz();
                 },
-                setDiffNormal(){
+                setDiffNormal() {
                     this.quizMinNumber = 0;
                     this.quizMaxNumber = 100;
                     this.newQuiz();
                 },
-                setDiffHard(){
+                setDiffHard() {
                     this.quizMinNumber = 0;
-                    this.quizMaxNumber = 1000;  
+                    this.quizMaxNumber = 1000;
                     this.newQuiz();
                 },
                 newQuiz() {
@@ -221,10 +298,10 @@
                 }
             },
             computed: {
-                answerStateClass(){
+                answerStateClass() {
                     return {
-                        "rightAnswer" : this.answerState === true,
-                        "wrongAnswer" : this.answerState === false,
+                        "rightAnswer": this.answerState === true,
+                        "wrongAnswer": this.answerState === false,
                     };
                 },
                 quizOptions() {
