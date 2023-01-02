@@ -31,7 +31,7 @@
     <div>
         <div id="app">
             <template v-if="quiz">
-                <h2>Math Quiz: {{quiz.name}}</h2>
+                <h2><a href="#" @click.prevent="newQuiz">Math Quiz</a>: {{quiz.name}}</h2>
 
                 <div>
 
@@ -66,7 +66,7 @@
             </template>
             <br>
             <br>
-            <details open>
+            <details>
                 <summary>Visuals</summary>
                 <fieldset>
                     <table>
@@ -235,7 +235,7 @@
 
             return {
                 quizType : 'qa',
-                name: `Plus ${xText}`,
+                name: `Addition: Plus ${xText}`,
                 question,
                 answer
             }
@@ -263,7 +263,7 @@
 
             return {
                 quizType : 'qa',
-                name: "Write x",
+                name: "Number: Write x",
                 speech: `${answer}`,
                 answer
             }
@@ -279,7 +279,89 @@
             const question = range.map(formatNumber).join(', ');
 
             return {
-                name: "Next number",
+                name: "Sequence: Next number",
+                quizType : 'qa',
+                question,
+                answer
+            }
+        }
+
+        function getXAddYQuiz({ quizMinNumber, quizMaxNumber }) {
+            const x = randomNumberInRange(quizMinNumber, quizMaxNumber);
+            const y = randomNumberInRange(quizMinNumber, quizMaxNumber);
+            
+            const answer = x + y;
+            const question = `${x} + ${y}`;
+
+            return {
+                name: "Addition: x + y",
+                quizType : 'qa',
+                question,
+                answer
+            }
+        }
+        
+        function getXAddYAddZQuiz({ quizMinNumber, quizMaxNumber }) {
+            const x = randomNumberInRange(quizMinNumber, quizMaxNumber);
+            const y = randomNumberInRange(quizMinNumber, quizMaxNumber);
+            const z = randomNumberInRange(quizMinNumber, quizMaxNumber);
+            
+            const answer = x + y + z;
+            const question = `${x} + ${y} + ${z}`;
+
+            return {
+                name: "Addition: x + y + z",
+                quizType : 'qa',
+                question,
+                answer
+            }
+        }
+
+        function getPosXMinusYQuiz({ quizMinNumber, quizMaxNumber }) {
+            let x = randomNumberInRange(quizMinNumber, quizMaxNumber);
+            let y = randomNumberInRange(quizMinNumber, quizMaxNumber);
+
+            if(x < y){
+                [x, y] = [y, x];
+            }
+
+            const answer = x - y;
+            const question = `${x} - ${y}`;
+
+            return {
+                name: "Subtraction: (+) x - y",
+                quizType : 'qa',
+                question,
+                answer
+            }
+        }
+
+        
+        function getXMinusYQuiz({ quizMinNumber, quizMaxNumber }) {
+            const x = randomNumberInRange(quizMinNumber, quizMaxNumber);
+            const y = randomNumberInRange(quizMinNumber, quizMaxNumber);
+            
+            const answer = x - y;
+            const question = `${x} - ${y}`;
+
+            return {
+                name: "Subtraction: x - y",
+                quizType : 'qa',
+                question,
+                answer
+            }
+        }
+
+        function getXMinusYMinusZQuiz({ quizMinNumber, quizMaxNumber }) {
+            const x = randomNumberInRange(quizMinNumber, quizMaxNumber);
+            const y = randomNumberInRange(quizMinNumber, quizMaxNumber);
+            const z = randomNumberInRange(quizMinNumber, quizMaxNumber);
+            
+            const answer = x - y - z;
+            const question = `${x} - ${y} - ${z}`;
+
+            return {
+                name: "Subtraction: x - y - z",
                 quizType : 'qa',
                 question,
                 answer
@@ -292,12 +374,12 @@
             y = Math.max(x+ 1, y);
             
             const isGreaterThan = Math.random() < 0.5; 
-            const xyBlock = createXYBlock(x, y);
-            let question = `Is ${x} smaller than ${y}?\n\n${x} < ${y}\n\n${xyBlock}`;
+            
+            let question = `Is ${x} smaller than ${y}?\n\n${x} < ${y}`;
             let answer = x < y;
 
             if(isGreaterThan) {
-                question = `Is ${x} bigger than ${y}?\n\n${x} > ${y}\n\n${xyBlock}`;
+                question = `Is ${x} bigger than ${y}?\n\n${x} > ${y}`;
                 answer = x > y;
             }
 
@@ -306,7 +388,7 @@
                 quizType : 'tf',
                 isTrueFalse: true,
                 question,
-                viz: xyBlock,
+                viz: createXYBlock(x, y),
                 answer
             }
         }
@@ -320,9 +402,14 @@
                     rangeViz: null,
                     userAnswer: null,
                     answerState: null,
-                    quizzes: [getGreaterThanQuiz, get0PlusQuiz, get1PlusQuiz, get2PlusQuiz, get1Plus1PlusQuiz, getMissingNumberQuiz, getWriteXQuiz],
+                    quizzes: [
+                        getGreaterThanQuiz, get0PlusQuiz, get1PlusQuiz, 
+                        get2PlusQuiz, get1Plus1PlusQuiz, getMissingNumberQuiz, 
+                        getWriteXQuiz, getXAddYQuiz, getXAddYAddZQuiz,
+                        getPosXMinusYQuiz, getXMinusYQuiz, getXMinusYMinusZQuiz
+                    ],
                     quiz: null,
-                    quizType: "getGreaterThanQuiz",
+                    quizType: "getXAddYQuiz",
                     quizMinNumber: 0,
                     quizMaxNumber: 100
                 }
@@ -394,6 +481,8 @@
                             name: fn({}).name,
                             value: fn.name
                         }
+                    }).sort((a, b) => {
+                        return a.name.localeCompare(b.name);
                     });
                 }
             }
