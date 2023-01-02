@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- CopyRight: Larry Battle 2023 Jan 2 -->
 <html lang="en">
 
 <head>
@@ -20,46 +21,43 @@
         .rightAnswer {
             border-color: lightgreen;
         }
-
-        .fadein {
-            animation: fadein 1s;
-        }
-
-        @keyframes fadein {
-            from {
-                opacity: 0;
-            }
-
-            to {
-                opacity: 1;
-            }
-        }
     </style>
 </head>
 
 <body>
     <noscript>Javascript is Disabled. Please enabled it for this site to work</noscript>
-    <!-- <script src="vue.global.js"></script> -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="vue.global.js"></script>
+    <!-- <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script> -->
     <div>
         <div id="app">
             <template v-if="quiz">
                 <h2>Math Quiz: {{quiz.name}}</h2>
 
-                <div class="fadein">
+                <div>
 
-                    <p>{{ quiz.question }}</p>
+                    <pre>{{ quiz.question }}</pre>
 
                     <p v-if="quiz.speech">
                         <input type="button" value="What number? 🔊" @click="sayIt(quiz.speech)" />
                     </p>
 
                 </div>
+                <template v-if="quiz.quizType != 'tf'">
+                    <input type="number" placeholder="?" maxlength="6" :class="answerStateClass" :min="quizMinNumber"
+                        :max="quizMaxNumber" v-model.number="userAnswer" @change.enter="checkAnswer" />
+                        <input type="button" value="check" @click="checkAnswer()" />
+                </template>
 
-                <input type="number" placeholder="?" maxlength="6" :class="answerStateClass" :min="quizMinNumber"
-                    :max="quizMaxNumber" v-model.number="userAnswer" @change.enter="checkAnswer" />
-                <input type="button" value="check" @click="checkAnswer()" />
-                <br>
+                <template v-if="quiz.quizType == 'tf'">
+                    <label for="quiz_answer_input_yes">Yes</label>
+                    <input type="radio" id="quiz_answer_input_yes" name="quiz_tf_quiz" value="true" 
+                        v-model="userAnswer" @click="setAndCheckAnswer(true)">
+                    
+                    <label for="quiz_answer_input_no">No</label>
+                    <input type="radio" id="quiz_answer_input_no" name="quiz_tf_quiz" value="false" 
+                        v-model="userAnswer" @click="setAndCheckAnswer(false)">
+                </template>
+                
                 <div id="quiz_feedback">
                     <span v-if="answerState === null">-</span>
                     <span v-if="answerState === false">wrong: ☹️</span>
@@ -68,6 +66,29 @@
             </template>
             <br>
             <br>
+            <details open>
+                <summary>Visuals</summary>
+                <fieldset>
+                    <table>
+                        <thead>
+                            <th>Graphs</th>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <pre>{{quiz?.viz}}</pre>
+                                </td>
+                            </tr>
+                            <tr style="overflow: scroll; max-width: 20vw;">
+                                <td>
+                                    <input type="button" value="Create Range" v-if="!rangeViz" @click="createRangeViz"/>
+                                    <pre>{{rangeViz}}</pre>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </fieldset>
+            </details>
             <details open>
                 <summary>Options</summary>
                 <fieldset>
@@ -181,6 +202,26 @@
             return str;
         }
 
+        function formatXAsBlock(x, token, width, joinToken){
+            const n = Math.abs(x);
+            const minHeight = Math.floor(n / width);
+            const lastLine = token.repeat(n % width);
+            const lines = [];
+            const maxTokenWidth = (0 < minHeight) ? token.repeat(width) : 0;
+
+            for(let i = 0; i < minHeight; i++){
+                lines.push( maxTokenWidth );
+            }
+            lines.push(lastLine);
+
+            return lines.join(joinToken || '\n');
+        }
+
+        function createXYBlock(x, y){
+            const token = 'x', width = 10;
+            return `${x}:\n${formatXAsBlock(x, token, width)}\n\n${y}:\n${formatXAsBlock(y, token, width)}\n`;
+        }        
+
         function getXPlusQuiz(x, xText, { quizMinNumber, quizMaxNumber }) {
             const i = randomNumberInRange(quizMinNumber, quizMaxNumber);
 
@@ -193,6 +234,7 @@
             const answer = x + i;
 
             return {
+                quizType : 'qa',
                 name: `Plus ${xText}`,
                 question,
                 answer
@@ -220,6 +262,7 @@
             const answer = randomNumberInRange(quizMinNumber, quizMaxNumber);
 
             return {
+                quizType : 'qa',
                 name: "Write x",
                 speech: `${answer}`,
                 answer
@@ -237,23 +280,49 @@
 
             return {
                 name: "Next number",
+                quizType : 'qa',
                 question,
+                answer
+            }
+        }
+
+        function getGreaterThanQuiz({ quizMinNumber, quizMaxNumber }) {
+            const x = randomNumberInRange(quizMinNumber, quizMaxNumber - 1);
+            let y = randomNumberInRange(x, quizMaxNumber);
+            y = Math.max(x+ 1, y);
+            
+            const isGreaterThan = Math.random() < 0.5; 
+            const xyBlock = createXYBlock(x, y);
+            let question = `Is ${x} smaller than ${y}?\n\n${x} < ${y}\n\n${xyBlock}`;
+            let answer = x < y;
+
+            if(isGreaterThan) {
+                question = `Is ${x} bigger than ${y}?\n\n${x} > ${y}\n\n${xyBlock}`;
+                answer = x > y;
+            }
+
+            return {
+                name: "Bigger or Smaller",
+                quizType : 'tf',
+                isTrueFalse: true,
+                question,
+                viz: xyBlock,
                 answer
             }
         }
 
         createApp({
             created() {
-                console.log("called");
                 SpeechService.init();
             },
             data() {
                 return {
+                    rangeViz: null,
                     userAnswer: null,
                     answerState: null,
-                    quizzes: [get0PlusQuiz, get1PlusQuiz, get2PlusQuiz, get1Plus1PlusQuiz, getMissingNumberQuiz, getWriteXQuiz],
+                    quizzes: [getGreaterThanQuiz, get0PlusQuiz, get1PlusQuiz, get2PlusQuiz, get1Plus1PlusQuiz, getMissingNumberQuiz, getWriteXQuiz],
                     quiz: null,
-                    quizType: "getWriteXQuiz",
+                    quizType: "getGreaterThanQuiz",
                     quizMinNumber: 0,
                     quizMaxNumber: 100
                 }
@@ -262,6 +331,16 @@
                 this.newQuiz();
             },
             methods: {
+                createRangeViz(){
+                    const len = Math.abs(this.quizMaxNumber - this.quizMinNumber);
+                    const items = [];
+
+                    for(let i = this.quizMinNumber; i < this.quizMaxNumber; i++){
+                        items.push( i );
+                    }
+
+                    this.rangeViz = items.join(', ');
+                },
                 sayIt(text) {
                     SpeechService.sayIt(text);
                 },
@@ -289,6 +368,10 @@
                         quizMaxNumber: this.quizMaxNumber,
                         quizMinNumber: this.quizMinNumber
                     });
+                },
+                setAndCheckAnswer(answer){
+                    this.userAnswer = answer;
+                    this.checkAnswer();
                 },
                 checkAnswer() {
                     if (this.userAnswer != null) {
