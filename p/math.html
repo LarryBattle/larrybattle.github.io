@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<!-- CopyRight: Larry Battle 2023 Jan 2 -->
+<!-- CopyRight: Larry Battle 2023 Jan -->
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧾</text></svg>">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧾</text></svg>">
     <title>Math Quiz</title>
     <style>
         .wrongAnswer,
@@ -45,19 +46,19 @@
                 <template v-if="quiz.quizType != 'tf'">
                     <input type="number" placeholder="?" maxlength="6" :class="answerStateClass" :min="quizMinNumber"
                         :max="quizMaxNumber" v-model.number="userAnswer" @change.enter="checkAnswer" />
-                        <input type="button" value="check" @click="checkAnswer()" />
+                    <input type="button" value="check" @click="checkAnswer()" />
                 </template>
 
                 <template v-if="quiz.quizType == 'tf'">
                     <label for="quiz_answer_input_yes">Yes</label>
-                    <input type="radio" id="quiz_answer_input_yes" name="quiz_tf_quiz" value="true" 
-                        v-model="userAnswer" @click="setAndCheckAnswer(true)">
-                    
+                    <input type="radio" id="quiz_answer_input_yes" name="quiz_tf_quiz" value="true" v-model="userAnswer"
+                        @click="setAndCheckAnswer(true)">
+
                     <label for="quiz_answer_input_no">No</label>
-                    <input type="radio" id="quiz_answer_input_no" name="quiz_tf_quiz" value="false" 
-                        v-model="userAnswer" @click="setAndCheckAnswer(false)">
+                    <input type="radio" id="quiz_answer_input_no" name="quiz_tf_quiz" value="false" v-model="userAnswer"
+                        @click="setAndCheckAnswer(false)">
                 </template>
-                
+
                 <div id="quiz_feedback">
                     <span v-if="answerState === null">-</span>
                     <span v-if="answerState === false">wrong: ☹️</span>
@@ -66,6 +67,17 @@
             </template>
             <br>
             <br>
+            <details>
+                <summary>Score</summary>
+                <fieldset>
+                    <div>
+                        {{quizUserAttemptCorrect}} / {{quizUserAttempts.length}}
+                    </div>
+                    <div>
+                        <input type="button" @click="resetAttempts" value="Reset Score">
+                    </div>
+                </fieldset>
+            </details>
             <details>
                 <summary>Visuals</summary>
                 <fieldset>
@@ -81,7 +93,8 @@
                             </tr>
                             <tr style="overflow: scroll; max-width: 20vw;">
                                 <td>
-                                    <input type="button" value="Create Range" v-if="!rangeViz" @click="createRangeViz"/>
+                                    <input type="button" value="Create Range" v-if="!rangeViz"
+                                        @click="createRangeViz" />
                                     <pre>{{rangeViz}}</pre>
                                 </td>
                             </tr>
@@ -118,6 +131,12 @@
                                         <input type="number" min="0" max="99999" v-model="quizMaxNumber">
                                     </td>
                                 </tr>
+                                <tr>
+                                    <td>N</td>
+                                    <td>
+                                        <input type="number" min="0" max="900" v-model="quizNNumber">
+                                    </td>
+                                </tr>
 
                                 <tr>
                                     <td>Difficulty</td>
@@ -132,6 +151,16 @@
                     </div>
                 </fieldset>
             </details>
+            <details>
+                <summary>Dev Test</summary>
+                <fieldset>
+                    date: <input type="date"> <br> 
+                    time: <input type="time">  <br>
+                    tel: <input type="tel">  <br>
+                    datetime: <input type="datetime"> <br> 
+                    datetime-local: <input type="datetime-local"> <br> 
+                </fieldset>
+            </details>
         </div>
     </div>
     <script>
@@ -144,7 +173,7 @@
             static getRandomVoice() {
                 const voices = window.speechSynthesis.getVoices();
                 const defaultVoice = voices.find(v => v.default);
-                
+
                 if (!defaultVoice) {
                     return voices[0];
                 }
@@ -170,6 +199,15 @@
             }
         };
 
+        // from: https://stackfame.com/5-ways-to-shuffle-an-array-using-moder-javascript-es6
+        function shuffle(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
         function getRange(start, end) {
             return Array.from({
                 length: Math.abs(1 + end - start)
@@ -178,19 +216,25 @@
                 .map((c, i) => c + i);
         }
 
+        // TODO Look into having it as [min, max]
         // return number in [min, max)
         function randomNumberInRange(min, max) {
             const x = Math.abs(max - min);
             return min + Math.floor(Math.random() * x);
         }
 
+        function randomNumbersInRange(min, max, count) {
+            return Array.from({length: count}).fill(0).map(() => randomNumberInRange(min, max));
+        }
+
+        // Returns a list of random list of numbers in sequential order within a [min, max] range.
         function getRandomRange(min, max, count = 4) {
             const x = randomNumberInRange(min, max);
             return getRange(x, Math.min(x + count, max));
         }
 
         function getRandomElement(arr) {
-            return arr[~~(Math.random() * arr.length)]
+            return arr[Math.floor(Math.random() * arr.length)]
         }
 
         function formatNumber(x) {
@@ -202,39 +246,43 @@
             return str;
         }
 
-        function formatXAsBlock(x, token, width, joinToken){
+        function formatXAsBlock(x, token, width, joinToken) {
             const n = Math.abs(x);
             const minHeight = Math.floor(n / width);
             const lastLine = token.repeat(n % width);
             const lines = [];
             const maxTokenWidth = (0 < minHeight) ? token.repeat(width) : 0;
 
-            for(let i = 0; i < minHeight; i++){
-                lines.push( maxTokenWidth );
+            for (let i = 0; i < minHeight; i++) {
+                lines.push(maxTokenWidth);
             }
             lines.push(lastLine);
 
             return lines.join(joinToken || '\n');
         }
 
-        function createXYBlock(x, y){
+        function createXYBlock(x, y) {
             const token = 'x', width = 10;
             return `${x}:\n${formatXAsBlock(x, token, width)}\n\n${y}:\n${formatXAsBlock(y, token, width)}\n`;
-        }        
+        }
+
+        function shuffleNumbersInAddition(expression) {
+            return shuffleNumbersInExpression(expression, /\s+[+]\s+/g, " + ");
+        }
+
+        function shuffleNumbersInExpression(expression, delimiterRegex, delimiter) {
+            return shuffle(expression.split(delimiterRegex)).join(delimiter)
+        }
 
         function getXPlusQuiz(x, xText, { quizMinNumber, quizMaxNumber }) {
             const i = randomNumberInRange(quizMinNumber, quizMaxNumber);
 
-            let question = `${formatNumber(i)} + ${xText}`;
-
-            if (Math.random() > 0.5) {
-                question = `${xText} + ${formatNumber(i)}`;
-            }
+            let question = shuffleNumbersInAddition(`${formatNumber(i)} + ${xText}`);
 
             const answer = x + i;
 
             return {
-                quizType : 'qa',
+                quizType: 'qa',
                 name: `Addition: Plus ${xText}`,
                 question,
                 answer
@@ -262,7 +310,7 @@
             const answer = randomNumberInRange(quizMinNumber, quizMaxNumber);
 
             return {
-                quizType : 'qa',
+                quizType: 'qa',
                 name: "Number: Write x",
                 speech: `${answer}`,
                 answer
@@ -280,7 +328,7 @@
 
             return {
                 name: "Sequence: Next number",
-                quizType : 'qa',
+                quizType: 'qa',
                 question,
                 answer
             }
@@ -289,29 +337,29 @@
         function getXAddYQuiz({ quizMinNumber, quizMaxNumber }) {
             const x = randomNumberInRange(quizMinNumber, quizMaxNumber);
             const y = randomNumberInRange(quizMinNumber, quizMaxNumber);
-            
+
             const answer = x + y;
             const question = `${x} + ${y}`;
 
             return {
                 name: "Addition: x + y",
-                quizType : 'qa',
+                quizType: 'qa',
                 question,
                 answer
             }
         }
-        
+
         function getXAddYAddZQuiz({ quizMinNumber, quizMaxNumber }) {
             const x = randomNumberInRange(quizMinNumber, quizMaxNumber);
             const y = randomNumberInRange(quizMinNumber, quizMaxNumber);
             const z = randomNumberInRange(quizMinNumber, quizMaxNumber);
-            
+
             const answer = x + y + z;
             const question = `${x} + ${y} + ${z}`;
 
             return {
                 name: "Addition: x + y + z",
-                quizType : 'qa',
+                quizType: 'qa',
                 question,
                 answer
             }
@@ -321,7 +369,7 @@
             let x = randomNumberInRange(quizMinNumber, quizMaxNumber);
             let y = randomNumberInRange(quizMinNumber, quizMaxNumber);
 
-            if(x < y){
+            if (x < y) {
                 [x, y] = [y, x];
             }
 
@@ -330,23 +378,22 @@
 
             return {
                 name: "Subtraction: (+) x - y",
-                quizType : 'qa',
+                quizType: 'qa',
                 question,
                 answer
             }
         }
 
-        
         function getXMinusYQuiz({ quizMinNumber, quizMaxNumber }) {
             const x = randomNumberInRange(quizMinNumber, quizMaxNumber);
             const y = randomNumberInRange(quizMinNumber, quizMaxNumber);
-            
+
             const answer = x - y;
             const question = `${x} - ${y}`;
 
             return {
                 name: "Subtraction: x - y",
-                quizType : 'qa',
+                quizType: 'qa',
                 question,
                 answer
             }
@@ -356,13 +403,53 @@
             const x = randomNumberInRange(quizMinNumber, quizMaxNumber);
             const y = randomNumberInRange(quizMinNumber, quizMaxNumber);
             const z = randomNumberInRange(quizMinNumber, quizMaxNumber);
-            
+
             const answer = x - y - z;
             const question = `${x} - ${y} - ${z}`;
 
             return {
                 name: "Subtraction: x - y - z",
-                quizType : 'qa',
+                quizType: 'qa',
+                question,
+                answer
+            }
+        }
+        function twoPad(n) {
+            return ("" + n).padStart(2, 0);
+        }
+
+        // TODO quiz; show word, then pick the right sound
+        // TODO quiz; words that rhyme
+        // TODO quiz: say word, pick word amoung group of words 
+        // TODO quiz: say word, spell it
+        // TODO quiz: say word, repeat it
+
+        // TODO quiz: What time is it? analog clock 
+        // TODO quiz: What time is it? digital clock
+
+        // TODO quiz: What hour is it? analog clock 
+        // TODO quiz: What hour is it? digital clock
+
+        // TODO quiz: What min is it? analog clock 
+        // TODO quiz: What min is it? digital clock
+
+        // TODO quiz: Is the time in the evening, afternoon or morning?
+        // TODO quiz: Is the time in the evening, afternoon or morning?
+        // TODO quiz: What time is later?
+        // TODO quiz: What time is earlier?
+        // TODO quiz: Is time x within time boundary?
+
+        function getClockQuiz({ quizMinNumber, quizMaxNumber }) {
+            const hour = twoPad(randomNumberInRange(1, 13));
+            const min = twoPad(randomNumberInRange(0, 60));
+            const amPM = getRandomElement(["am", "pm"]);
+
+            const question = `${hour}:${min} ${amPM}`;
+            const answer = question;
+
+            return {
+                name: "Clock: What time?",
+                quizType: 'qa',
                 question,
                 answer
             }
@@ -371,24 +458,66 @@
         function getGreaterThanQuiz({ quizMinNumber, quizMaxNumber }) {
             const x = randomNumberInRange(quizMinNumber, quizMaxNumber - 1);
             let y = randomNumberInRange(x, quizMaxNumber);
-            y = Math.max(x+ 1, y);
-            
-            const isGreaterThan = Math.random() < 0.5; 
-            
+            y = Math.max(x + 1, y);
+
+            const isGreaterThan = Math.random() < 0.5;
+
             let question = `Is ${x} smaller than ${y}?\n\n${x} < ${y}`;
             let answer = x < y;
 
-            if(isGreaterThan) {
+            if (isGreaterThan) {
                 question = `Is ${x} bigger than ${y}?\n\n${x} > ${y}`;
                 answer = x > y;
             }
 
             return {
-                name: "Bigger or Smaller",
-                quizType : 'tf',
+                name: "Comparison: Bigger or Smaller",
+                quizType: 'tf',
+                // TODO: Is this needed because shouldn't the quiz type defined this?
                 isTrueFalse: true,
                 question,
+                // TODO: Is there a better to do this?
                 viz: createXYBlock(x, y),
+                answer
+            }
+        }
+
+        function getBiggestNumberQuiz({ quizMinNumber, quizMaxNumber }) {
+            const numbers = randomNumbersInRange(quizMinNumber, quizMaxNumber, 3);
+            let question = `What is the biggest number? \n${numbers.join(', ')}`;
+            let answer = numbers.sort().pop();
+
+            return {
+                name: "Comparison: Largest Number",
+                quizType: 'qa',
+                question,
+                answer
+            }
+        }
+
+        function getSmallestNumberQuiz({ quizMinNumber, quizMaxNumber }) {
+            const numbers = randomNumbersInRange(quizMinNumber, quizMaxNumber, 3);
+            let question = `What is the smallest number? \n${numbers.join(', ')}`;
+            let answer = numbers.sort()[0];
+
+            return {
+                name: "Comparison: Smallest Number",
+                quizType: 'qa',
+                question,
+                answer
+            }
+        }
+
+        function getNPlusXQuiz({ quizNNumber, quizMinNumber, quizMaxNumber }) {
+            const x = randomNumberInRange(quizMinNumber, quizMaxNumber + 1);
+
+            const question = shuffleNumbersInAddition(`${x} + ${quizNNumber}`);
+            const answer = x + quizNNumber;
+
+            return {
+                name: "Addition: x + n",
+                quizType: 'qa',
+                question,
                 answer
             }
         }
@@ -399,31 +528,37 @@
             },
             data() {
                 return {
+                    quizNNumber: 1,
                     rangeViz: null,
                     userAnswer: null,
                     answerState: null,
                     quizzes: [
-                        getGreaterThanQuiz, get0PlusQuiz, get1PlusQuiz, 
-                        get2PlusQuiz, get1Plus1PlusQuiz, getMissingNumberQuiz, 
+                        // TODO: Fix this
+                        // getClockQuiz,
+                        
+                        getBiggestNumberQuiz, getSmallestNumberQuiz,
+                        getGreaterThanQuiz, get0PlusQuiz, get1PlusQuiz,
+                        get2PlusQuiz, get1Plus1PlusQuiz, getMissingNumberQuiz,
                         getWriteXQuiz, getXAddYQuiz, getXAddYAddZQuiz,
-                        getPosXMinusYQuiz, getXMinusYQuiz, getXMinusYMinusZQuiz
+                        getPosXMinusYQuiz, getXMinusYQuiz, getXMinusYMinusZQuiz, getNPlusXQuiz
                     ],
                     quiz: null,
-                    quizType: "getXAddYQuiz",
+                    quizType: "getSmallestNumberQuiz",
                     quizMinNumber: 0,
-                    quizMaxNumber: 100
+                    quizMaxNumber: 100,
+                    quizUserAttempts: [],
                 }
             },
             mounted() {
                 this.newQuiz();
             },
             methods: {
-                createRangeViz(){
+                createRangeViz() {
                     const len = Math.abs(this.quizMaxNumber - this.quizMinNumber);
                     const items = [];
 
-                    for(let i = this.quizMinNumber; i < this.quizMaxNumber; i++){
-                        items.push( i );
+                    for (let i = this.quizMinNumber; i < this.quizMaxNumber; i++) {
+                        items.push(i);
                     }
 
                     this.rangeViz = items.join(', ');
@@ -447,28 +582,40 @@
                     this.newQuiz();
                 },
                 newQuiz() {
+                    this.resetAttempts();
                     this.answerState = null;
                     this.userAnswer = null;
                     this.createQuizFn = this.quizzes.find(fn => fn.name == this.quizType);
 
                     this.quiz = this.createQuizFn({
+                        quizNNumber: this.quizNNumber,
                         quizMaxNumber: this.quizMaxNumber,
                         quizMinNumber: this.quizMinNumber
                     });
                 },
-                setAndCheckAnswer(answer){
+                setAndCheckAnswer(answer) {
                     this.userAnswer = answer;
                     this.checkAnswer();
                 },
                 checkAnswer() {
                     if (this.userAnswer != null) {
-                        this.answerState = this.quiz.answer == this.userAnswer;
+                        const attempt = {};
+                        attempt.isCorrect = this.quiz.answer == this.userAnswer;
+                        this.quizUserAttempts.push(attempt);
+
+                        this.answerState = attempt.isCorrect;
                     } else {
                         this.answerState = null;
                     }
+                },
+                resetAttempts() {
+                    this.quizUserAttempts = [];
                 }
             },
             computed: {
+                quizUserAttemptCorrect() {
+                    return this.quizUserAttempts.filter(attempt => attempt.isCorrect).length;
+                },
                 answerStateClass() {
                     return {
                         "rightAnswer": this.answerState === true,
