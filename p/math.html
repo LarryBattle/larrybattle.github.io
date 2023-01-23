@@ -27,8 +27,8 @@
 
 <body>
     <noscript>Javascript is Disabled. Please enabled it for this site to work</noscript>
-    <script src="vue.global.js"></script>
-    <!-- <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script> -->
+    <!-- <script src="vue.global.js"></script> -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <div>
         <div id="app">
             <template v-if="quiz">
@@ -45,8 +45,8 @@
                 </div>
                 <template v-if="quiz.quizType == 'vocab'">
                     <input type="text" placeholder="?" maxlength="20" :class="answerStateClass" v-model="userAnswer"
-                        @change.enter="checkAnswer" />
-                    <input type="button" value="check" @click="checkAnswer()" />
+                        @change.enter="setVocabAndCheckAnswer(userAnswer)"/>
+                    <input type="button" value="check" @click="setVocabAndCheckAnswer(userAnswer)" />
                 </template>
 
                 <template v-if="quiz.quizType == 'qa'">
@@ -67,15 +67,14 @@
 
                 <template v-if="quiz.quizType == 'vocab:stt_choices'">
                     <template v-for="(c, i) in quiz.choices" :key="c">
-                        <input type="button" :value="c"
-                        @click="setAndCheckAnswer(c)"> 
+                        <input type="button" :value="c" @click="setAndCheckAnswer(c)">
                         <span v-if="(i + 1) < quiz.choices.length"> - </span>
                     </template>
                 </template>
-                
+
                 <div id="quiz_feedback">
                     <p>
-                        Correct?  
+                        Correct?
                         <span v-if="answerState === null"></span>
                         <span v-if="answerState === false">☹️</span>
                         <span v-if="answerState === true">✔️</span>
@@ -303,19 +302,19 @@
         function shuffleNumbersInExpression(expression, delimiterRegex, delimiter) {
             return shuffle(expression.split(delimiterRegex)).join(delimiter)
         }
-        
-        function randomIndexInArray(arr){
+
+        function randomIndexInArray(arr) {
             return ~~(Math.random() * arr.length);
         }
 
-        function randomUniqIndexesInArray(arr, count){
+        function randomUniqIndexesInArray(arr, count) {
             count = Math.min(count, arr.length);
-            const indexes = Array.from({length: arr.length}).fill(0).map((c,i) => i);
+            const indexes = Array.from({ length: arr.length }).fill(0).map((c, i) => i);
 
             return shuffle(indexes).slice(0, count);
         }
 
-        function randomElementsInArray(arr, count){
+        function randomElementsInArray(arr, count) {
             return randomUniqIndexesInArray(arr, count).map((c) => arr[c]);
         }
 
@@ -361,8 +360,8 @@
                 answer
             }
         }
-        
-        function splitVocabInputToWords(str){
+
+        function splitVocabInputToWords(str) {
             return str?.match(/\w+/g);
         }
 
@@ -675,6 +674,11 @@
                 setAndCheckAnswer(answer) {
                     this.userAnswer = answer;
                     this.checkAnswer();
+                },
+                setVocabAndCheckAnswer(word) {
+                    const cleanWord = word.trim().toLowerCase();
+                    console.log(cleanWord)
+                    this.setAndCheckAnswer(cleanWord)
                 },
                 checkAnswer() {
                     if (this.userAnswer != null) {
