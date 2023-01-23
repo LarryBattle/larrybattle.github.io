@@ -39,11 +39,17 @@
                     <pre>{{ quiz.question }}</pre>
 
                     <p v-if="quiz.speech">
-                        <input type="button" value="What number? 🔊" @click="sayIt(quiz.speech)" />
+                        <input type="button" value="What is said? 🔊" @click="sayIt(quiz.speech)" />
                     </p>
 
                 </div>
-                <template v-if="quiz.quizType != 'tf'">
+                <template v-if="quiz.quizType == 'vocab'">
+                    <input type="text" placeholder="?" maxlength="20" :class="answerStateClass" 
+                        v-model="userAnswer" @change.enter="checkAnswer" />
+                    <input type="button" value="check" @click="checkAnswer()" />
+                </template>
+
+                <template v-if="quiz.quizType != 'tf' && quiz.quizType != 'vocab'">
                     <input type="number" placeholder="?" maxlength="6" :class="answerStateClass" :min="quizMinNumber"
                         :max="quizMaxNumber" v-model.number="userAnswer" @change.enter="checkAnswer" />
                     <input type="button" value="check" @click="checkAnswer()" />
@@ -146,6 +152,12 @@
                                         <input type="button" @click="setDiffHard" value="Hard" />
                                     </td>
                                 </tr>
+                                <tr>
+                                    <td>Vocab</td>
+                                    <td>
+                                        <input type="text" v-model="quizVocabWords" />
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -154,11 +166,12 @@
             <details>
                 <summary>Dev Test</summary>
                 <fieldset>
-                    date: <input type="date"> <br> 
-                    time: <input type="time">  <br>
-                    tel: <input type="tel">  <br>
-                    datetime: <input type="datetime"> <br> 
-                    datetime-local: <input type="datetime-local"> <br> 
+                    date: <input type="date"> <br>
+                    time: <input type="time"> <br>
+                    tel: <input type="tel"> <br>
+                    datetime: <input type="datetime"> <br>
+                    datetime-local: <input type="datetime-local"> <br>
+                    quiz.answer: <pre>{{quiz?.answer}}</pre>
                 </fieldset>
             </details>
         </div>
@@ -224,7 +237,7 @@
         }
 
         function randomNumbersInRange(min, max, count) {
-            return Array.from({length: count}).fill(0).map(() => randomNumberInRange(min, max));
+            return Array.from({ length: count }).fill(0).map(() => randomNumberInRange(min, max));
         }
 
         // Returns a list of random list of numbers in sequential order within a [min, max] range.
@@ -305,6 +318,17 @@
             return getXPlusQuiz(2, `1 + 1`, ctx);
         }
 
+        function getWriteVocabQuiz({ quizVocabWords, quizMinNumber, quizMaxNumber }) {
+            const words = quizVocabWords?.match(/\w+/g) || ['error'];
+            const answer = getRandomElement(words);
+
+            return {
+                quizType: 'vocab',
+                name: "Vocab: Write word",
+                speech: `${answer}`,
+                answer
+            }
+        }
 
         function getWriteXQuiz({ quizMinNumber, quizMaxNumber }) {
             const answer = randomNumberInRange(quizMinNumber, quizMaxNumber);
@@ -485,7 +509,7 @@
         function getBiggestNumberQuiz({ quizMinNumber, quizMaxNumber }) {
             const numbers = randomNumbersInRange(quizMinNumber, quizMaxNumber, 3);
             let question = `What is the biggest number? \n${numbers.join(', ')}`;
-            let answer = numbers.sort().pop();
+            let answer = numbers.sort((a, b) => a - b).pop();
 
             return {
                 name: "Comparison: Largest Number",
@@ -498,7 +522,7 @@
         function getSmallestNumberQuiz({ quizMinNumber, quizMaxNumber }) {
             const numbers = randomNumbersInRange(quizMinNumber, quizMaxNumber, 3);
             let question = `What is the smallest number? \n${numbers.join(', ')}`;
-            let answer = numbers.sort()[0];
+            let answer = numbers.sort((a, b) => a - b)[0];
 
             return {
                 name: "Comparison: Smallest Number",
@@ -535,7 +559,7 @@
                     quizzes: [
                         // TODO: Fix this
                         // getClockQuiz,
-                        
+                        getWriteVocabQuiz,
                         getBiggestNumberQuiz, getSmallestNumberQuiz,
                         getGreaterThanQuiz, get0PlusQuiz, get1PlusQuiz,
                         get2PlusQuiz, get1Plus1PlusQuiz, getMissingNumberQuiz,
@@ -543,9 +567,11 @@
                         getPosXMinusYQuiz, getXMinusYQuiz, getXMinusYMinusZQuiz, getNPlusXQuiz
                     ],
                     quiz: null,
-                    quizType: "getSmallestNumberQuiz",
+                    quizType: "getWriteVocabQuiz",
                     quizMinNumber: 0,
                     quizMaxNumber: 100,
+                    // 1st grade: week 9
+                    quizVocabWords: 'with,next,need,speed,last,past,could,should,near,hear,fasten,appear',
                     quizUserAttempts: [],
                 }
             },
@@ -588,6 +614,7 @@
                     this.createQuizFn = this.quizzes.find(fn => fn.name == this.quizType);
 
                     this.quiz = this.createQuizFn({
+                        quizVocabWords: this.quizVocabWords,
                         quizNNumber: this.quizNNumber,
                         quizMaxNumber: this.quizMaxNumber,
                         quizMinNumber: this.quizMinNumber
