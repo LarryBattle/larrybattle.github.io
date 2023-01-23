@@ -44,8 +44,8 @@
 
                 </div>
                 <template v-if="quiz.quizType == 'vocab'">
-                    <input type="text" placeholder="?" maxlength="20" :class="answerStateClass" 
-                        v-model="userAnswer" @change.enter="checkAnswer" />
+                    <input type="text" placeholder="?" maxlength="20" :class="answerStateClass" v-model="userAnswer"
+                        @change.enter="checkAnswer" />
                     <input type="button" value="check" @click="checkAnswer()" />
                 </template>
 
@@ -171,7 +171,8 @@
                     tel: <input type="tel"> <br>
                     datetime: <input type="datetime"> <br>
                     datetime-local: <input type="datetime-local"> <br>
-                    quiz.answer: <pre>{{quiz?.answer}}</pre>
+                    quiz.answer:
+                    <pre>{{quiz?.answer}}</pre>
                 </fieldset>
             </details>
         </div>
@@ -183,15 +184,20 @@
             static async init() {
                 window.speechSynthesis.getVoices();
             }
-            static getRandomVoice() {
+            static getRandomVoice(useDefaultVoice) {
                 const voices = window.speechSynthesis.getVoices();
                 const defaultVoice = voices.find(v => v.default);
+                let langCodePrefix = "en-";
 
-                if (!defaultVoice) {
-                    return voices[0];
+                // TODO Rethink this
+                if (useDefaultVoice) {
+                    if (!defaultVoice) {
+                        return voices[0];
+                    }
+
+                    langCodePrefix = defaultVoice.lang.replace(/[A-Z]+$/, '');
                 }
 
-                const langCodePrefix = defaultVoice.lang.replace(/[A-Z]+$/, '');
                 const nativeVoices = voices.filter(v => v.lang.startsWith(langCodePrefix));
                 return getRandomElement(nativeVoices);
             }
