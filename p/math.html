@@ -49,7 +49,7 @@
                     <input type="button" value="check" @click="checkAnswer()" />
                 </template>
 
-                <template v-if="quiz.quizType != 'tf' && quiz.quizType != 'vocab'">
+                <template v-if="quiz.quizType == 'qa'">
                     <input type="number" placeholder="?" maxlength="6" :class="answerStateClass" :min="quizMinNumber"
                         :max="quizMaxNumber" v-model.number="userAnswer" @change.enter="checkAnswer" />
                     <input type="button" value="check" @click="checkAnswer()" />
@@ -65,10 +65,21 @@
                         @click="setAndCheckAnswer(false)">
                 </template>
 
+                <template v-if="quiz.quizType == 'vocab:stt_choices'">
+                    <template v-for="(c, i) in quiz.choices" :key="c">
+                        <input type="button" :value="c"
+                        @click="setAndCheckAnswer(c)"> 
+                        <span v-if="(i + 1) < quiz.choices.length"> - </span>
+                    </template>
+                </template>
+                
                 <div id="quiz_feedback">
-                    <span v-if="answerState === null">-</span>
-                    <span v-if="answerState === false">wrong: ☹️</span>
-                    <span v-if="answerState === true">right: ✔️</span>
+                    <p>
+                        Correct?  
+                        <span v-if="answerState === null"></span>
+                        <span v-if="answerState === false">☹️</span>
+                        <span v-if="answerState === true">✔️</span>
+                    </p>
                 </div>
             </template>
             <br>
@@ -292,6 +303,21 @@
         function shuffleNumbersInExpression(expression, delimiterRegex, delimiter) {
             return shuffle(expression.split(delimiterRegex)).join(delimiter)
         }
+        
+        function randomIndexInArray(arr){
+            return ~~(Math.random() * arr.length);
+        }
+
+        function randomUniqIndexesInArray(arr, count){
+            count = Math.min(count, arr.length);
+            const indexes = Array.from({length: arr.length}).fill(0).map((c,i) => i);
+
+            return shuffle(indexes).slice(0, count);
+        }
+
+        function randomElementsInArray(arr, count){
+            return randomUniqIndexesInArray(arr, count).map((c) => arr[c]);
+        }
 
         function getXPlusQuiz(x, xText, { quizMinNumber, quizMaxNumber }) {
             const i = randomNumberInRange(quizMinNumber, quizMaxNumber);
@@ -325,13 +351,31 @@
         }
 
         function getWriteVocabQuiz({ quizVocabWords, quizMinNumber, quizMaxNumber }) {
-            const words = quizVocabWords?.match(/\w+/g) || ['error'];
+            const words = splitVocabInputToWords(quizVocabWords) || ['error'];
             const answer = getRandomElement(words);
 
             return {
                 quizType: 'vocab',
                 name: "Vocab: Write word",
                 speech: `${answer}`,
+                answer
+            }
+        }
+        
+        function splitVocabInputToWords(str){
+            return str?.match(/\w+/g);
+        }
+
+        function getPickWordSTTQuiz({ quizVocabWords, quizMinNumber, quizMaxNumber }) {
+            const words = splitVocabInputToWords(quizVocabWords) || ['error'];
+            const choices = randomElementsInArray(words, 3);
+            const answer = getRandomElement(choices);
+
+            return {
+                quizType: 'vocab:stt_choices',
+                name: "Vocab: Which Word spoken?",
+                speech: `${answer}`,
+                choices,
                 answer
             }
         }
@@ -565,7 +609,7 @@
                     quizzes: [
                         // TODO: Fix this
                         // getClockQuiz,
-                        getWriteVocabQuiz,
+                        getWriteVocabQuiz, getPickWordSTTQuiz,
                         getBiggestNumberQuiz, getSmallestNumberQuiz,
                         getGreaterThanQuiz, get0PlusQuiz, get1PlusQuiz,
                         get2PlusQuiz, get1Plus1PlusQuiz, getMissingNumberQuiz,
@@ -573,7 +617,7 @@
                         getPosXMinusYQuiz, getXMinusYQuiz, getXMinusYMinusZQuiz, getNPlusXQuiz
                     ],
                     quiz: null,
-                    quizType: "getWriteVocabQuiz",
+                    quizType: "getPickWordSTTQuiz",
                     quizMinNumber: 0,
                     quizMaxNumber: 100,
                     // 1st grade: week 9
@@ -618,6 +662,8 @@
                     this.answerState = null;
                     this.userAnswer = null;
                     this.createQuizFn = this.quizzes.find(fn => fn.name == this.quizType);
+
+                    // console.log( "quizTypes: ", this.quizzes.map(fn => fn({}).quizType).sort() );
 
                     this.quiz = this.createQuizFn({
                         quizVocabWords: this.quizVocabWords,
