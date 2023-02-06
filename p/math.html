@@ -27,8 +27,8 @@
 
 <body>
     <noscript>Javascript is Disabled. Please enabled it for this site to work</noscript>
-    <!-- <script src="vue.global.js"></script> -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="vue.global.js"></script>
+    <!-- <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script> -->
     <div>
         <div id="app">
             <template v-if="quiz">
@@ -45,8 +45,8 @@
                 </div>
                 <template v-if="quiz.quizType == 'vocab'">
                     <input type="text" placeholder="?" maxlength="20" :class="answerStateClass" v-model="userAnswer"
-                        @change.enter="setVocabAndCheckAnswer(userAnswer)"/>
-                    <input type="button" value="check" @click="setVocabAndCheckAnswer(userAnswer)" />
+                        @change.enter="checkAnswer" />
+                    <input type="button" value="check" @click="checkAnswer()" />
                 </template>
 
                 <template v-if="quiz.quizType == 'qa'">
@@ -134,8 +134,6 @@
                                                 <option :value="value">{{name}}</option>
                                             </template>
                                         </select>
-
-
                                     </td>
                                 </tr>
 
@@ -160,6 +158,24 @@
                                         <input type="button" @click="setDiffEasy" value="Easy" />
                                         <input type="button" @click="setDiffNormal" value="Normal" />
                                         <input type="button" @click="setDiffHard" value="Hard" />
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>Voices</td>
+                                    <td>
+                                        <div>
+                                            <label>
+                                                Pick Random Voice <input type="checkbox" v-model="useRandomVoice" />
+                                            </label>
+                                        </div>
+                                        <select :disabled="useRandomVoice" v-model="voiceChoice">
+                                            <option value="">- Please select voice</option>
+
+                                            <template v-for="(voice, i) in voices" :key="voice.id">
+                                                <option :value="voice.id">{{voice.name}}</option>
+                                            </template>
+                                        </select>
                                     </td>
                                 </tr>
                                 <tr>
@@ -192,10 +208,60 @@
 
         class SpeechService {
             static async init() {
-                window.speechSynthesis.getVoices();
+                let tries = 0;
+
+                function initVoices() {
+                    const voices = window.speechSynthesis.getVoices();
+
+                    if (voices && voices.length) {
+                        return voices;
+                    }
+
+                    tries += 1;
+
+                    if (tries < 5) {
+                        return new Promise((resolve) => {
+                            setTimeout(() => {
+                                resolve(initVoices());
+                            }, tries * 200);
+                        });
+                    }
+
+                    return null;
+                }
+
+                return initVoices();
             }
-            static getRandomVoice(useDefaultVoice) {
-                const voices = window.speechSynthesis.getVoices();
+
+            static async getVoices() {
+                return window.speechSynthesis.getVoices();
+            }
+
+            static async getDefaultVoice() {
+                const voices = await SpeechService.getVoices();
+                return voices.find(v => v.default) || voices[0];
+            }
+            static async findVoiceById(voiceId) {
+                const voices = await SpeechService.getVoices();
+                return voices.find(v => v.voiceURI == voiceId);
+            }
+
+            static async getVoicesInLang(langCodePrefix) {
+                const voices = await SpeechService.getVoices();
+                return voices.filter(v => v.lang.startsWith(langCodePrefix));
+            }
+
+            static async getVoiceDetails() {
+                const voices = await SpeechService.getVoices();
+
+                return voices.map(v => ({
+                    id: v.voiceURI,
+                    name: `${v.lang} - ${v.name}`
+                })).sort((a, b) => a.name.localeCompare(b.name));
+            }
+
+            static async getRandomVoice(useDefaultVoice) {
+                const voices = await SpeechService.getVoices();
                 const defaultVoice = voices.find(v => v.default);
                 let langCodePrefix = "en-";
 
@@ -211,10 +277,21 @@
                 const nativeVoices = voices.filter(v => v.lang.startsWith(langCodePrefix));
                 return getRandomElement(nativeVoices);
             }
-            static async sayIt(text) {
-                return new Promise((resolve) => {
+
+            static async sayIt({ text, useRandomVoice, voiceChoice }) {
+                return new Promise(async (resolve) => {
                     const msg = new SpeechSynthesisUtterance();
-                    const voice = SpeechService.getRandomVoice();
+                    let voice = null;
+                    const hasVoiceSelected = !!(voiceChoice && !useRandomVoice);
+
+                    console.log({ text, hasVoiceSelected, useRandomVoice, voiceChoice });
+
+                    if (hasVoiceSelected) {
+                        voice = await SpeechService.findVoiceById(voiceChoice);
+                    } else {
+                        voice = await SpeechService.getRandomVoice();
+                    }
+
                     msg.voice = voice;
                     msg.text = text;
 
@@ -362,6 +439,8 @@
         }
 
         function splitVocabInputToWords(str) {
+            // TODO Find out how to match chinese curahacter
+            return str?.split(",").map(x => x.trim()).filter(x => !!x)
             return str?.match(/\w+/g);
         }
 
@@ -596,11 +675,14 @@
         }
 
         createApp({
-            created() {
-                SpeechService.init();
+            async created() {
+                await SpeechService.init();
+                this.voices = await SpeechService.getVoiceDetails();
             },
             data() {
                 return {
+                    voiceChoice: "",
+                    useRandomVoice: true,
                     quizNNumber: 1,
                     rangeViz: null,
                     userAnswer: null,
@@ -620,8 +702,13 @@
                     quizMinNumber: 0,
                     quizMaxNumber: 100,
                     // 1st grade: week 9
-                    quizVocabWords: 'with,next,need,speed,last,past,could,should,near,hear,fasten,appear',
+                    quizVocabWords: [
+                        'with,next,need,speed,last,past,could,should,near,hear,fasten,appear',
+                        'much,went,sent,pool,cool,know,snow,blow,our,sour,school,marshmallow'
+                    ].join(","),
                     quizUserAttempts: [],
+                    voice: null,
+                    voices: null
                 }
             },
             mounted() {
@@ -639,7 +726,11 @@
                     this.rangeViz = items.join(', ');
                 },
                 sayIt(text) {
-                    SpeechService.sayIt(text);
+                    SpeechService.sayIt({
+                        text,
+                        useRandomVoice: this.useRandomVoice,
+                        voiceChoice: this.voiceChoice
+                    });
                 },
                 setDiffEasy() {
                     this.quizMinNumber = 0;
@@ -662,8 +753,6 @@
                     this.userAnswer = null;
                     this.createQuizFn = this.quizzes.find(fn => fn.name == this.quizType);
 
-                    // console.log( "quizTypes: ", this.quizzes.map(fn => fn({}).quizType).sort() );
-
                     this.quiz = this.createQuizFn({
                         quizVocabWords: this.quizVocabWords,
                         quizNNumber: this.quizNNumber,
@@ -674,11 +763,6 @@
                 setAndCheckAnswer(answer) {
                     this.userAnswer = answer;
                     this.checkAnswer();
-                },
-                setVocabAndCheckAnswer(word) {
-                    const cleanWord = word.trim().toLowerCase();
-                    console.log(cleanWord)
-                    this.setAndCheckAnswer(cleanWord)
                 },
                 checkAnswer() {
                     if (this.userAnswer != null) {
