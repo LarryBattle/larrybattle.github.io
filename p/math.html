@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧾</text></svg>">
-    <title>Math Quiz</title>
+    <title>Quiz</title>
     <style>
         .wrongAnswer,
         .rightAnswer {
@@ -32,10 +32,9 @@
     <div>
         <div id="app">
             <template v-if="quiz">
-                <h2><a href="#" @click.prevent="newQuiz">Math Quiz</a>: {{quiz.name}}</h2>
+                <h2><a href="#" @click.prevent="newQuiz">Quiz</a>: {{quiz.name}}</h2>
 
                 <div>
-
                     <pre>{{ quiz.question }}</pre>
 
                     <p v-if="quiz.speech">
@@ -322,11 +321,10 @@
                 .map((c, i) => c + i);
         }
 
-        // TODO Look into having it as [min, max]
-        // return number in [min, max)
+        // return number in [min, max]
         function randomNumberInRange(min, max) {
             const x = Math.abs(max - min);
-            return min + Math.floor(Math.random() * x);
+            return min + Math.round(Math.random() * x);
         }
 
         function randomNumbersInRange(min, max, count) {
@@ -375,6 +373,9 @@
         function shuffleNumbersInAddition(expression) {
             return shuffleNumbersInExpression(expression, /\s+[+]\s+/g, " + ");
         }
+        function shuffleNumbersInMult(expression) {
+            return shuffleNumbersInExpression(expression, /\s+[x]\s+/g, " x ");
+        }
 
         function shuffleNumbersInExpression(expression, delimiterRegex, delimiter) {
             return shuffle(expression.split(delimiterRegex)).join(delimiter)
@@ -405,6 +406,63 @@
             return {
                 quizType: 'qa',
                 name: `Addition: Plus ${xText}`,
+                question,
+                answer
+            }
+        }
+
+        function getAXNTimeQuiz({ quizMinNumber, quizMaxNumber, quizNNumber }) {
+            const i = randomNumberInRange(quizMinNumber, quizMaxNumber);
+
+            let question = shuffleNumbersInMult(`${localN(i)} x ${quizNNumber}`);
+
+            const answer = quizNNumber * i;
+
+            return {
+                quizType: 'qa',
+                name: `Multiplication: a x n`,
+                question,
+                answer
+            }
+        }
+
+        function getAXBTimeQuiz({ quizMinNumber, quizMaxNumber }) {
+            const i = randomNumberInRange(quizMinNumber, quizMaxNumber);
+            const j = randomNumberInRange(quizMinNumber, quizMaxNumber);
+
+            let question = shuffleNumbersInMult(`${localN(i)} x ${localN(j)}`);
+
+            const answer = i * j;
+
+            return {
+                quizType: 'qa',
+                name: `Multiplication: a x b`,
+                question,
+                answer
+            }
+        }
+
+        function localN(x) {
+            return x.toLocaleString();
+        }
+
+        function getADivBQuiz({ quizMinNumber, quizMaxNumber }) {
+            const j = randomNumberInRange(quizMinNumber, quizMaxNumber);
+            let i = randomNumberInRange(quizMinNumber, quizMaxNumber);
+
+            if (i === 0) {
+                i = 1;
+            }
+
+            const product = i * j;
+
+            let question = shuffleNumbersInMult(`${localN(product)} / ${localN(i)}`);
+
+            const answer = i * j;
+
+            return {
+                quizType: 'qa',
+                name: `Division: a / b`,
                 question,
                 answer
             }
@@ -469,17 +527,67 @@
             }
         }
 
-        function getMissingNumberQuiz({ quizMinNumber, quizMaxNumber }) {
-            const range = getRandomRange(quizMinNumber, quizMaxNumber);
+        function getMissingNumberPlusXQuiz(nameSuffix, x, { quizMinNumber, quizMaxNumber }) {
+            const range = getRandomRange(quizMinNumber, quizMaxNumber).map(n => n * x);
 
-            const i = randomNumberInRange(0, range.length);
+            const i = randomNumberInRange(0, range.length - 1);
             const answer = range[i];
             range[i] = '?';
 
-            const question = range.map(formatNumber).join(', ');
+            const rangeText = range.map(formatNumber).join(', ');
+            const question = `f(i) = f(i-1) + ${x};
+
+${rangeText}`;
 
             return {
-                name: "Sequence: Next number",
+                name: `Sequence: Next number${nameSuffix}`,
+                quizType: 'qa',
+                question,
+                answer
+            }
+        }
+
+        function getMissingNumberPlusNQuiz(options) {
+            return getMissingNumberPlusXQuiz(" + n", options.quizNNumber, options);
+        }
+
+        function getMissingNumberPlus1Quiz(options) {
+            return getMissingNumberPlusXQuiz(" + 1", 1, options);
+        }
+
+        function getMissingNumberPlus5Quiz(options) {
+            return getMissingNumberPlusXQuiz(" + 5", 5, options);
+        }
+
+        function getMissingNumberPlus10Quiz(options) {
+            return getMissingNumberPlusXQuiz(" + 10", 5, options);
+        }
+
+        function getFOfXQuiz({ quizMinNumber, quizMaxNumber }) {
+            const x = randomNumberInRange(quizMinNumber, quizMaxNumber);
+            const y = randomNumberInRange(quizMinNumber, quizMaxNumber);
+
+            const answer = x + y;
+            const question = `f(x) = x + ${x};
+f(${y}) == ?`;
+
+            return {
+                name: "Functions: f(x) = x + y",
+                quizType: 'qa',
+                question,
+                answer
+            }
+        }
+
+        function getFOfXGivenNQuiz({ quizMinNumber, quizMaxNumber, quizNNumber }) {
+            const x = randomNumberInRange(quizMinNumber, quizMaxNumber);
+
+            const answer = x + quizNNumber;
+            const question = `f(x) = x + ${quizNNumber};
+f(${x}) == ?`;
+
+            return {
+                name: "Functions: f(x) = x + n",
                 quizType: 'qa',
                 question,
                 answer
@@ -566,6 +674,7 @@
                 answer
             }
         }
+
         function twoPad(n) {
             return ("" + n).padStart(2, 0);
         }
@@ -690,15 +799,19 @@
                     quizzes: [
                         // TODO: Fix this
                         // getClockQuiz,
+                        getMissingNumberPlusNQuiz, getMissingNumberPlus1Quiz, getMissingNumberPlus5Quiz, getMissingNumberPlus10Quiz,
+                        getFOfXQuiz, getFOfXGivenNQuiz,
+                        getADivBQuiz,
+                        getAXNTimeQuiz, getAXBTimeQuiz,
                         getWriteVocabQuiz, getPickWordSTTQuiz,
                         getBiggestNumberQuiz, getSmallestNumberQuiz,
                         getGreaterThanQuiz, get0PlusQuiz, get1PlusQuiz,
-                        get2PlusQuiz, get1Plus1PlusQuiz, getMissingNumberQuiz,
+                        get2PlusQuiz, get1Plus1PlusQuiz,
                         getWriteXQuiz, getXAddYQuiz, getXAddYAddZQuiz,
                         getPosXMinusYQuiz, getXMinusYQuiz, getXMinusYMinusZQuiz, getNPlusXQuiz
                     ],
                     quiz: null,
-                    quizType: "getPickWordSTTQuiz",
+                    quizType: "getMissingNumberPlusNQuiz",
                     quizMinNumber: 0,
                     quizMaxNumber: 100,
                     // 1st grade: week 9
