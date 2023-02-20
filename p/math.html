@@ -259,22 +259,18 @@
                 })).sort((a, b) => a.name.localeCompare(b.name));
             }
 
-            static async getRandomVoice(useDefaultVoice) {
-                const voices = await SpeechService.getVoices();
-                const defaultVoice = voices.find(v => v.default);
-                let langCodePrefix = "en-";
+            static async getRandomVoice(langCodePrefix) {
+                let voices = await SpeechService.getVoices();
 
-                // TODO Rethink this
-                if (useDefaultVoice) {
-                    if (!defaultVoice) {
-                        return voices[0];
-                    }
-
-                    langCodePrefix = defaultVoice.lang.replace(/[A-Z]+$/, '');
+                if (langCodePrefix) {
+                    voices = voices.filter(v => v.lang.startsWith(langCodePrefix));
                 }
 
-                const nativeVoices = voices.filter(v => v.lang.startsWith(langCodePrefix));
-                return getRandomElement(nativeVoices);
+                return getRandomElement(voices);
+            }
+
+            static async getRandomEnglishVoice() {
+                return SpeechService.getRandomVoice("en-");
             }
 
             static async sayIt({ text, useRandomVoice, voiceChoice }) {
@@ -283,19 +279,16 @@
                     let voice = null;
                     const hasVoiceSelected = !!(voiceChoice && !useRandomVoice);
 
-                    console.log({ text, hasVoiceSelected, useRandomVoice, voiceChoice });
-
                     if (hasVoiceSelected) {
                         voice = await SpeechService.findVoiceById(voiceChoice);
                     } else {
-                        voice = await SpeechService.getRandomVoice();
+                        voice = await SpeechService.getRandomEnglishVoice();
                     }
 
                     msg.voice = voice;
                     msg.text = text;
 
                     msg.onend = function (e) {
-                        console.info({ voiceName: voice?.name, voiceLang: voice?.lang, text });
                         resolve();
                     };
 
@@ -497,9 +490,7 @@
         }
 
         function splitVocabInputToWords(str) {
-            // TODO Find out how to match chinese curahacter
             return str?.split(",").map(x => x.trim()).filter(x => !!x)
-            return str?.match(/\w+/g);
         }
 
         function getPickWordSTTQuiz({ quizVocabWords, quizMinNumber, quizMaxNumber }) {
@@ -679,10 +670,8 @@ f(${x}) == ?`;
             return ("" + n).padStart(2, 0);
         }
 
-        // TODO quiz; show word, then pick the right sound
         // TODO quiz; words that rhyme
         // TODO quiz: say word, pick word amoung group of words 
-        // TODO quiz: say word, spell it
         // TODO quiz: say word, repeat it
 
         // TODO quiz: What time is it? analog clock 
@@ -734,8 +723,6 @@ f(${x}) == ?`;
             return {
                 name: "Comparison: Bigger or Smaller",
                 quizType: 'tf',
-                // TODO: Is this needed because shouldn't the quiz type defined this?
-                isTrueFalse: true,
                 question,
                 // TODO: Is there a better to do this?
                 viz: createXYBlock(x, y),
@@ -814,10 +801,11 @@ f(${x}) == ?`;
                     quizType: "getMissingNumberPlusNQuiz",
                     quizMinNumber: 0,
                     quizMaxNumber: 100,
-                    // 1st grade: week 9
                     quizVocabWords: [
+                    // 1st grade: week 9
                         'with,next,need,speed,last,past,could,should,near,hear,fasten,appear',
-                        'much,went,sent,pool,cool,know,snow,blow,our,sour,school,marshmallow'
+                        'much,went,sent,pool,cool,know,snow,blow,our,sour,school,marshmallow',
+                        ''
                     ].join(","),
                     quizUserAttempts: [],
                     voice: null,
@@ -829,10 +817,9 @@ f(${x}) == ?`;
             },
             methods: {
                 createRangeViz() {
-                    const len = Math.abs(this.quizMaxNumber - this.quizMinNumber);
                     const items = [];
 
-                    for (let i = this.quizMinNumber; i < this.quizMaxNumber; i++) {
+                    for (let i = this.quizMinNumber; i <= this.quizMaxNumber; i++) {
                         items.push(i);
                     }
 
