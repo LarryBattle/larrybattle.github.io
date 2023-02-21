@@ -27,8 +27,8 @@
 
 <body>
     <noscript>Javascript is Disabled. Please enabled it for this site to work</noscript>
-    <script src="vue.global.js"></script>
-    <!-- <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script> -->
+    <!-- <script src="vue.global.js"></script> -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <div>
         <div id="app">
             <template v-if="quiz">
@@ -44,6 +44,18 @@
                 </div>
                 <template v-if="quiz.quizType == 'vocab'">
                     <input type="text" placeholder="?" maxlength="20" :class="answerStateClass" v-model="userAnswer"
+                        @change.enter="checkAnswer" />
+                    <input type="button" value="check" @click="checkAnswer()" />
+                </template>
+
+                <template v-if="quiz.quizType == 'date_picker'">
+                    <input type="date" placeholder="?" :class="answerStateClass" v-model="userAnswer"
+                        @change.enter="checkAnswer" />
+                    <input type="button" value="check" @click="checkAnswer()" />
+                </template>
+                
+                <template v-if="quiz.quizType == 'time_picker'">
+                    <input type="time" placeholder="?" :class="answerStateClass" v-model="userAnswer"
                         @change.enter="checkAnswer" />
                     <input type="button" value="check" @click="checkAnswer()" />
                 </template>
@@ -198,6 +210,9 @@
                     datetime-local: <input type="datetime-local"> <br>
                     quiz.answer:
                     <pre>{{quiz?.answer}}</pre>
+                    <br>
+                    userAnswer:
+                    <pre>{{userAnswer}}</pre>
                 </fieldset>
             </details>
         </div>
@@ -387,6 +402,129 @@
 
         function randomElementsInArray(arr, count) {
             return randomUniqIndexesInArray(arr, count).map((c) => arr[c]);
+        }
+
+        function getRandomDateParts(year, month, day) {
+            const date = new Date(year, month, day);
+            const options = {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+            };
+            const formattedDate = new Intl.DateTimeFormat("en-US", options).format(date);
+            const dateParts = formattedDate.toLowerCase().replace(/[,]/g, '').split(" ");
+
+            return {
+                month,
+                day,
+                year,
+                dow: dateParts[0],
+                monthName: dateParts[1],
+                formattedDate,
+                dateParts
+            }
+        }
+
+        function formatDatePartsToInputDateValue(year, month, day) {
+            const m = ("" + (month + 1)).padStart(2, 0);
+            const d = ("" + day).padStart(2, 0);
+
+            return `${year}-${m}-${d}`;
+        }
+
+        function getDatePickerQuiz() {
+            const year = randomNumberInRange(2010, 2025);
+            const month = randomNumberInRange(0, 12);
+            const day = randomNumberInRange(0, 31);
+            const dateObj = getRandomDateParts(year, month, day);
+
+            const question = `Select the date: ${dateObj.formattedDate}`;
+            const answer = formatDatePartsToInputDateValue(year, month, day);
+
+            return {
+                quizType: 'date_picker',
+                name: `Date: Pick Date`,
+                question,
+                answer
+            }
+        }
+
+        function getDatePartQuiz() {
+            const year = randomNumberInRange(1700, 2100);
+            const month = randomNumberInRange(0, 12);
+            const day = randomNumberInRange(0, 31);
+            const dateObj = getRandomDateParts(year, month, day);
+            const { dow, monthName, formattedDate, dateParts } = dateObj;
+            let question, answer;
+
+            if (Math.random() < 0.5) {
+                question = `What day of the week is ${formattedDate}?`;
+                answer = dow;
+            } else if (Math.random() < 0.5) {
+                question = `What year is ${formattedDate}?`;
+                answer = year;
+            } else if (Math.random() < 0.5) {
+                question = `What month is ${formattedDate}?`;
+                answer = monthName;
+            } else {
+                question = `What day is ${formattedDate}?`;
+                answer = day;
+            }
+
+            return {
+                quizType: 'vocab',
+                name: `Date: Date parts`,
+                question,
+                answer
+            }
+        }
+
+        function formatTimeFromParts(hour, minutes, amPM) {
+            const h = ("" + hour).padStart(2, 0);
+            const m = ("" + minutes).padStart(2, 0);
+
+            return `${h}:${m} ${amPM}`;
+        }
+
+        function getDigitalClockQuiz() {
+            const hour = randomNumberInRange(1, 12);
+            const minutes = randomNumberInRange(0, 60);
+            const amPM = getRandomElement(["am", "pm"]);
+            const formattedTime = formatTimeFromParts(hour, minutes, amPM);
+
+            if (Math.random() < 0.5) {
+                question = `What hour is ${formattedTime}?`;
+                answer = hour;
+            } else {
+                question = `What minute is ${formattedTime}?`;
+                answer = minutes;
+            }
+
+            return {
+                quizType: 'vocab',
+                name: `Time: Time parts`,
+                question,
+                answer
+            }
+        }
+
+        function getTimePickerQuiz() {
+            const hour = randomNumberInRange(1, 12);
+            const minutes = randomNumberInRange(0, 60);
+            const amPM = getRandomElement(["am", "pm"]);
+            const formattedTime = formatTimeFromParts(hour, minutes, amPM);
+
+            const question = `Pick the time: ${formattedTime}`;
+            const h = (amPM === 'pm') ? 12 + hour : hour;
+            const answer = `${("" + h).padStart(2, 0)}:${( "" + minutes).padStart(2, 0)}`;
+
+            return {
+                quizType: 'time_picker',
+                name: `Time: Time Picker`,
+                question,
+                answer
+            }
         }
 
         function getXPlusQuiz(x, xText, { quizMinNumber, quizMaxNumber }) {
@@ -675,13 +813,8 @@ f(${x}) == ?`;
         // TODO quiz: say word, repeat it
 
         // TODO quiz: What time is it? analog clock 
-        // TODO quiz: What time is it? digital clock
-
         // TODO quiz: What hour is it? analog clock 
-        // TODO quiz: What hour is it? digital clock
-
         // TODO quiz: What min is it? analog clock 
-        // TODO quiz: What min is it? digital clock
 
         // TODO quiz: Is the time in the evening, afternoon or morning?
         // TODO quiz: Is the time in the evening, afternoon or morning?
@@ -689,7 +822,7 @@ f(${x}) == ?`;
         // TODO quiz: What time is earlier?
         // TODO quiz: Is time x within time boundary?
 
-        function getClockQuiz({ quizMinNumber, quizMaxNumber }) {
+        function getXClockQuiz({ quizMinNumber, quizMaxNumber }) {
             const hour = twoPad(randomNumberInRange(1, 13));
             const min = twoPad(randomNumberInRange(0, 60));
             const amPM = getRandomElement(["am", "pm"]);
@@ -784,8 +917,8 @@ f(${x}) == ?`;
                     userAnswer: null,
                     answerState: null,
                     quizzes: [
-                        // TODO: Fix this
-                        // getClockQuiz,
+                        getDigitalClockQuiz, getTimePickerQuiz,
+                        getDatePartQuiz, getDatePickerQuiz,
                         getMissingNumberPlusNQuiz, getMissingNumberPlus1Quiz, getMissingNumberPlus5Quiz, getMissingNumberPlus10Quiz,
                         getFOfXQuiz, getFOfXGivenNQuiz,
                         getADivBQuiz,
@@ -798,11 +931,11 @@ f(${x}) == ?`;
                         getPosXMinusYQuiz, getXMinusYQuiz, getXMinusYMinusZQuiz, getNPlusXQuiz
                     ],
                     quiz: null,
-                    quizType: "getMissingNumberPlusNQuiz",
+                    quizType: "getTimePickerQuiz",
                     quizMinNumber: 0,
                     quizMaxNumber: 100,
                     quizVocabWords: [
-                    // 1st grade: week 9
+                        // 1st grade: week 9
                         'with,next,need,speed,last,past,could,should,near,hear,fasten,appear',
                         'much,went,sent,pool,cool,know,snow,blow,our,sour,school,marshmallow'
                     ].join(","),
