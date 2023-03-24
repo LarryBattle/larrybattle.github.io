@@ -70,7 +70,7 @@
                     <label for="quiz_answer_input_yes">Yes</label>
                     <input type="radio" id="quiz_answer_input_yes" name="quiz_tf_quiz" value="true" v-model="userAnswer"
                         @click="setAndCheckAnswer(true)">
-
+                    <br>
                     <label for="quiz_answer_input_no">No</label>
                     <input type="radio" id="quiz_answer_input_no" name="quiz_tf_quiz" value="false" v-model="userAnswer"
                         @click="setAndCheckAnswer(false)">
@@ -345,8 +345,17 @@
             return getRange(x, Math.min(x + count, max));
         }
 
+        function getRandomBool() {
+            return Math.random() < 0.5;
+        }
+
         function getRandomElement(arr) {
             return arr[Math.floor(Math.random() * arr.length)]
+        }
+
+        // sorts smallest to highest
+        function sortNums(nums) {
+            return nums.sort((a, b) => a - b);
         }
 
         function formatNumber(x) {
@@ -458,13 +467,13 @@
             const { dow, monthName, formattedDate, dateParts } = dateObj;
             let question, answer;
 
-            if (Math.random() < 0.5) {
+            if (getRandomBool()) {
                 question = `What day of the week is ${formattedDate}?`;
                 answer = dow;
-            } else if (Math.random() < 0.5) {
+            } else if (getRandomBool()) {
                 question = `What year is ${formattedDate}?`;
                 answer = year;
-            } else if (Math.random() < 0.5) {
+            } else if (getRandomBool()) {
                 question = `What month is ${formattedDate}?`;
                 answer = monthName;
             } else {
@@ -493,7 +502,7 @@
             const amPM = getRandomElement(["am", "pm"]);
             const formattedTime = formatTimeFromParts(hour, minutes, amPM);
 
-            if (Math.random() < 0.5) {
+            if (getRandomBool()) {
                 question = `What hour is ${formattedTime}?`;
                 answer = hour;
             } else {
@@ -542,6 +551,26 @@
             }
         }
 
+        function createXTimesYBlock(x, y) {
+            const fn = (a, b) => {
+                const times = Math.abs(b);
+                const sign = Math.sign(a * b);
+                const n = sign * Math.abs(a);
+                return Array.from({ length: times }).fill(n).join(" + ");
+            };
+            if ((x * y) === 0) {
+                if (x === 0) {
+                    return fn(x, y);
+                }
+                return fn(y, x);
+            }
+            if (x == y) {
+                return fn(x, y);
+            }
+
+            return `a) ${fn(x, y)}\nb) ${fn(y, x)}`;
+        }
+
         function getAXNTimeQuiz({ quizMinNumber, quizMaxNumber, quizNNumber }) {
             const i = randomNumberInRange(quizMinNumber, quizMaxNumber);
 
@@ -552,6 +581,7 @@
             return {
                 quizType: 'qa',
                 name: `Multiplication: a x n`,
+                viz: createXTimesYBlock(quizNNumber, i),
                 question,
                 answer
             }
@@ -568,6 +598,7 @@
             return {
                 quizType: 'qa',
                 name: `Multiplication: a x b`,
+                viz: createXTimesYBlock(i, j),
                 question,
                 answer
             }
@@ -843,7 +874,7 @@ f(${x}) == ?`;
             let y = randomNumberInRange(x, quizMaxNumber);
             y = Math.max(x + 1, y);
 
-            const isGreaterThan = Math.random() < 0.5;
+            const isGreaterThan = getRandomBool();
 
             let question = `Is ${x} smaller than ${y}?\n\n${x} < ${y}`;
             let answer = x < y;
@@ -863,37 +894,75 @@ f(${x}) == ?`;
             }
         }
 
-        function getTwoEquationsSameQuiz({ quizMinNumber, quizMaxNumber, quizNNumber }) {
-            let x = randomNumberInRange(quizMinNumber, quizMaxNumber);
+        // return (a+b) == (c+d) but sometimes d is different so it's not equal 
+        function getTwoEquationData({ quizMinNumber, quizMaxNumber, quizNNumber }) {
+            const a = quizMinNumber + randomNumberInRange(0, quizMaxNumber - quizMinNumber);
+            const b = randomNumberInRange(0, quizMaxNumber - a);
+            const c = randomNumberInRange(0, quizMaxNumber);
+            let d = Math.max(0, (a + b) - c);
 
-            let diffA = randomNumberInRange(0, quizNNumber);
-            let diffC = randomNumberInRange(0, quizNNumber);
-            if ((x - diffA) < 0) {
-                diffA = 0;
-            }
-            if ((x - diffC) < 0) {
-                diffC = 0;
-            }
-            const a = x - diffA;
-            const b = diffA;
-
-            let c = x - diffC;
-            let d = diffC;
-            
-            if (Math.random() < 0.5) {
-                d = diffC + randomNumberInRange(1, 3);
+            if (getRandomBool()) {
+                d = randomNumberInRange(0, Math.floor(quizMaxNumber / 2));
             }
 
-            const eq1 = `${a} + ${b}`;
-            const eq2 = `${c} + ${d}`;
+            return {
+                a, b, c, d
+            }
+        }
+
+        function getTwoEquationsSameAdditionQuiz({ quizMinNumber, quizMaxNumber, quizNNumber }) {
+            const eq = getTwoEquationData({ quizMinNumber, quizMaxNumber, quizNNumber });
+
+            const eq1 = shuffleNumbersInAddition(`${eq.a} + ${eq.b}`);
+            const eq2 = shuffleNumbersInAddition(`${eq.c} + ${eq.d}`);
 
             let question = `Do they equal?\n\n${eq1} == ${eq2}`;
 
             let answer = eval(`${eq1} == ${eq2}`);
-            const viz = `${eq1} ?== ${eq2}\n${a + b} ?== ${c + d}`;
+            const viz = `${eq1} ?== ${eq2}\n${eq.a + eq.b} ?== ${eq.c + eq.d}`;
 
             return {
-                name: "Comparison: Are Equations Same?",
+                name: "Addition/Comparison: Are Equations Same?",
+                quizType: 'tf',
+                question,
+                viz,
+                answer
+            }
+        }
+
+        function sortNumsAndJoin(a, b, delimiter) {
+            return sortNums([a, b]).join(delimiter);
+        }
+
+        function getTwoEquationsSameSubtractionQuiz({ quizMinNumber, quizMaxNumber, quizNNumber }) {
+            const eq = getTwoEquationData({ quizMinNumber, quizMaxNumber, quizNNumber });
+            let a = eq.a;
+            let b = eq.b;
+            let c = eq.c;
+            let d = eq.d;
+
+            if (a < b) {
+                let t = b;
+                b = a;
+                a = t;
+            }
+
+            if (c < d) {
+                let t = d;
+                d = c;
+                c = t;
+            }
+
+            const eq1 = `${a} - ${b}`;
+            const eq2 = `${c} - ${d}`;
+
+            let question = `Do they equal?\n\n${eq1} == ${eq2}`;
+
+            let answer = eval(`${eq1} == ${eq2}`);
+            const viz = `${eq1} ?== ${eq2}\n${a - b} ?== ${c - d}`;
+
+            return {
+                name: "Subtraction/Comparison: Are Equations Same?",
                 quizType: 'tf',
                 question,
                 viz,
@@ -904,7 +973,7 @@ f(${x}) == ?`;
         function getBiggestNumberQuiz({ quizMinNumber, quizMaxNumber }) {
             const numbers = randomNumbersInRange(quizMinNumber, quizMaxNumber, 3);
             let question = `What is the biggest number? \n${numbers.join(', ')}`;
-            let answer = numbers.sort((a, b) => a - b).pop();
+            let answer = sortNums(numbers).pop();
 
             return {
                 name: "Comparison: Largest Number",
@@ -917,7 +986,7 @@ f(${x}) == ?`;
         function getSmallestNumberQuiz({ quizMinNumber, quizMaxNumber }) {
             const numbers = randomNumbersInRange(quizMinNumber, quizMaxNumber, 3);
             let question = `What is the smallest number? \n${numbers.join(', ')}`;
-            let answer = numbers.sort((a, b) => a - b)[0];
+            let answer = sortNums(numbers)[0];
 
             return {
                 name: "Comparison: Smallest Number",
@@ -955,7 +1024,7 @@ f(${x}) == ?`;
                     userAnswer: null,
                     answerState: null,
                     quizzes: [
-                        getTwoEquationsSameQuiz,
+                        getTwoEquationsSameAdditionQuiz, getTwoEquationsSameSubtractionQuiz,
                         getDigitalClockQuiz, getTimePickerQuiz,
                         getDatePartQuiz, getDatePickerQuiz,
                         getMissingNumberPlusNQuiz, getMissingNumberPlus1Quiz, getMissingNumberPlus5Quiz, getMissingNumberPlus10Quiz,
@@ -970,7 +1039,7 @@ f(${x}) == ?`;
                         getPosXMinusYQuiz, getXMinusYQuiz, getXMinusYMinusZQuiz, getNPlusXQuiz
                     ],
                     quiz: null,
-                    quizType: "getTwoEquationsSameQuiz",
+                    quizType: "getTwoEquationsSameSubtractionQuiz",
                     quizMinNumber: 0,
                     quizMaxNumber: 100,
                     quizVocabWords: [
