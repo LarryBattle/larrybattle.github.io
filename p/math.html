@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <!-- CopyRight: Larry Battle 2023 Jan -->
 <html lang="en">
@@ -687,6 +688,35 @@
             }
         }
 
+        function placeValue(n, i){
+            return String(n).split("").at(-1 * (1 + i)) || "0";
+        }
+
+        function getPlaceValueQuiz({ quizMinNumber, quizMaxNumber }) {
+            const x = randomNumberInRange(quizMinNumber, quizMaxNumber);
+
+            if(getRandomBool()){
+                question = `What's the 1s of ${x}?`;
+                answer = placeValue(x, 0);
+            } else if (getRandomBool()){
+                question = `What's the 10s of ${x}?`;
+                answer = placeValue(x, 1);
+            } else if (getRandomBool()){
+                question = `What's the 100s of ${x}?`;
+                answer = placeValue(x, 2);
+            } else {
+                question = `What's the 1,000s of ${x}?`;
+                answer = placeValue(x, 3);
+            }
+
+            return {
+                quizType: 'qa',
+                name: `Number: Place value`,
+                question,
+                answer
+            }
+        }
+
         function getMissingNumberPlusXQuiz(nameSuffix, x, { quizMinNumber, quizMaxNumber }) {
             const range = getRandomRange(quizMinNumber, quizMaxNumber).map(n => n * x);
 
@@ -1030,6 +1060,7 @@ f(${x}) == ?`;
                         getMissingNumberPlusNQuiz, getMissingNumberPlus1Quiz, getMissingNumberPlus5Quiz, getMissingNumberPlus10Quiz,
                         getFOfXQuiz, getFOfXGivenNQuiz,
                         getADivBQuiz,
+                        getPlaceValueQuiz,
                         getAXNTimeQuiz, getAXBTimeQuiz,
                         getWriteVocabQuiz, getPickWordSTTQuiz,
                         getBiggestNumberQuiz, getSmallestNumberQuiz,
@@ -1039,7 +1070,7 @@ f(${x}) == ?`;
                         getPosXMinusYQuiz, getXMinusYQuiz, getXMinusYMinusZQuiz, getNPlusXQuiz
                     ],
                     quiz: null,
-                    quizType: "getTwoEquationsSameSubtractionQuiz",
+                    quizType: "getPlaceValueQuiz",
                     quizMinNumber: 0,
                     quizMaxNumber: 100,
                     quizVocabWords: [
