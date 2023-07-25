@@ -960,6 +960,42 @@ f(${x}) == ?`;
             }
         }
 
+        function getPreKAlgebraAdditionXTwoEquationQuiz({ quizMinNumber, quizMaxNumber, quizNNumber }) {
+            const eq = getTwoEquationData({ quizMinNumber, quizMaxNumber, quizNNumber });
+
+            const eq1 = shuffleNumbersInAddition(`x + ${eq.b}`);
+            const eq2 = shuffleNumbersInAddition(`${eq.a} + ${eq.b}`);
+
+            let question = `What is x?\n\n${eq1} == ${eq2}`;
+
+            let answer = eq.a;
+
+            return {
+                name: "Algebra: Prek / Addition only / What's x?",
+                quizType: 'qa',
+                question,
+                answer
+            }
+        }
+
+
+        function getAlgebraAdditionXTwoEquationQuiz({ quizMinNumber, quizMaxNumber, quizNNumber }) {
+            const eq = getTwoEquationData({ quizMinNumber, quizMaxNumber, quizNNumber });
+
+            const eq1 = shuffleNumbersInAddition(`x + ${eq.b}`);
+
+            let question = `What is x?\n\n${eq1} == ${eq2}`;
+
+            let answer = eq.a;
+
+            return {
+                name: "Algebra: Addition only / What's x?",
+                quizType: 'qa',
+                question,
+                answer
+            }
+        }
+
         function sortNumsAndJoin(a, b, delimiter) {
             return sortNums([a, b]).join(delimiter);
         }
@@ -1054,6 +1090,7 @@ f(${x}) == ?`;
                     userAnswer: null,
                     answerState: null,
                     quizzes: [
+                        getPreKAlgebraAdditionXTwoEquationQuiz,
                         getTwoEquationsSameAdditionQuiz, getTwoEquationsSameSubtractionQuiz,
                         getDigitalClockQuiz, getTimePickerQuiz,
                         getDatePartQuiz, getDatePickerQuiz,
@@ -1070,7 +1107,7 @@ f(${x}) == ?`;
                         getPosXMinusYQuiz, getXMinusYQuiz, getXMinusYMinusZQuiz, getNPlusXQuiz
                     ],
                     quiz: null,
-                    quizType: "getPlaceValueQuiz",
+                    quizType: "getPreKAlgebraAdditionXTwoEquationQuiz",
                     quizMinNumber: 0,
                     quizMaxNumber: 100,
                     quizVocabWords: [
