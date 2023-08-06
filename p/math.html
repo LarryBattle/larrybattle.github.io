@@ -789,6 +789,53 @@
             return str?.split(",").map(x => x.trim()).filter(x => !!x)
         }
 
+        function engLetterIndex(letter){
+            return ENGLISH_LETTERS.findIndex(x => x === letter);
+        }
+        function getEnglishLetterCasingQuiz() {
+            return creategetEnglishLetterCasingQuiz(0, ENGLISH_LETTERS.length - 1);
+        }
+
+        function getEnglishLetterCasingAToFQuiz() {
+            return creategetEnglishLetterCasingQuiz(0, engLetterIndex("F"));
+        }
+
+        function getEnglishLetterCasingGToLQuiz() {
+            return creategetEnglishLetterCasingQuiz(engLetterIndex("G"), engLetterIndex("L"));
+        }
+
+        function getEnglishLetterCasingMToRQuiz() {
+            return creategetEnglishLetterCasingQuiz(engLetterIndex("M"), engLetterIndex("R"));
+        }
+
+        function getEnglishLetterCasingSToZQuiz() {
+            return creategetEnglishLetterCasingQuiz(engLetterIndex("S"), engLetterIndex("Z"));
+        }
+
+        const ENGLISH_LETTERS = Object.freeze([
+            "A", "B", "C", "D", "E", "F", 
+            "G", "H", "I", "J", "K", "L", 
+            "M", "N", "O", "P", "Q", "R", 
+            "S", "T", "U", "V", "W", "X", "Y", "Z"
+        ]);
+
+        function creategetEnglishLetterCasingQuiz(startLetterIndex, endLetterIndex) {
+            const letters = ENGLISH_LETTERS.slice(startLetterIndex, endLetterIndex + 1);
+            const orderedChoices = shuffle(letters).slice(0, 3).flatMap((x) => [x, x.toLowerCase()]);
+            const choices = shuffle(orderedChoices);
+            const answer = getRandomElement(choices);
+            const casingSpeech = (/[a-z]/.test(answer)) ? "Lower" : "Upper";
+            const speech = `${casingSpeech} case ${answer}`;
+
+            return {
+                quizType: 'vocab:stt_choices',
+                name: `Vocab: Which Letter spoken? (${ENGLISH_LETTERS[startLetterIndex]} - ${ENGLISH_LETTERS[endLetterIndex]})`,
+                speech,
+                choices,
+                answer
+            }
+        }
+
         function getPickWordSTTQuiz({ quizVocabWords, quizMinNumber, quizMaxNumber }) {
             const words = splitVocabInputToWords(quizVocabWords) || ['error'];
             const choices = randomElementsInArray(words, 3);
@@ -820,23 +867,23 @@
             }
         }
 
-        function getALongOrShortVowelSTTQuiz(){
+        function getALongOrShortVowelSTTQuiz() {
             return createLongOrShortVowelForXSTTQuiz("a");
         }
 
-        function getELongOrShortVowelSTTQuiz(){
+        function getELongOrShortVowelSTTQuiz() {
             return createLongOrShortVowelForXSTTQuiz("e");
         }
 
-        function getILongOrShortVowelSTTQuiz(){
+        function getILongOrShortVowelSTTQuiz() {
             return createLongOrShortVowelForXSTTQuiz("i");
         }
 
-        function getOLongOrShortVowelSTTQuiz(){
+        function getOLongOrShortVowelSTTQuiz() {
             return createLongOrShortVowelForXSTTQuiz("o");
         }
 
-        function getULongOrShortVowelSTTQuiz(){
+        function getULongOrShortVowelSTTQuiz() {
             return createLongOrShortVowelForXSTTQuiz("u");
         }
 
@@ -1271,10 +1318,12 @@ f(${x}) == ?`;
                     userAnswer: null,
                     answerState: null,
                     quizzes: [
-                        getALongOrShortVowelSTTQuiz, getELongOrShortVowelSTTQuiz, getILongOrShortVowelSTTQuiz, 
-                        getOLongOrShortVowelSTTQuiz, getULongOrShortVowelSTTQuiz, 
-                        getLongOrShortVowelSTTQuiz,
+                        getALongOrShortVowelSTTQuiz, getELongOrShortVowelSTTQuiz, getILongOrShortVowelSTTQuiz,
+                        getOLongOrShortVowelSTTQuiz, getULongOrShortVowelSTTQuiz,
+                        getLongOrShortVowelSTTQuiz, 
                         getPreKAlgebraAdditionXTwoEquationQuiz,
+                        getEnglishLetterCasingQuiz, getEnglishLetterCasingAToFQuiz, getEnglishLetterCasingGToLQuiz, 
+                        getEnglishLetterCasingMToRQuiz, getEnglishLetterCasingSToZQuiz,
                         getTwoEquationsSameAdditionQuiz, getTwoEquationsSameSubtractionQuiz,
                         getDigitalClockQuiz, getTimePickerQuiz,
                         getDatePartQuiz, getDatePickerQuiz,
@@ -1291,7 +1340,7 @@ f(${x}) == ?`;
                         getPosXMinusYQuiz, getXMinusYQuiz, getXMinusYMinusZQuiz, getNPlusXQuiz
                     ],
                     quiz: null,
-                    quizType: "getULongOrShortVowelSTTQuiz",
+                    quizType: "getEnglishLetterCasingQuiz",
                     quizMinNumber: 0,
                     quizMaxNumber: 100,
                     quizVocabWords: [
