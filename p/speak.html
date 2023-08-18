@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Japanese Speech Recognition</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+
+        .card, .score {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="setup">
+        Enter Phrases (one per line): <br>
+        <textarea id="inputPhrases" rows="5" cols="30" placeholder="Enter phrases to test..."></textarea><br><br>
+        <button onclick="startQuiz()">Start Quiz</button>
+    </div>
+
+    <div id="quizSection" style="display: none;">
+        <div class="card" id="card"></div><br>
+        <div class="card" id="you_said_card">
+            You said: <span id="you_said"></span>
+        </div>
+        <div class="score" id="score">Score: 0</div>
+        <div id="countdown">10</div>
+        <button id="recordButton" onclick="toggleRecognition()">Start Recording</button>
+    </div>
+
+    <script>
+        let recognition;
+        let score = 0;
+        let isRecording = false;
+        let phrasesToTest = [];
+
+        function startQuiz() {
+            phrasesToTest = document.getElementById('inputPhrases').value.split('\n').filter(line => line.trim() !== '');
+
+            if (phrasesToTest.length === 0) {
+                alert('Please enter at least one phrase to test.');
+                return;
+            }
+
+            document.getElementById('setup').style.display = 'none';
+            document.getElementById('quizSection').style.display = 'block';
+            document.getElementById('card').textContent = phrasesToTest[0];
+        }
+
+        function toggleRecognition() {
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                startRecognition();
+            }
+        }
+
+        function startRecognition() {
+            let currentPhraseIndex = 0;
+            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = "ja-JP";
+            recognition.start();
+
+            isRecording = true;
+            document.getElementById('recordButton').textContent = "Stop Recording";
+
+            let countdownValue = 10;
+            let countdownInterval = setInterval(() => {
+                document.getElementById('countdown').textContent = countdownValue;
+                countdownValue--;
+                if (countdownValue < 0) {
+                    clearInterval(countdownInterval);
+                }
+            }, 1000);
+
+            setTimeout(() => {
+                if (isRecording) {
+                    recognition.stop();
+                }
+                clearInterval(countdownInterval);
+                document.getElementById('countdown').textContent = '10';
+            }, 10000);
+
+            recognition.onresult = function(event) {
+                let recognizedText = event.results[0][0].transcript;
+                document.getElementById('you_said').textContent = recognizedText;
+
+                // Trim and lowercase both the recognized text and the target phrase for comparison
+                if (recognizedText.trim().toLowerCase() === phrasesToTest[currentPhraseIndex].trim().toLowerCase()) {
+                    currentPhraseIndex++;
+                    score++;
+                    if (currentPhraseIndex < phrasesToTest.length) {
+                        document.getElementById('card').textContent = phrasesToTest[currentPhraseIndex];
+                    } else {
+                        alert('Congratulations! You completed all phrases.');
+                    }
+                } else {
+                    score--;
+                    alert('Try again!');
+                }
+                updateScore();
+            };
+
+            recognition.onend = function() {
+                isRecording = false;
+                document.getElementById('recordButton').textContent = "Start Recording";
+            };
+        }
+
+        function updateScore() {
+            document.getElementById('score').textContent = "Score: " + score;
+        }
+    </script>
+</body>
+</html>
