@@ -114,7 +114,39 @@ const quizApp = {
     getPhrases: function() {
         this.phrasesToTest = document.getElementById('inputPhrases').value.split('\n').filter(line => line.trim() !== '');
     },
+presets: {
+    english: {
+        phrases: ["Hello", "How are you?", "Thank you", "Yes", "No"],
+        language: "en-US"
+    },
+    spanish: {
+        phrases: ["Hola", "¿Cómo estás?", "Gracias", "Sí", "No"],
+        language: "es-ES"
+    },
+    chinese: {
+        phrases: ["你好", "你好吗?", "谢谢", "是", "不是"],
+        language: "zh-CN"
+    },
+    japanese: {
+        phrases: ["こんにちは", "お元気ですか", "ありがとう", "はい", "いいえ"],
+        language: "ja-JP"
+    },
+    korean: {
+        phrases: ["안녕하세요", "잘 지내세요?", "감사합니다", "네", "아니오"],
+        language: "ko-KR"
+    }
+},
 
+loadPresetPhrases: function() {
+    const selectedPreset = document.getElementById('presetPhrases').value;
+    const preset = this.presets[selectedPreset];
+    
+    if (preset) {
+        this.phrasesToTest = preset.phrases;
+        document.getElementById('inputPhrases').value = preset.phrases.join('\n');
+        document.getElementById('languageSelection').value = preset.language;
+    }
+},
     setupRecognitionLanguage: function() {
         const selectedLanguage = document.getElementById('languageSelection').value;
         this.recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
