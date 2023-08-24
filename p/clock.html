@@ -1,5 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+<!-- 
+    Date created: 2023 Aug 24
+    Created by Larry Battle.
+    Based off of: https://codepen.io/khalidsaifullahfuad/pen/WNOjWgR 
+-->
 
 <head>
     <meta charset="UTF-8">
@@ -7,8 +12,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Random Analaog Clock</title>
     <style>
-        @import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@700&display=swap");
-
         :root {
             --hand-width: 0.5rem;
             --sec-hand: 6rem;
@@ -18,18 +21,15 @@
             --clr-dark: hsl(0, 0%, 19%);
         }
 
-        * {
-            margin: 0;
-            padding: 0;
+        #clock-container * {
             box-sizing: border-box;
         }
 
-        body {
-            height: 100vh;
-            width: 100vw;
-            display: grid;
-            place-items: center;
-            font-family: "Open Sans", sans-serif;
+        #clock-container {
+            display: flex;
+            justify-content: center;
+            height: 17rem;
+            width: 17rem;
         }
 
         .clock-body {
@@ -178,25 +178,42 @@
 
 <body>
 
-<h2>Random Analog Clock</h2>
-    <div class="clock-body">
-        <div class="hours"></div>
-        <div class="disc disc-top"></div>
-        <div class="disc disc-bottom"></div>
-        <div class="hand second"></div>
-        <div class="hand minute"></div>
-        <div class="hand hour"></div>
+    <h2 id="question"> <input type="button" id="new_time_btn" onclick="setClockToRandomTime()" value="New">
+        What time is it?</h2>
+
+    <details>
+        <summary>Time</summary>
+        <span id="date_str">loading...</span>
+    </details>
+
+    <br>
+    <div id="clock-container">
+        <div class="clock-body">
+            <div class="hours"></div>
+            <div class="disc disc-top"></div>
+            <div class="disc disc-bottom"></div>
+            <div class="hand second"></div>
+            <div class="hand minute"></div>
+            <div class="hand hour"></div>
+        </div>
     </div>
 
 
-    <p>
-        <details>
-            <summary>Date Time</summary>
-            <span id="date_str">loading...</span>
-        </details>
-    </p>
+    <details>
+        <summary>Options</summary>
+        Minute hand: <select id="minuteHandOption">
+            <option value="1">1s</option>
+            <option value="5">5s</option>
+            <option value="10">10s</option>
+            <option value="15" selected>15s</option>
+            <option value="30">30s</option>
+            <option value="0">0</option>
+        </select>
 
-    <h3>Based off of from: https://codepen.io/khalidsaifullahfuad/pen/WNOjWgR</h3>
+    </details>
+
+
+    <cite>Based off of from: https://codepen.io/khalidsaifullahfuad/pen/WNOjWgR</cite>
 
     <script>
         const time = document.querySelector(".hours");
@@ -217,16 +234,16 @@
             }
         }
 
-        function randomDate() {
+        function randomDate(minDiv) {
             const o = {
-                min: ~~(Math.random() * 60),
+                min: (minDiv * ~~(Math.random() * (60 / minDiv))),
                 hour: ~~(Math.random() * 12),
                 date: new Date()
             };
 
             o.date.setMinutes(o.min);
             o.date.setHours(o.hour);
-
+            o.date.setSeconds(0);
             return o;
         }
 
@@ -243,12 +260,21 @@
             hourHand.style.transform = `translateX(-50%) rotate(${hourDeg}deg)`;
         }
 
-        function setClockToRandomTime() {
-            const dateObj = randomDate();
+        function updateClockView(dateObj) {
             const date = dateObj.date;
             setClockTime(date);
-            document.getElementById("date_str").innerText = dateObj.date.toLocaleString();
+            const t = dateObj.date.toLocaleTimeString().match(/^[^:]+:[^:]+/)[0];
+            const answer = `${dateObj.date.toLocaleString()} or ${t}`;
+            document.getElementById("date_str").innerText = answer;
+            document.getElementById("question").title = t; 
         }
+
+        function setClockToRandomTime() {
+            const minOptions = +document.getElementById("minuteHandOption").value;
+            const dateObj = randomDate(minOptions);
+            updateClockView(dateObj)
+        }
+
         setClockToRandomTime();
     </script>
 </body>
