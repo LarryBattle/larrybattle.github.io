@@ -789,7 +789,7 @@
             return str?.split(",").map(x => x.trim()).filter(x => !!x)
         }
 
-        function engLetterIndex(letter){
+        function engLetterIndex(letter) {
             return ENGLISH_LETTERS.findIndex(x => x === letter);
         }
         function getEnglishLetterCasingQuiz() {
@@ -813,9 +813,9 @@
         }
 
         const ENGLISH_LETTERS = Object.freeze([
-            "A", "B", "C", "D", "E", "F", 
-            "G", "H", "I", "J", "K", "L", 
-            "M", "N", "O", "P", "Q", "R", 
+            "A", "B", "C", "D", "E", "F",
+            "G", "H", "I", "J", "K", "L",
+            "M", "N", "O", "P", "Q", "R",
             "S", "T", "U", "V", "W", "X", "Y", "Z"
         ]);
 
@@ -911,6 +911,28 @@
             return {
                 quizType: 'qa',
                 name: "Number: Write x",
+                speech: `${answer}`,
+                answer
+            }
+        }
+
+        function replaceRandomChar(x, newChar, minI) {
+            const parts = [...String(x)];
+            const i = randomNumberInRange((minI || 0), parts.length - 1);
+            parts[i] = newChar;
+            return parts.join("");
+        }
+
+        function getWriteXThatHas0Quiz({ quizMinNumber, quizMaxNumber }) {
+            const x = randomNumberInRange(quizMinNumber, quizMaxNumber);
+            let answer = +replaceRandomChar(x, 0, 1);
+            if (quizMaxNumber < 11) {
+                answer = 0;
+            }
+
+            return {
+                quizType: 'qa',
+                name: "Number: Write x that has 0",
                 speech: `${answer}`,
                 answer
             }
@@ -1320,9 +1342,9 @@ f(${x}) == ?`;
                     quizzes: [
                         getALongOrShortVowelSTTQuiz, getELongOrShortVowelSTTQuiz, getILongOrShortVowelSTTQuiz,
                         getOLongOrShortVowelSTTQuiz, getULongOrShortVowelSTTQuiz,
-                        getLongOrShortVowelSTTQuiz, 
+                        getLongOrShortVowelSTTQuiz,
                         getPreKAlgebraAdditionXTwoEquationQuiz,
-                        getEnglishLetterCasingQuiz, getEnglishLetterCasingAToFQuiz, getEnglishLetterCasingGToLQuiz, 
+                        getEnglishLetterCasingQuiz, getEnglishLetterCasingAToFQuiz, getEnglishLetterCasingGToLQuiz,
                         getEnglishLetterCasingMToRQuiz, getEnglishLetterCasingSToZQuiz,
                         getTwoEquationsSameAdditionQuiz, getTwoEquationsSameSubtractionQuiz,
                         getDigitalClockQuiz, getTimePickerQuiz,
@@ -1336,11 +1358,11 @@ f(${x}) == ?`;
                         getBiggestNumberQuiz, getSmallestNumberQuiz,
                         getGreaterThanQuiz, get0PlusQuiz, get1PlusQuiz,
                         get2PlusQuiz, get1Plus1PlusQuiz,
-                        getWriteXQuiz, getXAddYQuiz, getXAddYAddZQuiz,
+                        getWriteXQuiz, getWriteXThatHas0Quiz, getXAddYQuiz, getXAddYAddZQuiz,
                         getPosXMinusYQuiz, getXMinusYQuiz, getXMinusYMinusZQuiz, getNPlusXQuiz
                     ],
                     quiz: null,
-                    quizType: "getEnglishLetterCasingQuiz",
+                    quizType: "getWriteXThatHas0Quiz",
                     quizMinNumber: 0,
                     quizMaxNumber: 100,
                     quizVocabWords: [
