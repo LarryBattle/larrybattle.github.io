@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Who Wants to Be a Millionaire?</title>
+    <link rel="stylesheet" href="styles.css"> <!-- Placeholder for our CSS file -->
+    <script src="script.js" defer></script> <!-- Placeholder for our JavaScript file -->
+</head>
+
+<body>
+
+    <div class="game-container">
+
+        <div class="banner">
+            Who Wants to Be Slightly Richer?
+        </div>
+        <button id="start-button">Start Game</button>
+        <div class="content-wrapper" style="display: none;">
+            <!-- Prize Ladder Section -->
+            <div class="left-section">
+                <div class="prize-ladder">
+                    <!-- The individual prize amounts will be populated here by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Question and Lifeline Section -->
+            <div class="right-section">
+
+                <!-- Display the current question -->
+                <div class="question-section">
+                    <p id="question-text">What is the capital of France?</p>
+                </div>
+
+                <!-- Display the answer options -->
+                <div class="options-section">
+                    <button class="option" data-option="A">A: Berlin</button>
+                    <button class="option" data-option="B">B: Madrid</button>
+                    <button class="option" data-option="C">C: Paris</button>
+                    <button class="option" data-option="D">D: Rome</button>
+                </div>
+
+                <!-- Display the current prize money -->
+                <div class="prize-section">
+                    <p id="current-prize">Current Prize: $0</p>
+                </div>
+
+                <!-- Lifeline buttons -->
+                <div class="lifeline-section">
+                    <button id="lifeline-5050">50:50</button>
+                    <button id="lifeline-audience">Ask the Audience</button>
+                    <button id="lifeline-chatgpt">Ask ChatGPT</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>
