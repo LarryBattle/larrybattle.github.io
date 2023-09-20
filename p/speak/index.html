@@ -4,106 +4,340 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="styles.css">
-    <link rel="icon"
-        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌍</text></svg>"
-        type="image/svg+xml">
-    <title>Language Pronunciation Quiz</title>
+    <title>Language Speech Recognition</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+
+        .card, .score {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        #quizSection {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .infoRow {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .infoRow .label, .infoRow .value {
+            padding: 10px;
+        }
+
+        .label {
+            font-weight: bold;
+        }
+
+        #lastCorrectWordSection {
+            margin-top: 20px;
+            font-size: 20px;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        table, th, td {
+            border: 1px solid black;
+        }
+
+        th, td {
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        #score {
+            transition: transform 0.3s;
+        }
+
+        #score.updated {
+            transform: scale(1.1);
+        }
+    </style>
 </head>
 
 <body>
-    <!-- Settings Section -->
-    <!-- Within Settings Section -->
-    <section id="settings-section">
-        <!-- Merged Settings, Input, and Start Quiz Section -->
-        <details>
-            <summary>
-                <b>Settings & Quiz Configuration</b>
-            </summary>
+    <div id="setup">
+        Select Preset Phrases: 
+        <select id="presetPhrases" onchange="quizApp.loadPresetPhrases()">
+            <option value="">-- Select Preset --</option>
+            <option value="english">English Phrases</option>
+            <option value="spanish">Spanish Phrases</option>
+            <option value="chinese">Chinese Phrases</option>
+            <option value="japanese">Japanese Phrases</option>
+            <option value="korean">Korean Phrases</option>
+        </select><br><br>
 
-            <!-- Settings Section -->
-            <div id="settings-section">
-                <label for="language-dropdown">Choose a language:</label>
-                <select id="language-dropdown">
-                    <option value="en-US">English</option>
-                    <option value="es-ES">Spanish</option>
-                    <option value="zh-CN">Chinese</option>
-                    <option value="ja-JP">Japanese</option>
-                    <option value="ko-KR">Korean</option>
-                </select>
+        Language:
+        <select id="languageSelection">
+            <option value="en-US">English</option>
+            <option value="es-ES">Spanish</option>
+            <option value="zh-CN">Chinese</option>
+            <option value="ja-JP">Japanese</option>
+            <option value="ko-KR">Korean</option>
+        </select><br><br>
 
-                <label for="preset-dropdown">Select phrase preset:</label>
-                <select id="preset-dropdown">
-                    <!-- Options will be populated from presets.json via JavaScript -->
-                    <option value="default" disabled selected>Select a preset</option>
-                </select>
+        Enter Phrases (one per line): <br>
+        <textarea id="inputPhrases" rows="5" cols="30" placeholder="Enter phrases to test..."></textarea><br><br>
+        <button onclick="quizApp.initQuiz()">Start Quiz</button>
+    </div>
+
+    <div id="quizSection" style="display: none;">
+        <div class="infoRow">
+            <div class="label">Expected:</div>
+            <div class="value card" id="card" onclick="quizApp.speak(this.innerText)"></div>
+        </div>
+        <div class="infoRow">
+            <div class="label">You Said:</div>
+            <div class="value card" id="you_said_card">
+                <span id="you_said"></span>
             </div>
+        </div>
+        <div class="score" id="score">Score: 0</div>
+        <div id="countdown" style="font-size: 24px; margin-top: 10px;">10</div>
+        <button id="startRecordButton" onclick="quizApp.startRecognition()">
+            🎤 Start Recording
+        </button>
+        <button id="stopRecordButton" onclick="quizApp.stopRecognition()" disabled>
+            ■ Stop Recording
+        </button>
+        <div id="lastCorrectWordSection">
+            Last Word Spoken Correctly: <span id="lastCorrectWord"></span>
+        </div>
+        <table id="attemptsLog">
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Phrase</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows will be added dynamically here -->
+            </tbody>
+        </table>
+    </div>
 
-            <!-- Input Section -->
-            <div id="input-section">
-                <label for="phrases-textarea">Enter phrases (one per line):</label>
-                <textarea id="phrases-textarea" rows="10" cols="30"></textarea>
-                <p id="input-error" style="color: red;"></p> <!-- This is for error messages -->
-            </div>
+    <script>
+        const quizApp = {
+            recognition: null,
+            score: 0,
+            isRecording: false,
+            phrasesToTest: [],
+            currentPhraseIndex: 0,
+            countdownInterval: null,
 
-            <!-- Start Quiz Button -->
-            <div id="start-quiz-section">
-                <button id="start-quiz-btn">Start Quiz</button>
-                <p id="start-quiz-status" style="color: red;"></p> <!-- For displaying status messages -->
-            </div>
-        </details>
+            initQuiz: function() {
+                this.getPhrases();
+                this.setupRecognitionLanguage();
 
-        <!-- Rest of your sections remain unchanged -->
+                if (this.phrasesToTest.length === 0) {
+                    alert('Please enter at least one phrase to test.');
+                    return;
+                }
 
-    </section>
+                this.displayQuiz();
+                this.setInitialPhrase();
+            },
 
-    <!-- Quiz Section -->
-    <section id="quiz-section" style="display: none;"> <!-- Initially hidden -->
-        <details>
-            <summary>
-                <b>Quiz</b>
-            </summary>
-            <div id="score-display">Score: 0</div>
+            getPhrases: function() {
+                this.phrasesToTest = document.getElementById('inputPhrases').value.split('\n').filter(line => line.trim() !== '');
+            },
 
-            <div id="current-phrase-card">
-                <p id="current-phrase">[Current Phrase]</p>
-            </div>
-            <button id="start-recording-btn">Start Recording</button>
-            <button id="stop-recording-btn" disabled>Stop Recording</button> <!-- Initially disabled -->
+            setupRecognitionLanguage: function() {
+                const selectedLanguage = document.getElementById('languageSelection').value;
+                this.recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+                this.recognition.lang = selectedLanguage;
+            },
 
-            <div id="timer">
-                Remaining Time: <span id="time-left">10</span> seconds
-            </div>
-            <p id="quiz-status" style="color: green;"></p> <!-- This will show status messages related to the quiz -->
-        </details>
-    </section>
+            displayQuiz: function() {
+                document.getElementById('setup').style.display = 'none';
+                document.getElementById('quizSection').style.display = 'block';
+            },
 
-    <!-- Feedback Section -->
-    <section id="feedback-section">
-        <details>
-            <summary>
-                <b>Feedback</b>
-            </summary>
-            <div>
-                Last Correct Word: <span id="last-correct-word"></span>
-            </div>
-            <table id="attempts-table">
-                <thead>
-                    <tr>
-                        <th>Expected Phrase</th>
-                        <th>User's Input</th>
-                        <th>Correctness</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Rows will be dynamically added here -->
-                </tbody>
-            </table>
-        </details>
-    </section>
+            setInitialPhrase: function() {
+                const card = document.getElementById('card');
+                card.textContent = this.phrasesToTest[this.currentPhraseIndex];
+                card.onclick = () => this.speak(this.phrasesToTest[this.currentPhraseIndex]);
+            },
 
-    <!-- JavaScript inclusion, to be expanded in future features -->
-    <script src="app.js"></script>
+            startRecognition: function() {
+                this.isRecording = true;
+                document.getElementById('startRecordButton').disabled = true;
+                document.getElementById('stopRecordButton').disabled = false;
+
+                if (this.countdownInterval) {
+                    clearInterval(this.countdownInterval);
+                }
+                this.startCountdown();
+
+                this.recognition.onresult = this.handleRecognitionResult.bind(this);
+                this.recognition.onend = this.resetRecordingState.bind(this);
+                this.recognition.start();
+            },
+
+            stopRecognition: function() {
+                this.recognition.stop();
+            },
+
+            startCountdown: function() {
+                let countdownValue = 10;
+                document.getElementById('countdown').textContent = countdownValue;
+
+                this.countdownInterval = setInterval(() => {
+                    countdownValue--;
+                    document.getElementById('countdown').textContent = countdownValue;
+
+                    if (countdownValue <= 0) {
+                        clearInterval(this.countdownInterval);
+                        this.stopRecognition();
+                    }
+                }, 1000);
+            },
+
+            handleRecognitionResult: function(event) {
+                const recognizedText = event.results[0][0].transcript;
+                document.getElementById('you_said').textContent = recognizedText;
+
+                const isCorrect = this.sanitizeInput(recognizedText) === this.sanitizeInput(this.phrasesToTest[this.currentPhraseIndex]);
+
+                this.logAttempt(isCorrect, recognizedText);
+
+                if (isCorrect) {
+                    document.getElementById('lastCorrectWord').textContent = recognizedText;
+                    this.score++;
+                    this.currentPhraseIndex++;
+
+                    if (this.currentPhraseIndex >= this.phrasesToTest.length) {
+                        alert('Congratulations! You completed all phrases.');
+                    } else {
+                        document.getElementById('card').textContent = this.phrasesToTest[this.currentPhraseIndex];
+                    }
+                } else {
+                    alert('Try again!');
+                }
+                this.updateScore();
+            },
+
+            logAttempt: function(isCorrect, recognizedText) {
+                const tableBody = document.getElementById('attemptsLog').getElementsByTagName('tbody')[0];
+                const newRow = tableBody.insertRow(0);  // Prepend the new row
+                const statusCell = newRow.insertCell(0);
+                const phraseCell = newRow.insertCell(1);
+
+                statusCell.innerHTML = isCorrect ? "✅" : "❌";
+                phraseCell.textContent = recognizedText;
+            },
+
+            resetRecordingState: function() {
+                this.isRecording = false;
+                document.getElementById('startRecordButton').disabled = false;
+                document.getElementById('stopRecordButton').disabled = true;
+
+                if (this.countdownInterval) {
+                    clearInterval(this.countdownInterval);
+                    document.getElementById('countdown').textContent = '10'; // Reset the counter here
+                }
+            },
+
+            updateScore: function() {
+                const scoreElement = document.getElementById('score');
+                scoreElement.textContent = "Score: " + this.score;
+
+                scoreElement.classList.add('updated');
+                setTimeout(() => scoreElement.classList.remove('updated'), 300);
+            },
+
+            loadPresetPhrases: function() {
+                const selectedPreset = document.getElementById('presetPhrases').value;
+                const preset = this.presets[selectedPreset];
+
+                if (preset) {
+                    this.phrasesToTest = preset.phrases;
+                    document.getElementById('inputPhrases').value = preset.phrases.join('\n');
+                    document.getElementById('languageSelection').value = preset.language;
+                }
+            },
+
+            speak: function(text) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                window.speechSynthesis.speak(utterance);
+            },
+
+            sanitizeInput: function(input) {
+                const lang = document.getElementById('languageSelection').value;
+
+                let regex;
+                switch (lang) {
+                    case 'en-US': // English
+                        regex = /[^a-zA-Z]/g;
+                        break;
+                    case 'es-ES': // Spanish
+                        regex = /[^a-zA-Záéíóúñ]/g;
+                        break;
+                    case 'zh-CN': // Chinese
+                        regex = /[\p{P}\p{Z}]/gu; // Remove punctuation and whitespace
+                        break;
+                    case 'ja-JP': // Japanese
+                        regex = /[\p{P}\p{Z}]/gu; // Remove punctuation and whitespace
+                        break;
+                    case 'ko-KR': // Korean
+                        regex = /[\p{P}\p{Z}]/gu; // Remove punctuation and whitespace
+                        break;
+                    default:
+                        regex = /[^a-zA-Z]/g;
+                }
+
+                return input.replace(regex, '').toLowerCase();
+            },
+
+            presets: {
+                english: {
+                    phrases: ["Hello", "How are you?", "Thank you", "Yes", "No"],
+                    language: "en-US"
+                },
+                spanish: {
+                    phrases: ["Hola", "¿Cómo estás?", "Gracias", "Sí", "No"],
+                    language: "es-ES"
+                },
+                chinese: {
+                    phrases: ["你好", "你好吗?", "谢谢", "是", "不是"],
+                    language: "zh-CN"
+                },
+                japanese: {
+                    phrases: ["こんにちは", "お元気ですか", "ありがとう", "はい", "いいえ"],
+                    language: "ja-JP"
+                },
+                korean: {
+                    phrases: ["안녕하세요", "잘 지내세요?", "감사합니다", "네", "아니오"],
+                    language: "ko-KR"
+                }
+            }
+        };
+    </script>
 </body>
 
 </html>

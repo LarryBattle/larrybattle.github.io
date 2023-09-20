@@ -1,6 +1,6 @@
 // date created : July 30, 2023
 
-[
+var vowels1 = [
   {
     "letter": "a",
     "shortVowel": ["cat", "mat", "rat", "hat", "bat"],
@@ -33,7 +33,7 @@
   }
 ]
 // ===
-[
+var vowels2 = [
   {
     "letter": "a",
     "shortVowel": ["cat", "bat", "hat", "rat", "man"],
@@ -64,4 +64,19 @@
     "shortVowel": ["my", "by", "try", "cry", "fly"],
     "longVowel": ["my", "by", "try", "cry", "fly"]
   }
-]
+];
+
+const uniqueArray = (arr) => {
+  return [...new Set(arr)]
+};
+
+var vowels = vowels1.map((o, i) => {
+  var b = vowels2[i];
+  return {
+    letter : o.letter,
+    shortVowel : uniqueArray(o.shortVowel.concat(b.shortVowel)),
+    longVowel : uniqueArray(o.longVowel.concat(b.longVowel))
+  };
+});
+
+console.log(JSON.stringify(vowels, null, 2));

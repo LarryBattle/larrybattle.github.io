@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌍</text></svg>"
+        type="image/svg+xml">
+    <title>Language Pronunciation Quiz</title>
+</head>
+
+<body>
+    <!-- Settings Section -->
+    <!-- Within Settings Section -->
+    <section id="settings-section">
+        <!-- Merged Settings, Input, and Start Quiz Section -->
+        <details>
+            <summary>
+                <b>Settings & Quiz Configuration</b>
+            </summary>
+
+            <!-- Settings Section -->
+            <div id="settings-section">
+                <label for="language-dropdown">Choose a language:</label>
+                <select id="language-dropdown">
+                    <option value="en-US">English</option>
+                    <option value="es-ES">Spanish</option>
+                    <option value="zh-CN">Chinese</option>
+                    <option value="ja-JP">Japanese</option>
+                    <option value="ko-KR">Korean</option>
+                </select>
+
+                <label for="preset-dropdown">Select phrase preset:</label>
+                <select id="preset-dropdown">
+                    <!-- Options will be populated from presets.json via JavaScript -->
+                    <option value="default" disabled selected>Select a preset</option>
+                </select>
+            </div>
+
+            <!-- Input Section -->
+            <div id="input-section">
+                <label for="phrases-textarea">Enter phrases (one per line):</label>
+                <textarea id="phrases-textarea" rows="10" cols="30"></textarea>
+                <p id="input-error" style="color: red;"></p> <!-- This is for error messages -->
+            </div>
+
+            <!-- Start Quiz Button -->
+            <div id="start-quiz-section">
+                <button id="start-quiz-btn">Start Quiz</button>
+                <p id="start-quiz-status" style="color: red;"></p> <!-- For displaying status messages -->
+            </div>
+        </details>
+
+        <!-- Rest of your sections remain unchanged -->
+
+    </section>
+
+    <!-- Quiz Section -->
+    <section id="quiz-section" style="display: none;"> <!-- Initially hidden -->
+        <details>
+            <summary>
+                <b>Quiz</b>
+            </summary>
+            <div id="score-display">Score: 0</div>
+
+            <div id="current-phrase-card">
+                <p id="current-phrase">[Current Phrase]</p>
+            </div>
+            <button id="start-recording-btn">Start Recording</button>
+            <button id="stop-recording-btn" disabled>Stop Recording</button> <!-- Initially disabled -->
+
+            <div id="timer">
+                Remaining Time: <span id="time-left">10</span> seconds
+            </div>
+            <p id="quiz-status" style="color: green;"></p> <!-- This will show status messages related to the quiz -->
+        </details>
+    </section>
+
+    <!-- Feedback Section -->
+    <section id="feedback-section">
+        <details>
+            <summary>
+                <b>Feedback</b>
+            </summary>
+            <div>
+                Last Correct Word: <span id="last-correct-word"></span>
+            </div>
+            <table id="attempts-table">
+                <thead>
+                    <tr>
+                        <th>Expected Phrase</th>
+                        <th>User's Input</th>
+                        <th>Correctness</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Rows will be dynamically added here -->
+                </tbody>
+            </table>
+        </details>
+    </section>
+
+    <!-- JavaScript inclusion, to be expanded in future features -->
+    <script src="app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,37 @@
+{
+    "presets": [
+        {
+            "id": "preset1",
+            "name": "English Phrases",
+            "language": "en-US",
+            "phrases": ["Hello", "Goodbye", "Thank you", "Please", "Yes", "No", "How are you?", "I don't understand.", "What's your name?", "Excuse me."]
+        },
+        {
+            "id": "preset2",
+            "name": "Spanish Phrases",
+            "language": "es-ES",
+            "phrases": ["Hola", "Adiós", "Gracias", "Por favor", "Sí", "No", "¿Cómo estás?", "No entiendo.", "¿Cómo te llamas?", "Disculpe."]
+        },
+        {
+            "id": "preset3",
+            "name": "Chinese Phrases",
+            "language": "zh-CN",
+            "phrases": ["你好", "再见", "谢谢", "请", "是", "不", "你好吗?", "我不懂", "你叫什么名字?", "请问"],
+            "romanization": ["Nǐ hǎo", "Zàijiàn", "Xièxiè", "Qǐng", "Shì", "Bù", "Nǐ hǎo ma?", "Wǒ bù dǒng", "Nǐ jiào shénme míngzì?", "Qǐngwèn"]
+        },
+        {
+            "id": "preset4",
+            "name": "Korean Phrases",
+            "language": "ko-KR",
+            "phrases": ["안녕하세요", "안녕히 가세요", "감사합니다", "제발", "네", "아니", "어떻게 지내세요?", "이해하지 못해요", "이름이 뭐에요?", "실례합니다"],
+            "romanization": ["Annyeonghaseyo", "Annyeonghi gaseyo", "Gamsahamnida", "Jebal", "Ne", "Ani", "Eotteoke jinaeseyo?", "Ihaehaji mothaeyo", "Ireumi mwoeyo?", "Sillyehamnida"]
+        },
+        {
+            "id": "preset5",
+            "name": "Japanese Phrases",
+            "language": "ja-JP",
+            "phrases": ["こんにちは", "さようなら", "ありがとう", "ください", "はい", "いいえ", "お元気ですか?", "わかりません", "お名前は何ですか?", "すみません"],
+            "romanization": ["Konnichiwa", "Sayōnara", "Arigatou", "Kudasai", "Hai", "Iie", "Ogenki desu ka?", "Wakarimasen", "Onamae wa nan desu ka?", "Sumimasen"]
+        }
+    ]
+}
