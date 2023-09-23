@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" href="favicon.ico" type="image/x-icon" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Language Speech Recognition</title>
     <style>
@@ -16,7 +17,8 @@
             background-color: #f4f4f4;
         }
 
-        .card, .score {
+        .card,
+        .score {
             background: white;
             padding: 20px;
             border-radius: 5px;
@@ -37,7 +39,8 @@
             margin-bottom: 20px;
         }
 
-        .infoRow .label, .infoRow .value {
+        .infoRow .label,
+        .infoRow .value {
             padding: 10px;
         }
 
@@ -56,11 +59,14 @@
             border-collapse: collapse;
         }
 
-        table, th, td {
+        table,
+        th,
+        td {
             border: 1px solid black;
         }
 
-        th, td {
+        th,
+        td {
             padding: 8px 12px;
             text-align: left;
         }
@@ -82,7 +88,7 @@
 
 <body>
     <div id="setup">
-        Select Preset Phrases: 
+        Select Preset Phrases:
         <select id="presetPhrases" onchange="quizApp.loadPresetPhrases()">
             <option value="">-- Select Preset --</option>
             <option value="english">English Phrases</option>
@@ -90,6 +96,7 @@
             <option value="chinese">Chinese Phrases</option>
             <option value="japanese">Japanese Phrases</option>
             <option value="korean">Korean Phrases</option>
+            <option value="viet">Viet Phrases</option>
         </select><br><br>
 
         Language:
@@ -99,6 +106,7 @@
             <option value="zh-CN">Chinese</option>
             <option value="ja-JP">Japanese</option>
             <option value="ko-KR">Korean</option>
+            <option value="vi-VN">Viet</option>
         </select><br><br>
 
         Enter Phrases (one per line): <br>
@@ -150,7 +158,7 @@
             currentPhraseIndex: 0,
             countdownInterval: null,
 
-            initQuiz: function() {
+            initQuiz: function () {
                 this.getPhrases();
                 this.setupRecognitionLanguage();
 
@@ -163,28 +171,28 @@
                 this.setInitialPhrase();
             },
 
-            getPhrases: function() {
+            getPhrases: function () {
                 this.phrasesToTest = document.getElementById('inputPhrases').value.split('\n').filter(line => line.trim() !== '');
             },
 
-            setupRecognitionLanguage: function() {
+            setupRecognitionLanguage: function () {
                 const selectedLanguage = document.getElementById('languageSelection').value;
                 this.recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
                 this.recognition.lang = selectedLanguage;
             },
 
-            displayQuiz: function() {
+            displayQuiz: function () {
                 document.getElementById('setup').style.display = 'none';
                 document.getElementById('quizSection').style.display = 'block';
             },
 
-            setInitialPhrase: function() {
+            setInitialPhrase: function () {
                 const card = document.getElementById('card');
                 card.textContent = this.phrasesToTest[this.currentPhraseIndex];
                 card.onclick = () => this.speak(this.phrasesToTest[this.currentPhraseIndex]);
             },
 
-            startRecognition: function() {
+            startRecognition: function () {
                 this.isRecording = true;
                 document.getElementById('startRecordButton').disabled = true;
                 document.getElementById('stopRecordButton').disabled = false;
@@ -199,11 +207,11 @@
                 this.recognition.start();
             },
 
-            stopRecognition: function() {
+            stopRecognition: function () {
                 this.recognition.stop();
             },
 
-            startCountdown: function() {
+            startCountdown: function () {
                 let countdownValue = 10;
                 document.getElementById('countdown').textContent = countdownValue;
 
@@ -218,7 +226,7 @@
                 }, 1000);
             },
 
-            handleRecognitionResult: function(event) {
+            handleRecognitionResult: function (event) {
                 const recognizedText = event.results[0][0].transcript;
                 document.getElementById('you_said').textContent = recognizedText;
 
@@ -242,7 +250,7 @@
                 this.updateScore();
             },
 
-            logAttempt: function(isCorrect, recognizedText) {
+            logAttempt: function (isCorrect, recognizedText) {
                 const tableBody = document.getElementById('attemptsLog').getElementsByTagName('tbody')[0];
                 const newRow = tableBody.insertRow(0);  // Prepend the new row
                 const statusCell = newRow.insertCell(0);
@@ -252,7 +260,7 @@
                 phraseCell.textContent = recognizedText;
             },
 
-            resetRecordingState: function() {
+            resetRecordingState: function () {
                 this.isRecording = false;
                 document.getElementById('startRecordButton').disabled = false;
                 document.getElementById('stopRecordButton').disabled = true;
@@ -263,7 +271,7 @@
                 }
             },
 
-            updateScore: function() {
+            updateScore: function () {
                 const scoreElement = document.getElementById('score');
                 scoreElement.textContent = "Score: " + this.score;
 
@@ -271,7 +279,7 @@
                 setTimeout(() => scoreElement.classList.remove('updated'), 300);
             },
 
-            loadPresetPhrases: function() {
+            loadPresetPhrases: function () {
                 const selectedPreset = document.getElementById('presetPhrases').value;
                 const preset = this.presets[selectedPreset];
 
@@ -282,12 +290,15 @@
                 }
             },
 
-            speak: function(text) {
+            speak: function (text) {
+                const selectedLanguage = document.getElementById('languageSelection').value;
+                let message = new SpeechSynthesisUtterance();
                 const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = selectedLanguage;
                 window.speechSynthesis.speak(utterance);
             },
 
-            sanitizeInput: function(input) {
+            sanitizeInput: function (input) {
                 const lang = document.getElementById('languageSelection').value;
 
                 let regex;
@@ -299,11 +310,7 @@
                         regex = /[^a-zA-Záéíóúñ]/g;
                         break;
                     case 'zh-CN': // Chinese
-                        regex = /[\p{P}\p{Z}]/gu; // Remove punctuation and whitespace
-                        break;
                     case 'ja-JP': // Japanese
-                        regex = /[\p{P}\p{Z}]/gu; // Remove punctuation and whitespace
-                        break;
                     case 'ko-KR': // Korean
                         regex = /[\p{P}\p{Z}]/gu; // Remove punctuation and whitespace
                         break;
@@ -334,9 +341,26 @@
                 korean: {
                     phrases: ["안녕하세요", "잘 지내세요?", "감사합니다", "네", "아니오"],
                     language: "ko-KR"
+                },
+                viet: {
+                    "phrases": [
+                        "Ba tôi là bác sĩ.",
+                        "Mẹ tôi nấu ăn ngon.",
+                        "Anh tôi học ở đại học.",
+                        "Chị tôi mua sách mới.",
+                        "Em tôi thích chơi đá banh.",
+                        "Ông tôi ở quê.",
+                        "Bà tôi trồng hoa.",
+                        "Chú tôi làm kỹ sư.",
+                        "Cô tôi dạy tiếng Anh.",
+                        "Bác tôi thích cái mới."
+                    ],
+                    "language": "vi-VN"
                 }
+
             }
         };
+
     </script>
 </body>
 
