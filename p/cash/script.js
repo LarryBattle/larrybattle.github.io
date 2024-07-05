@@ -288,6 +288,19 @@ function updateMaxAmount() {
     initializePractice();
 }
 
+// Add this function to check online status
+function updateOnlineStatus() {
+    if (navigator.onLine) {
+        document.body.classList.remove('offline');
+    } else {
+        document.body.classList.add('offline');
+    }
+}
+
+// Add these event listeners for online/offline events
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+
 // Event Listeners
 $('#piece-range').addEventListener('input', updatePieceRange);
 $('#check-button').addEventListener('click', checkCountingChallenge);
@@ -319,3 +332,4 @@ initializeMakeAmount();
 initializePractice();
 setNewTargetAmount();
 updatePieceRange();
+updateOnlineStatus();

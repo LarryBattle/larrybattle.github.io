@@ -1,11 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Learn to Count Money</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Learn to Count Money</title>
+        <link rel="icon" type="image/svg+xml" href="icon.svg">
+        <link rel="stylesheet" href="styles.css">
+        <link rel="manifest" href="manifest.json">
+        <meta name="theme-color" content="#3498db">
+        <link rel="apple-touch-icon" href="icon.svg">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black">
+        <meta name="apple-mobile-web-app-title" content="Money Counter">
+    </head>
 <body>
     <div class="container">
         <h1>Learn to Count Money</h1>
@@ -65,6 +72,20 @@
         <button id="close-dialog">Close</button>
     </dialog>
 
+    
     <script src="script.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('Service Worker registered:', registration);
+                    })
+                    .catch(error => {
+                        console.log('Service Worker registration failed:', error);
+                    });
+            });
+        }
+    </script>
 </body>
 </html>

@@ -126,7 +126,7 @@ dialog::backdrop {
 
 .tab-button {
     padding: 10px 20px;
-    background-color: #e0e0e0;  /* Lighter gray for inactive tabs */
+    background-color: #857e7e; 
     border: 1px solid #ccc;
     border-bottom: none;
     cursor: pointer;
@@ -180,4 +180,21 @@ dialog::backdrop {
 
 #coin-range-display {
     min-width: 40px;
+}
+.offline {
+    filter: grayscale(1);
+}
+
+.offline::after {
+    content: 'You are offline. Some features may be limited.';
+    display: block;
+    background-color: #f44336;
+    color: white;
+    text-align: center;
+    padding: 10px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
 }
