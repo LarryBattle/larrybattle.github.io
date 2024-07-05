@@ -181,17 +181,14 @@ dialog::backdrop {
 #coin-range-display {
     min-width: 40px;
 }
-.offline {
-    filter: grayscale(1);
-}
 
 .offline::after {
-    content: 'You are offline. Some features may be limited.';
+    content: 'You are offline.';
     display: block;
     background-color: #f44336;
     color: white;
     text-align: center;
-    padding: 10px;
+    padding: 5px;
     position: fixed;
     top: 0;
     left: 0;
