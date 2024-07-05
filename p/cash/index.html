@@ -4,210 +4,67 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Learn to Count Money</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-        }
-        .money-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .money-item {
-            width: 80px;
-            height: 80px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .money-item svg {
-            width: 100%;
-            height: 100%;
-        }
-        #total, #challenge-total {
-            font-size: 24px;
-            margin-bottom: 20px;
-        }
-        button {
-            font-size: 18px;
-            padding: 10px 20px;
-            margin: 10px;
-        }
-        #result {
-            font-size: 20px;
-            margin-top: 20px;
-        }
-        .section {
-            border: 1px solid #ccc;
-            padding: 20px;
-            margin-bottom: 20px;
-            width: 80%;
-            max-width: 600px;
-        }
-        #settings {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            margin-bottom: 20px;
-        }
-        #settings label {
-            margin-bottom: 10px;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Learn to Count Money</h1>
-    
-    <div id="challenge-section" class="section">
-        <h2>Money Counting Challenge</h2>
-        <div id="settings">
-            <label>
-                Max Amount: $<input type="number" id="max-amount" value="2" min="0.01" max="10" step="0.01">
-            </label>
-            <label>
-                Max Coins: <input type="number" id="max-coins" value="4" min="1" max="20">
-            </label>
+    <div class="container">
+        <h1>Learn to Count Money</h1>
+        
+        <div class="tabs">
+            <button class="tab-button active" data-tab="counting-challenge">Counting Challenge</button>
+            <button class="tab-button" data-tab="make-amount-challenge">Make Amount Challenge</button>
+            <button class="tab-button" data-tab="practice-area">Practice Area</button>
+            <button class="tab-button" data-tab="settings">Settings</button>
         </div>
-        <div id="challenge-container" class="money-container"></div>
-        <input type="number" id="challenge-input" placeholder="Enter the total amount" step="0.01">
-        <button id="check-button">Check Answer</button>
-        <button id="new-challenge-button">New Challenge</button>
-        <div id="challenge-result"></div>
+
+        <div id="counting-challenge" class="tab-content active">
+            <h2>Counting Challenge</h2>
+            <div id="challenge-container" class="money-container"></div>
+            <input type="number" id="challenge-input" placeholder="Enter the total amount" step="0.01">
+            <button id="check-button">Check Answer</button>
+            <button id="new-challenge-button">New Challenge</button>
+            <div id="challenge-result"></div>
+        </div>
+
+        <div id="make-amount-challenge" class="tab-content">
+            <h2>Make the Amount Challenge</h2>
+            <div id="target-amount">Target Amount: $0.00</div>
+            <div id="make-amount-container" class="money-container"></div>
+            <div id="make-amount-total">Your Total: $0.00</div>
+            <div id="make-amount-remainder">Remainder: $0.00</div>
+            <button id="reset-make-amount">New Target Amount</button>
+            <button id="reset-units">Reset Units</button>
+            <button id="show-optimal">Show Optimal Solution</button>
+            <label><input type="checkbox" id="random-target" checked> Random Target</label>
+            <input type="number" id="manual-target" placeholder="Enter target amount" step="0.01">
+        </div>
+
+        <div id="practice-area" class="tab-content">
+            <h2>Practice Area</h2>
+            <div id="practice-container" class="money-container"></div>
+            <div id="practice-total">Total: $0.00</div>
+            <button id="reset-practice">Reset</button>
+        </div>
+
+        <div id="settings" class="tab-content">
+            <h2>Settings</h2>
+            <div class="settings-grid">
+                <label>Max Amount: $<input type="number" id="max-amount" value="2" min="0.01" max="10" step="0.01"></label>
+                <label>Max Pieces: <span id="piece-range-value">4</span> <input type="range" id="piece-range" min="1" max="10" value="4"></label>
+                <div id="piece-range-display">1 - 4 pieces</div>
+                <label><input type="checkbox" id="toggle-names" checked> Show coin names</label>
+                <label><input type="checkbox" id="toggle-remainder" checked> Show remainder</label>
+                <div id="currency-toggles"></div>
+            </div>
+        </div>
     </div>
 
-    <div id="help-section" class="section">
-        <h2>Practice Area</h2>
-        <div id="help-container" class="money-container"></div>
-        <div id="help-total">Total: $0.00</div>
-        <button id="reset-help-button">Reset</button>
-    </div>
+    <dialog id="optimal-dialog">
+        <h2>Optimal Solution</h2>
+        <div id="optimal-content"></div>
+        <button id="close-dialog">Close</button>
+    </dialog>
 
-    <script>
-        const currencyData = [
-            {value: 1, type: 'bill', color: '#00994C', text: '$1'},
-            {value: 0.25, type: 'coin', color: '#C0C0C0', text: '25¢'},
-            {value: 0.10, type: 'coin', color: '#C0C0C0', text: '10¢'},
-            {value: 0.05, type: 'coin', color: '#C0C0C0', text: '5¢'},
-            {value: 0.01, type: 'coin', color: '#B87333', text: '1¢'}
-        ];
-
-        function createCurrencyElement(item) {
-            const element = document.createElement('div');
-            element.className = 'money-item';
-            element.dataset.value = item.value;
-            
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('viewBox', '0 0 100 100');
-            
-            if (item.type === 'bill') {
-                svg.innerHTML = `
-                    <rect width="100" height="50" fill="${item.color}"/>
-                    <circle cx="50" cy="25" r="20" fill="#FFFFFF"/>
-                    <text x="50" y="30" font-size="12" text-anchor="middle" fill="#000000">${item.text}</text>
-                `;
-            } else {
-                svg.innerHTML = `
-                    <circle cx="50" cy="50" r="45" fill="${item.color}"/>
-                    <text x="50" y="55" font-size="14" text-anchor="middle" fill="${item.color === '#B87333' ? '#FFFFFF' : '#000000'}">${item.text}</text>
-                `;
-            }
-            
-            element.appendChild(svg);
-            return element;
-        }
-
-        function generateRandomMoney() {
-            const maxAmount = parseFloat(document.getElementById('max-amount').value);
-            const maxCoins = parseInt(document.getElementById('max-coins').value);
-            let total = 0;
-            const items = [];
-            let coinCount = 0;
-
-            while (total < maxAmount && items.length < maxCoins) {
-                const item = currencyData[Math.floor(Math.random() * currencyData.length)];
-                if (total + item.value <= maxAmount) {
-                    if (item.type === 'coin') {
-                        if (coinCount < maxCoins) {
-                            total += item.value;
-                            items.push(item);
-                            coinCount++;
-                        }
-                    } else {
-                        total += item.value;
-                        items.push(item);
-                    }
-                }
-            }
-            return { items, total: parseFloat(total.toFixed(2)) };
-        }
-
-        // Challenge Section
-        const challengeContainer = document.getElementById('challenge-container');
-        const challengeInput = document.getElementById('challenge-input');
-        const checkButton = document.getElementById('check-button');
-        const newChallengeButton = document.getElementById('new-challenge-button');
-        const challengeResult = document.getElementById('challenge-result');
-        let challengeTotal = 0;
-
-        function newChallenge() {
-            challengeContainer.innerHTML = '';
-            const { items, total } = generateRandomMoney();
-            challengeTotal = total;
-            items.forEach(item => {
-                challengeContainer.appendChild(createCurrencyElement(item));
-            });
-            challengeInput.value = '';
-            challengeResult.textContent = '';
-        }
-
-        checkButton.addEventListener('click', () => {
-            const userValue = parseFloat(challengeInput.value);
-            if (userValue === challengeTotal) {
-                challengeResult.textContent = "Correct! Great job!";
-                challengeResult.style.color = "green";
-            } else {
-                challengeResult.textContent = "Not quite. Try again!";
-                challengeResult.style.color = "red";
-            }
-        });
-
-        newChallengeButton.addEventListener('click', newChallenge);
-
-        // Help Section
-        const helpContainer = document.getElementById('help-container');
-        const helpTotal = document.getElementById('help-total');
-        const resetHelpButton = document.getElementById('reset-help-button');
-        let helpTotalValue = 0;
-
-        function initializeHelpSection() {
-            helpContainer.innerHTML = '';
-            currencyData.forEach(item => {
-                const element = createCurrencyElement(item);
-                element.addEventListener('click', () => {
-                    helpTotalValue += item.value;
-                    helpTotal.textContent = `Total: $${helpTotalValue.toFixed(2)}`;
-                });
-                helpContainer.appendChild(element);
-            });
-        }
-
-        resetHelpButton.addEventListener('click', () => {
-            helpTotalValue = 0;
-            helpTotal.textContent = 'Total: $0.00';
-        });
-
-        // Settings
-        document.getElementById('max-amount').addEventListener('change', newChallenge);
-        document.getElementById('max-coins').addEventListener('change', newChallenge);
-
-        // Initialize
-        newChallenge();
-        initializeHelpSection();
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
