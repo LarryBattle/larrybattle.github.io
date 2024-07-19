@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verb Quiz App</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f4f8;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        #score {
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #3498db;
+        }
+        #verb-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        #verb-list button {
+            padding: 10px 15px;
+            cursor: pointer;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        #verb-list button:hover {
+            background-color: #2980b9;
+        }
+        #quiz-area {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        #quiz-sentence {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        #quiz-options {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        #quiz-options label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+        #quiz-options input[type="radio"] {
+            cursor: pointer;
+        }
+        #quiz-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        #submit-btn {
+            background-color: #2ecc71;
+            color: white;
+        }
+        #submit-btn:hover {
+            background-color: #27ae60;
+        }
+        #switch-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+        #switch-btn:hover {
+            background-color: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <h1>Verb Quiz App</h1>
+    <div id="score">Score: 0</div>
+    <div id="verb-list"></div>
+    <div id="quiz-area"></div>
+    <script src="defaultVerbData.js"></script>
+
+    <script>
+        // Assume defaultVerbData is defined here or imported from another file
+        // const defaultVerbData = [...];
+
+        let score = 0;
+        let currentVerb = null;
+        let currentQuiz = null;
+        let quizType = 'verbForm';
+
+        function initializeApp() {
+            const verbList = document.getElementById('verb-list');
+            defaultVerbData.forEach(verb => {
+                const button = document.createElement('button');
+                button.textContent = verb.baseForm;
+                button.onclick = () => selectVerb(verb);
+                verbList.appendChild(button);
+            });
+        }
+
+        function selectVerb(verb) {
+            currentVerb = verb;
+            generateQuiz();
+        }
+
+        function generateQuiz() {
+            const quizArea = document.getElementById('quiz-area');
+            quizArea.innerHTML = '';
+
+            const tenses = ['past', 'present', 'future'];
+            const randomTense = tenses[Math.floor(Math.random() * tenses.length)];
+            const sentenceArray = currentVerb[`${randomTense}Sentences`];
+            const randomSentence = sentenceArray[Math.floor(Math.random() * sentenceArray.length)];
+
+            currentQuiz = { tense: randomTense, sentence: randomSentence };
+
+            const sentenceElement = document.createElement('p');
+            sentenceElement.id = 'quiz-sentence';
+            sentenceElement.textContent = randomSentence;
+            quizArea.appendChild(sentenceElement);
+
+            const optionsDiv = document.createElement('div');
+            optionsDiv.id = 'quiz-options';
+            quizArea.appendChild(optionsDiv);
+
+            if (quizType === 'tense') {
+                createTenseQuiz(optionsDiv);
+            } else {
+                createVerbFormQuiz(optionsDiv);
+            }
+
+            const buttonsDiv = document.createElement('div');
+            buttonsDiv.id = 'quiz-buttons';
+            quizArea.appendChild(buttonsDiv);
+
+            const submitButton = document.createElement('button');
+            submitButton.textContent = 'Submit Answer';
+            submitButton.id = 'submit-btn';
+            submitButton.className = 'btn';
+            submitButton.onclick = checkAnswer;
+            buttonsDiv.appendChild(submitButton);
+
+            const switchButton = document.createElement('button');
+            switchButton.textContent = `Switch to ${quizType === 'tense' ? 'Tense' : 'Verb Form'} Quiz`;
+            switchButton.id = 'switch-btn';
+            switchButton.className = 'btn';
+            switchButton.onclick = switchQuizType;
+            buttonsDiv.appendChild(switchButton);
+        }
+
+        function createTenseQuiz(optionsDiv) {
+            const tenses = ['past', 'present', 'future'];
+            tenses.forEach(tense => {
+                const label = document.createElement('label');
+                const radio = document.createElement('input');
+                radio.type = 'radio';
+                radio.name = 'tense';
+                radio.value = tense;
+                radio.id = tense;
+                label.appendChild(radio);
+                label.appendChild(document.createTextNode(tense.charAt(0).toUpperCase() + tense.slice(1)));
+                optionsDiv.appendChild(label);
+            });
+        }
+
+        function createVerbFormQuiz(optionsDiv) {
+            const verbForms = [
+                currentVerb.pastTense,
+                currentVerb.presentTense,
+                currentVerb.futureTense
+            ].sort(() => Math.random() - 0.5);
+
+            verbForms.forEach(form => {
+                const label = document.createElement('label');
+                const radio = document.createElement('input');
+                radio.type = 'radio';
+                radio.name = 'verbForm';
+                radio.value = form;
+                radio.id = form;
+                label.appendChild(radio);
+                label.appendChild(document.createTextNode(form));
+                optionsDiv.appendChild(label);
+            });
+
+            const tenseInfo = document.createElement('p');
+            tenseInfo.textContent = `Select the correct ${currentQuiz.tense} tense form:`;
+            optionsDiv.insertBefore(tenseInfo, optionsDiv.firstChild);
+        }
+
+        function checkAnswer() {
+            const selectedAnswer = document.querySelector(`input[name="${quizType}"]:checked`);
+            if (!selectedAnswer) {
+                alert('Please select an answer');
+                return;
+            }
+
+            let isCorrect;
+            if (quizType === 'tense') {
+                isCorrect = selectedAnswer.value === currentQuiz.tense;
+            } else {
+                isCorrect = selectedAnswer.value === currentVerb[`${currentQuiz.tense}Tense`];
+            }
+
+            if (isCorrect) {
+                score++;
+                alert('Correct!');
+            } else {
+                alert('Incorrect. Try again!');
+            }
+
+            updateScore();
+            generateQuiz();
+        }
+
+        function switchQuizType() {
+            quizType = quizType === 'tense' ? 'verbForm' : 'tense';
+            generateQuiz();
+        }
+
+        function updateScore() {
+            document.getElementById('score').textContent = `Score: ${score}`;
+        }
+
+        initializeApp();
+    </script>
+</body>
+</html>
