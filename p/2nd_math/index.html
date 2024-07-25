@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2nd Grade Math Quiz</title>
+    <script type="text/javascript" id="MathJax-script"
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+        </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .question {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        input[type="number"] {
+            width: 60px;
+            font-size: 16px;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .settings-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: #008CBA;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: black;
+        }
+
+        #timer {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>3rd Grade Math Quiz - With MathJax</h1>
+    <div id="timer"></div>
+    <div id="quiz-grid" class="grid"></div>
+    <button onclick="checkAnswers()">Check Answers</button>
+    <button class="settings-btn" onclick="openModal()">Settings</button>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Quiz Settings</h2>
+            <div>
+                <label>
+                    Difficulty:
+                    <select id="difficultyLevel">
+                        <option value="easy">Easy (1-20)</option>
+                        <option value="medium" selected>Medium (1-50)</option>
+                        <option value="hard">Hard (1-100)</option>
+                    </select>
+                </label>
+            </div>
+            <div>
+                <label>
+                    Operations:
+                    <select id="operations" multiple>
+                        <option value="+" selected>Addition</option>
+                        <option value="-" selected>Subtraction</option>
+                        <option value="*">Multiplication</option>
+                    </select>
+                </label>
+            </div>
+            <div>
+                <label>
+                    Time Limit (seconds):
+                    <input type="number" id="timeLimit" value="60" min="30" max="300">
+                </label>
+            </div>
+            <div>
+                <label>
+                    Number of Questions:
+                    <select id="questionCount">
+                        <option value="6">6</option>
+                        <option value="12" selected>12</option>
+                        <option value="18">18</option>
+                    </select>
+                </label>
+            </div>
+            <div>
+                <label>
+                    Enable Timer:
+                    <input type="checkbox" id="timerToggle">
+                </label>
+            </div>
+            <button onclick="applySettings()">Apply</button>
+        </div>
+    </div>
+
+    <script>
+        let timer;
+        let timeLeft;
+        let settings = {
+            difficulty: "medium",
+            operations: ["+", "-"],
+            timeLimit: 60,
+            questionCount: 12,
+            timerEnabled: false
+        };
+
+        function generateQuestion() {
+            const operation = settings.operations[Math.floor(Math.random() * settings.operations.length)];
+            let maxNum, a, b;
+
+            switch (settings.difficulty) {
+                case "easy":
+                    maxNum = 20;
+                    break;
+                case "medium":
+                    maxNum = 50;
+                    break;
+                default:
+                    maxNum = 100;
+                    break;
+            }
+
+            if (operation === "*") {
+                a = Math.floor(Math.random() * 10) + 1;
+                b = Math.floor(Math.random() * 10) + 1;
+            } else {
+                a = Math.floor(Math.random() * maxNum) + 1;
+                b = operation === "-" ? Math.floor(Math.random() * a) + 1 : Math.floor(Math.random() * (maxNum - a)) + 1;
+            }
+
+            return {
+                a: a,
+                b: b,
+                operation: operation,
+                answer: operation === "+" ? a + b : (operation === "-" ? a - b : a * b)
+            };
+        }
+
+        function createQuiz() {
+            const grid = document.getElementById('quiz-grid');
+            grid.innerHTML = '';
+            for (let i = 0; i < settings.questionCount; i++) {
+                const question = generateQuestion();
+                const div = document.createElement('div');
+                div.className = 'question';
+
+                const equationElement = document.createElement('div');
+                equationElement.className = 'math';
+
+                if (question.operation === '+' || question.operation === '-') {
+                    equationElement.innerHTML = `\\begin{array}{r}
+                        ${question.a} \\\\
+                        ${question.operation}\\enspace${question.b} \\\\
+                        \\hline
+                    \\end{array}`;
+                } else {
+                    equationElement.innerHTML = `\\begin{aligned}
+                        ${question.a} ${question.operation} ${question.b} &= \\underline{\\hspace{2em}}
+                    \\end{aligned}`;
+                }
+
+                div.appendChild(equationElement);
+
+                const inputElement = document.createElement('input');
+                inputElement.type = 'number';
+                inputElement.id = `answer-${i}`;
+                inputElement.dataset.answer = question.answer;
+                div.appendChild(inputElement);
+
+                grid.appendChild(div);
+            }
+
+            MathJax.typeset();
+
+            if (settings.timerEnabled) {
+                startTimer();
+            } else {
+                document.getElementById('timer').style.display = 'none';
+            }
+        }
+
+        function checkAnswers() {
+            clearInterval(timer);
+            let correct = 0;
+            const inputs = document.querySelectorAll('input[type="number"]');
+            inputs.forEach(input => {
+                const userAnswer = parseInt(input.value);
+                const correctAnswer = parseInt(input.dataset.answer);
+                if (userAnswer === correctAnswer) {
+                    correct++;
+                    input.style.backgroundColor = '#8FFF8F';
+                } else {
+                    input.style.backgroundColor = '#FF8F8F';
+                }
+            });
+            alert(`You got ${correct} out of ${inputs.length} correct!`);
+        }
+
+        function startTimer() {
+            clearInterval(timer);
+            timeLeft = settings.timeLimit;
+            updateTimerDisplay();
+            timer = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    checkAnswers();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            document.getElementById('timer').textContent = `Time left: ${timeLeft}s`;
+            document.getElementById('timer').style.display = 'block';
+        }
+
+        function openModal() {
+            document.getElementById('settingsModal').style.display = 'block';
+            document.getElementById('difficultyLevel').value = settings.difficulty;
+            document.getElementById('operations').value = settings.operations;
+            document.getElementById('timeLimit').value = settings.timeLimit;
+            document.getElementById('questionCount').value = settings.questionCount;
+            document.getElementById('timerToggle').checked = settings.timerEnabled;
+        }
+
+        function closeModal() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function applySettings() {
+            settings.difficulty = document.getElementById('difficultyLevel').value;
+            settings.operations = Array.from(document.getElementById('operations').selectedOptions).map(option => option.value);
+            settings.timeLimit = parseInt(document.getElementById('timeLimit').value);
+            settings.questionCount = parseInt(document.getElementById('questionCount').value);
+            settings.timerEnabled = document.getElementById('timerToggle').checked;
+            closeModal();
+            createQuiz();
+        }
+
+        createQuiz();
+    </script>
+</body>
+
+</html>
