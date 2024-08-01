@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subtraction Borrowing Tutorial</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f8ff;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1,
+        h2 {
+            color: #4a4a4a;
+        }
+
+        .example {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #e6f3ff;
+            border-radius: 5px;
+        }
+
+        .subtraction-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .subtraction-table {
+            border-collapse: collapse;
+            margin-right: 20px;
+        }
+
+        .subtraction-table th,
+        .subtraction-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            font-size: 24px;
+            width: 60px;
+        }
+
+        .subtraction-table th {
+            background-color: #f2f2f2;
+        }
+
+        .original-equation {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .mnemonic {
+            background-color: #ffe6e6;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .reset-button {
+            background-color: #f44336;
+        }
+
+        .exercise {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e6fff0;
+            border-radius: 5px;
+        }
+
+        input[type="number"] {
+            width: 50px;
+            font-size: 18px;
+            margin: 0 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Subtraction Borrowing Tutorial</h1>
+
+        <h2>What is Borrowing?</h2>
+        <p>Borrowing is a method we use when we need to subtract a bigger number from a smaller number in a certain
+            place value.</p>
+
+        <div id="examples-container"></div>
+
+        <h2>Steps for Borrowing:</h2>
+        <ol>
+            <li>Look at the ones place. Can you subtract the bottom number from the top number?</li>
+            <li>If not, you need to borrow from the tens place.</li>
+            <li>Cross out the tens digit and make it one less.</li>
+            <li>Add 10 to the ones digit.</li>
+            <li>Now you can subtract!</li>
+        </ol>
+
+        <div class="mnemonic">
+            <h3>Remember this rhyme:</h3>
+            <p>"More on top? Just subtract!<br>
+                More on floor? Go next door!<br>
+                Ten more, then come back for more!"</p>
+        </div>
+
+        <div class="exercise">
+            <h2>Practice Exercise</h2>
+            <p>Try subtracting these numbers. Remember to borrow when needed!</p>
+            <div id="exercise-container"></div>
+            <button id="check-answers">Check Answers</button>
+            <button id="new-exercise">New Exercise</button>
+            <p id="result"></p>
+        </div>
+    </div>
+
+    <script>
+        class SubtractionExample {
+            constructor(id, num1, num2) {
+                this.id = id;
+                this.num1 = num1;
+                this.num2 = num2;
+                this.digits = Math.max(num1.toString().length, num2.toString().length);
+            }
+
+            createHTML() {
+                const headers = ['100s', '10s', '1s'].slice(-this.digits);
+                const num1Digits = this.num1.toString().padStart(this.digits, '0').split('');
+                const num2Digits = this.num2.toString().padStart(this.digits, '0').split('');
+
+                return `
+            <div class="example">
+                <h3>Example ${this.id}: ${this.num1} - ${this.num2}</h3>
+                <div class="original-equation">Original equation: ${this.num1} - ${this.num2}</div>
+                <div class="subtraction-container">
+                    <table class="subtraction-table">
+                        <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+                        <tr>${num1Digits.map((d, i) => `<td id="ex${this.id}-${headers[i].toLowerCase()}">${d}</td>`).join('')}</tr>
+                        <tr>${num2Digits.map(d => `<td>${d}</td>`).join('')}</tr>
+                    </table>
+                </div>
+                <button data-action="borrow" data-id="${this.id}">Show Borrowing</button>
+                <button class="reset-button" data-action="reset" data-id="${this.id}">Reset</button>
+            </div>
+        `;
+            }
+
+            animate() {
+                const digits = this.digits;
+                const animate = (from, to) => {
+                    gsap.to(`#ex${this.id}-${from}`, {
+                        duration: 1,
+                        y: -10,
+                        scale: 0.8,
+                        onComplete: () => {
+                            const elem = document.getElementById(`ex${this.id}-${from}`);
+                            elem.textContent = parseInt(elem.textContent) - 1;
+                            gsap.to(`#ex${this.id}-${from}`, { duration: 1, y: 0, scale: 1 });
+                        }
+                    });
+                    gsap.to(`#ex${this.id}-${to}`, {
+                        duration: 1,
+                        scale: 1.2,
+                        onComplete: () => {
+                            const elem = document.getElementById(`ex${this.id}-${to}`);
+                            elem.textContent = parseInt(elem.textContent) + 10;
+                            gsap.to(`#ex${this.id}-${to}`, { duration: 1, scale: 1 });
+                        }
+                    });
+                };
+
+                if (digits === 3) {
+                    animate('100s', '10s');
+                    setTimeout(() => animate('10s', '1s'), 2000);
+                } else {
+                    animate('10s', '1s');
+                }
+            }
+
+            reset() {
+                const digits = this.num1.toString().padStart(this.digits, '0').split('');
+                ['100s', '10s', '1s'].slice(-this.digits).forEach((place, i) => {
+                    const elem = document.getElementById(`ex${this.id}-${place.toLowerCase()}`);
+                    if (elem) elem.textContent = digits[i];
+                });
+            }
+        } 
+        class Exercise {
+            constructor() {
+                this.problems = [];
+            }
+
+            generate() {
+                this.problems = [];
+                for (let i = 0; i < 3; i++) {
+                    const num1 = Math.floor(Math.random() * 90) + 10;
+                    const num2 = Math.floor(Math.random() * num1);
+                    this.problems.push([num1, num2]);
+                }
+            }
+
+            createHTML() {
+                return this.problems.map((problem, i) => `
+                    <div>
+                        ${problem[0]} - ${problem[1]} = <input type="number" id="answer${i}" min="0" max="99">
+                    </div>
+                `).join('');
+            }
+
+            checkAnswers() {
+                let correct = 0;
+                this.problems.forEach(([num1, num2], i) => {
+                    const userAnswer = parseInt(document.getElementById(`answer${i}`).value);
+                    if (userAnswer === num1 - num2) correct++;
+                });
+                return correct;
+            }
+        }
+
+        // Initialize examples
+        const examples = [
+            new SubtractionExample(1, 52, 37),
+            new SubtractionExample(2, 80, 45),
+            new SubtractionExample(3, 103, 57)
+        ];
+
+        const examplesContainer = document.getElementById('examples-container');
+        examples.forEach(example => {
+            examplesContainer.innerHTML += example.createHTML();
+        });
+
+        // Initialize exercise
+        const exercise = new Exercise();
+
+        function newExercise() {
+            exercise.generate();
+            document.getElementById('exercise-container').innerHTML = exercise.createHTML();
+            document.getElementById('result').textContent = '';
+        }
+
+        function checkAnswers() {
+            const correct = exercise.checkAnswers();
+            document.getElementById('result').textContent = `You got ${correct} out of 3 correct!`;
+        }
+
+        // Event delegation for buttons
+        document.addEventListener('click', function (event) {
+            if (event.target.tagName === 'BUTTON') {
+                const action = event.target.getAttribute('data-action');
+                const id = event.target.getAttribute('data-id');
+                if (action === 'borrow') {
+                    examples.find(ex => ex.id.toString() === id).animate();
+                } else if (action === 'reset') {
+                    examples.find(ex => ex.id.toString() === id).reset();
+                } else if (event.target.id === 'check-answers') {
+                    checkAnswers();
+                } else if (event.target.id === 'new-exercise') {
+                    newExercise();
+                }
+            }
+        });
+
+        // Initialize first exercise
+        newExercise();
+    </script>
+</body>
+
+</html>
