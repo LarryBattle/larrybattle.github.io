@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulking Meal Plan</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Bulking Meal Plan</h1>
+    
+    <div class="view-selector">
+        <button id="dayViewButton">Day View</button>
+        <button id="searchViewButton">Search View</button>
+    </div>
+
+    <div id="dayView">
+        <div class="day-selector" id="daySelector"></div>
+        <div id="mealPlan"></div>
+    </div>
+
+    <div id="searchView" style="display: none;">
+        <div class="search-section">
+            <input type="text" id="searchInput" placeholder="Search meals...">
+            <button id="searchButton">Search</button>
+        </div>
+
+        <div class="filter-section">
+            <h3>Filter by Ingredients:</h3>
+            <div id="ingredientFilters"></div>
+        </div>
+
+        <div id="searchResults" class="search-results"></div>
+    </div>
+
+    <script src="meals.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
