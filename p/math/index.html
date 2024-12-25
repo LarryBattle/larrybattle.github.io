@@ -1,5 +1,6 @@
+
 <!DOCTYPE html>
-<!-- CopyRight: Larry Battle 2023 Jan -->
+<!-- CopyRight: Larry Battle 2023-2025 Jan -->
 <html lang="en">
 
 <head>
@@ -938,6 +939,18 @@
             }
         }
 
+        function getXTimesWhatEqualsProductQuiz({ quizNNumber }) {
+            const answer = randomNumberInRange(0, 12);
+            const question = `${quizNNumber} x ? = ${answer * quizNNumber}`;
+
+            return {
+                quizType: 'qa',
+                name: "Multiplication: a x ? = c",
+                question,
+                answer
+            }
+        }
+
         function placeValue(n, i) {
             return String(n).split("").at(-1 * (1 + i)) || "0";
         }
@@ -1353,7 +1366,7 @@ f(${x}) == ?`;
                         getFOfXQuiz, getFOfXGivenNQuiz,
                         getADivBQuiz,
                         getPlaceValueQuiz,
-                        getAXNTimeQuiz, getAXBTimeQuiz,
+                        getAXNTimeQuiz, getAXBTimeQuiz, getXTimesWhatEqualsProductQuiz,
                         getWriteVocabQuiz, getPickWordSTTQuiz,
                         getBiggestNumberQuiz, getSmallestNumberQuiz,
                         getGreaterThanQuiz, get0PlusQuiz, get1PlusQuiz,
