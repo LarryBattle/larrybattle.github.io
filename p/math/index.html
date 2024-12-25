@@ -1,6 +1,6 @@
 
 <!DOCTYPE html>
-<!-- CopyRight: Larry Battle 2023-2025 Jan -->
+<!-- CopyRight: Larry Battle 2023 Jan -->
 <html lang="en">
 
 <head>
@@ -938,6 +938,54 @@
                 answer
             }
         }
+        function getRandomEmoji() {
+            const emojiList = [
+                { name: "monkeys", emoji: "🐵" },
+                { name: "apples", emoji: "🍎" },
+                { name: "stars", emoji: "🌟" },
+                { name: "frogs", emoji: "🐸" },
+                { name: "donuts", emoji: "🍩" },
+                { name: "rockets", emoji: "🚀" },
+                { name: "unicorns", emoji: "🦄" },
+                { name: "dinosaurs", emoji: "🦖" },
+                { name: "teddy bears", emoji: "🧸" },
+                { name: "pizzas", emoji: "🍕" },
+                { name: "balloons", emoji: "🎈" }
+            ];
+            const randomIndex = Math.floor(Math.random() * emojiList.length);
+            return emojiList[randomIndex];
+        }
+
+        function getMatrixEqualsProductQuiz({ quizNNumber }) {
+            const emojiData = getRandomEmoji();
+            const y = randomNumberInRange(1, 12);
+            const image = createAsciiGrid(emojiData.emoji, quizNNumber, y);
+            const question = `How many ${emojiData.name}?\n\n===\n\n${image} \n\n===`;
+            const answer = quizNNumber * y;
+
+            return {
+                quizType: 'qa',
+                name: "Multiplication: Image: n x b = ?",
+                question,
+                answer
+            }
+        }
+
+        function getABMatrixEqualsProductQuiz({ quizMinNumber, quizMaxNumber }) {
+            const emojiData = getRandomEmoji();
+            const x = randomNumberInRange(quizMinNumber, quizMaxNumber);
+            const y = randomNumberInRange(1, 12);
+            const image = createAsciiGrid(emojiData.emoji, x, y);
+            const question = `How many ${emojiData.name}?\n\n===\n\n${image} \n\n===`;
+            const answer = x * y;
+
+            return {
+                quizType: 'qa',
+                name: "Multiplication: Image: a x b = ?",
+                question,
+                answer
+            }
+        }
 
         function getXTimesWhatEqualsProductQuiz({ quizNNumber }) {
             const answer = randomNumberInRange(0, 12);
@@ -1263,6 +1311,72 @@ f(${x}) == ?`;
             return sortNums([a, b]).join(delimiter);
         }
 
+        /**
+         * Creates an ASCII grid of the character/string `x`, sized `a` by `b`.
+         * After every `spacePadding` columns horizontally, a delimiter (`delimiterSpacer`) is inserted.
+         * After every `spacePadding` rows vertically, an entire delimiter line is inserted.
+         *
+         * @param {string}  x                The character or string to print in each cell.
+         * @param {number}  a                Number of columns.
+         * @param {number}  b                Number of rows.
+         * @param {number}  [spacePadding=5] After every N columns/rows, insert delimiter(s).
+         * @param {string}  [delimiterSpacer=" "] Delimiter to insert after `spacePadding` columns or rows.
+         * @returns {string}                 The resulting ASCII grid.
+         */
+        function createAsciiGrid(
+        x, 
+        a, 
+        b, 
+        spacePadding = 5, 
+        delimiterSpacer = " "
+        ) {
+            let lines = [];
+
+            for (let row = 1; row <= b; row++) {
+                let rowString = "";
+
+                // Build up a single row
+                for (let col = 1; col <= a; col++) {
+                // Add the main character/string
+                rowString += x;
+
+                // If not at the last column, you might insert a small spacing (optional)
+                // rowString += ' '; // Uncomment if you want a small space between cells
+
+                // If we've hit a 'spacePadding' boundary and not at the final column, insert the delimiter
+                if (col % spacePadding === 0 && col !== a) {
+                    rowString += delimiterSpacer;
+                }
+                }
+
+                // Push this row into our lines array
+                lines.push(rowString);
+
+                // After every `spacePadding` rows, and if not at the last row, add a delimiter line
+                if (row % spacePadding === 0 && row !== b) {
+                let delimiterLine = "";
+
+                // Build a line of delimiters that spans the width of the columns (with optional spacing logic)
+                for (let col = 1; col <= a; col++) {
+                    delimiterLine += delimiterSpacer;
+                    // Optionally add spacing or other markers here:
+                    // delimiterLine += " ";
+                    
+                    // If you want to align with the same logic horizontally:
+                    if (col % spacePadding === 0 && col !== a) {
+                    delimiterLine += delimiterSpacer;
+                    }
+                }
+                lines.push(delimiterLine);
+                }
+            }
+
+            // Join the lines with newlines
+            return lines.join("\n");
+        }
+
+    
+
         function getTwoEquationsSameSubtractionQuiz({ quizMinNumber, quizMaxNumber, quizNNumber }) {
             const eq = getTwoEquationData({ quizMinNumber, quizMaxNumber, quizNNumber });
             let a = eq.a;
@@ -1348,7 +1462,6 @@ f(${x}) == ?`;
                 return {
                     voiceChoice: "",
                     useRandomVoice: true,
-                    quizNNumber: 1,
                     rangeViz: null,
                     userAnswer: null,
                     answerState: null,
@@ -1366,7 +1479,7 @@ f(${x}) == ?`;
                         getFOfXQuiz, getFOfXGivenNQuiz,
                         getADivBQuiz,
                         getPlaceValueQuiz,
-                        getAXNTimeQuiz, getAXBTimeQuiz, getXTimesWhatEqualsProductQuiz,
+                        getAXNTimeQuiz, getAXBTimeQuiz, getXTimesWhatEqualsProductQuiz, getMatrixEqualsProductQuiz, getABMatrixEqualsProductQuiz,
                         getWriteVocabQuiz, getPickWordSTTQuiz,
                         getBiggestNumberQuiz, getSmallestNumberQuiz,
                         getGreaterThanQuiz, get0PlusQuiz, get1PlusQuiz,
@@ -1375,9 +1488,10 @@ f(${x}) == ?`;
                         getPosXMinusYQuiz, getXMinusYQuiz, getXMinusYMinusZQuiz, getNPlusXQuiz
                     ],
                     quiz: null,
-                    quizType: "getWriteXThatHas0Quiz",
+                    quizType: "getABMatrixEqualsProductQuiz",
+                    quizNNumber: 3,
                     quizMinNumber: 0,
-                    quizMaxNumber: 100,
+                    quizMaxNumber: 12,
                     quizVocabWords: [
                         // 1st grade: week 9
                         // 'with,next,need,speed,last,past,could,should,near,hear,fasten,appear',
