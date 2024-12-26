@@ -1,6 +1,6 @@
 
 <!DOCTYPE html>
-<!-- CopyRight: Larry Battle 2023 Jan -->
+<!-- CopyRight: Larry Battle 2023-2025 Jan -->
 <html lang="en">
 
 <head>
@@ -141,7 +141,7 @@
                                 <tr>
                                     <td>Quiz Type</td>
                                     <td>
-                                        <select v-model="quizType">
+                                        <select v-model="quizName">
                                             <template v-for="{name, value} in quizOptions" :key="name">
                                                 <option :value="value">{{name}}</option>
                                             </template>
@@ -347,6 +347,23 @@
                 ]
             }
         ];
+
+        class StorageService {
+            constructor() {
+                this.STORAGE_KEY = 'quizApp.lastQuizName';
+            }            
+            fetchLastQuizName() {
+                try{
+                    return localStorage.getItem(this.STORAGE_KEY) || null;
+                }catch(e){
+                    console.error(e);
+                }
+                return null;
+            }
+            saveLastQuizName(quizName) {
+                localStorage.setItem(this.STORAGE_KEY, quizName);
+            }
+        }
 
         class SpeechService {
             static async init() {
@@ -745,10 +762,9 @@
             }
 
             const product = i * j;
-
             let question = shuffleNumbersInMult(`${localN(product)} / ${localN(i)}`);
 
-            const answer = i * j;
+            const answer = j;
 
             return {
                 quizType: 'qa',
@@ -1488,7 +1504,7 @@ f(${x}) == ?`;
                         getPosXMinusYQuiz, getXMinusYQuiz, getXMinusYMinusZQuiz, getNPlusXQuiz
                     ],
                     quiz: null,
-                    quizType: "getABMatrixEqualsProductQuiz",
+                    quizName: null,
                     quizNNumber: 3,
                     quizMinNumber: 0,
                     quizMaxNumber: 12,
@@ -1499,11 +1515,13 @@ f(${x}) == ?`;
                         'people,some,flew,grew,stew,knew,stray,away,sway,layer,somebody,interview,nephew,wednesday,multilayer'
                     ].join(","),
                     quizUserAttempts: [],
+                    storageService: new StorageService(),
                     voice: null,
                     voices: null
                 }
             },
             mounted() {
+                this.quizName = this.storageService.fetchLastQuizName() || this.quizName;
                 this.newQuiz();
             },
             methods: {
@@ -1542,7 +1560,10 @@ f(${x}) == ?`;
                     this.resetAttempts();
                     this.answerState = null;
                     this.userAnswer = null;
-                    this.createQuizFn = this.quizzes.find(fn => fn.name == this.quizType);
+                    this.createQuizFn = this.quizzes.find(fn => fn.name == this.quizName);
+                    if(!this.createQuizFn){
+                        console.error(`Unable to find quizName: ${this.quizName}`);
+                    }
 
                     this.quiz = this.createQuizFn({
                         quizVocabWords: this.quizVocabWords,
@@ -1568,6 +1589,12 @@ f(${x}) == ?`;
                 },
                 resetAttempts() {
                     this.quizUserAttempts = [];
+                }
+            },
+            watch: {
+                quizName(newQuizName, oldQuizName){
+                    console.log(`newQuizName: ${newQuizName}, oldQuizName: ${oldQuizName}`);
+                    this.storageService.saveLastQuizName(newQuizName);
                 }
             },
             computed: {
