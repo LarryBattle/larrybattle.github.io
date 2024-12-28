@@ -5,11 +5,12 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon"
-        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧾</text></svg>">
-    <title>Quiz</title>
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧾</text></svg>"/>
+        
+        <link rel="manifest" href="manifest.json?v=2" />
+        <title>Quiz</title>
     <style>
         .wrongAnswer,
         .rightAnswer {
@@ -28,8 +29,8 @@
 
 <body>
     <noscript>Javascript is Disabled. Please enabled it for this site to work</noscript>
-    <!-- <script src="vue.global.js"></script> -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="vue.global.js"></script>
+    <!-- <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script> -->
     <div>
         <div id="app">
             <template v-if="quiz">
@@ -1521,7 +1522,7 @@ f(${x}) == ?`;
                 }
             },
             mounted() {
-                this.quizName = this.storageService.fetchLastQuizName() || this.quizName;
+                this.quizName = this.storageService.fetchLastQuizName() || this.quizzes[0].name;
                 this.newQuiz();
             },
             methods: {
@@ -1593,7 +1594,6 @@ f(${x}) == ?`;
             },
             watch: {
                 quizName(newQuizName, oldQuizName){
-                    console.log(`newQuizName: ${newQuizName}, oldQuizName: ${oldQuizName}`);
                     this.storageService.saveLastQuizName(newQuizName);
                 }
             },
@@ -1618,7 +1618,19 @@ f(${x}) == ?`;
                     });
                 }
             }
-        }).mount('#app')
+        }).mount('#app');
+
+    // Register the service worker for offline capability
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('service-worker.js')
+        .then((registration) => {
+          console.log('Service Worker registered:', registration);
+        })
+        .catch((error) => {
+          console.log('Service Worker registration failed:', error);
+        });
+    }
     </script>
 </body>
 
