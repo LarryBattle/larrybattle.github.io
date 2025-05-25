@@ -1,0 +1,234 @@
+/* style.css */
+body {
+    font-family: 'Comic Sans MS', 'Chalkboard SE', 'Arial', sans-serif;
+    text-align: center;
+    background-color: #f0f8ff; /* AliceBlue */
+    color: #333;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+}
+
+#app {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    width: 90%;
+    max-width: 700px;
+}
+
+h1 {
+    color: #ff6347; /* Tomato */
+    margin-top: 0;
+}
+h2 {
+    color: #4682b4; /* SteelBlue */
+}
+h3 {
+    color: #ff4500; /* OrangeRed */
+}
+
+button, .button-link {
+    background-color: #32cd32; /* LimeGreen */
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 10px 5px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background-color 0.3s;
+    font-family: inherit; /* Ensure buttons use body font */
+}
+button:hover, .button-link:hover {
+    background-color: #228b22; /* ForestGreen */
+}
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.nav-menu button, .nav-menu .button-link {
+    background-color: #1e90ff; /* DodgerBlue */
+    margin: 5px;
+}
+.nav-menu button:hover, .nav-menu .button-link:hover {
+    background-color: #4169e1; /* RoyalBlue */
+}
+
+.verb-card {
+    border: 2px solid #ffd700; /* Gold */
+    background-color: #fffacd; /* LemonChiffon */
+    padding: 15px;
+    margin: 20px auto;
+    border-radius: 10px;
+}
+.verb-card .verb-main {
+    font-size: 2.5em;
+    color: #ff4500; /* OrangeRed */
+    margin-bottom: 10px;
+}
+.verb-card .verb-image {
+    font-size: 3em;
+    margin: 10px 0;
+}
+.verb-card p {
+    font-size: 1.1em;
+    margin: 5px 0;
+}
+.verb-card ul {
+    list-style-type: "⭐ ";
+    padding-left: 20px;
+    text-align: left;
+}
+.verb-card li {
+    margin-bottom: 5px;
+}
+
+.quiz-option {
+    background-color: #87cefa; /* LightSkyBlue */
+    border: 1px solid #4682b4;
+    display: block;
+    width: 80%;
+    margin: 8px auto;
+}
+.quiz-option:hover {
+    background-color: #00bfff; /* DeepSkyBlue */
+}
+.feedback {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin-top: 15px;
+}
+.correct { color: #32cd32; }
+.incorrect { color: #dc143c; }
+
+.progress-bar-container {
+    width: 90%;
+    background-color: #e0e0e0;
+    border-radius: 5px;
+    margin: 15px auto;
+    height: 25px;
+}
+.progress-bar {
+    width: 0%;
+    height: 100%;
+    background-color: #4caf50; /* Green */
+    border-radius: 5px;
+    text-align: center;
+    line-height: 25px;
+    color: white;
+    font-size: 0.9em;
+    transition: width 0.5s ease-in-out;
+}
+
+#celebration {
+    font-size: 1.8em;
+    color: #ff69b4; /* HotPink */
+    margin-top: 20px;
+}
+
+/* Cheatsheet and Tense Lookup Specifics */
+.cheatsheet-page, .tense-lookup-page {
+    text-align: left;
+    padding: 10px;
+}
+.cheatsheet-page h2, .tense-lookup-page h2 {
+    text-align: center;
+}
+.cheatsheet-group {
+    margin-bottom: 20px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+.cheatsheet-group h3 {
+    color: #2a628f;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+.cheatsheet-verb {
+    margin-bottom: 8px;
+}
+.cheatsheet-verb strong {
+    font-size: 1.2em;
+}
+
+.tense-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+.tense-table th, .tense-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+.tense-table th {
+    background-color: #e9eff5; /* Light blueish gray */
+    color: #333;
+}
+.tense-lookup-page input[type="text"] {
+    padding: 10px;
+    font-size: 1em;
+    width: calc(100% - 22px);
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+/* Print Styles */
+@media print {
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #fff;
+        color: #000;
+        padding: 0;
+        margin: 0;
+    }
+    #app {
+        box-shadow: none;
+        border: none;
+        width: 100%;
+        max-width: 100%;
+        padding: 0;
+    }
+    .nav-menu, .progress-bar-container, .quiz-card, .lesson-navigation,
+    .non-printable, #day-selection, #group-selection, #lesson-area>button,
+    .tense-lookup-page input[type="text"], .tense-lookup-page button,
+    #celebration {
+        display: none !important;
+    }
+    .cheatsheet-page {
+        display: block !important; /* Ensure it's visible */
+    }
+    .cheatsheet-group {
+        page-break-inside: avoid;
+        border: 1px solid #ccc !important; /* Lighter border for print */
+    }
+    .cheatsheet-verb {
+        font-size: 10pt;
+    }
+    h1, h2, h3 {
+        color: #000 !important;
+        text-align: left;
+    }
+    .verb-card { /* If we ever print single verb cards */
+        border: 1px solid #ccc !important;
+        background-color: #fff !important;
+    }
+    .tense-table th, .tense-table td {
+        font-size: 9pt;
+        border: 1px solid #666 !important;
+    }
+    .tense-table th {
+        background-color: #f0f0f0 !important;
+    }
+}

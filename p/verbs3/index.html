@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Awesome Verb Learner!</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Vue.js 3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+    <div id="app">
+        <h1>Awesome Verb Learner! 🚀</h1>
+
+        <!-- Navigation Menu -->
+        <nav class="nav-menu non-printable">
+            <button @click="setView('home')">🏠 Home</button>
+            <button @click="setView('groupSelection')">📚 Learn by Group</button>
+            <button @click="setView('tenseLookup')">🔍 Tense Lookup</button>
+            <button @click="setView('cheatsheet')">📋 Cheatsheet</button>
+        </nav>
+
+        <!-- Home View -->
+        <div v.if="currentView === 'home'" class="home-view">
+            <h2>Welcome, Young Explorer!</h2>
+            <p>Let's learn English verbs in a fun way!</p>
+            <p>Choose an option from the menu above to get started.</p>
+            <p>We recommend starting with "Learn by Group". You can aim to learn 2-3 groups per day!</p>
+            <div class="verb-image" style="font-size: 5em;">🎉</div>
+        </div>
+
+        <!-- Group Selection View -->
+        <div v-if="currentView === 'groupSelection'">
+            <h2>Choose a Verb Group to Learn:</h2>
+            <div v-for="groupName in verbGroups" :key="groupName">
+                <button @click="startLessonOrQuiz(groupName)">{{ groupName }} ({{ getVerbsByGroup(groupName).length }} verbs)</button>
+            </div>
+        </div>
+
+        <!-- Lesson Area -->
+        <div v.if="currentView === 'lesson'">
+            <h2>Learning Group: {{ currentGroup }}</h2>
+            <div class="progress-bar-container non-printable">
+                <div class="progress-bar" :style="{ width: progressBarWidth + '%' }">{{ Math.round(progressBarWidth) }}%</div>
+            </div>
+
+            <div v-if="currentVerb" class="verb-card">
+                <div class="verb-main">{{ currentVerb.verb.toUpperCase() }}</div>
+                <div class="verb-image">{{ currentVerb.image }}</div>
+                <p><strong>Meaning:</strong> {{ currentVerb.meaning }}</p>
+                <p><strong>Examples:</strong></p>
+                <ul>
+                    <li v-for="(example, index) in currentVerb.examples" :key="index">{{ example }}</li>
+                </ul>
+                <p><strong>Tenses:</strong>
+                    Present: {{ currentVerb.tenses.present }},
+                    Past: {{ currentVerb.tenses.past }},
+                    Past Participle: {{ currentVerb.tenses.pastParticiple }},
+                    Present Participle: {{ currentVerb.tenses.presentParticiple }}
+                </p>
+            </div>
+
+            <div class="lesson-navigation non-printable">
+                <button @click="prevItem" :disabled="currentItemIndex === 0">⬅️ Previous</button>
+                <button v-if="currentItemIndex < currentVerbsInLesson.length - 1" @click="nextItem">Next Verb ➡️</button>
+                <button v-else @click="startQuizForCurrentGroup">Start Quiz for {{ currentGroup }}! 🧠</button>
+            </div>
+        </div>
+
+        <!-- Quiz Area -->
+        <div v.if="currentView === 'quiz'">
+            <h2>Quiz Time: {{ currentGroup }}</h2>
+             <div class="progress-bar-container non-printable">
+                <div class="progress-bar" :style="{ width: quizProgressBarWidth + '%' }">{{ Math.round(quizProgressBarWidth) }}%</div>
+            </div>
+
+            <div v-if="currentQuizVerb" class="verb-card">
+                <h4>What verb fits the blank or matches the image?</h4>
+                <div class="verb-image">{{ quizPrompt.image || quizPrompt.text }}</div>
+                <p v-if="quizPrompt.sentence" v-html="quizPrompt.sentence"></p>
+
+                <div class="quiz-options">
+                    <button
+                        v-for="option in quizOptions"
+                        :key="option"
+                        @click="checkAnswer(option)"
+                        class="quiz-option"
+                        :disabled="answerChecked"
+                        :style="getOptionStyle(option)">
+                        {{ option }}
+                    </button>
+                </div>
+                <p v-if="quizFeedback" :class="['feedback', quizFeedbackCorrect ? 'correct' : 'incorrect']">{{ quizFeedback }}</p>
+            </div>
+            <button v-if="answerChecked && quizQuestionIndex < currentVerbsInQuiz.length -1" @click="nextQuizQuestion" class="non-printable">Next Question ➡️</button>
+            <button v-if="answerChecked && quizQuestionIndex >= currentVerbsInQuiz.length -1" @click="showQuizResults" class="non-printable">See Results 🏆</button>
+        </div>
+
+        <!-- Quiz Results/Celebration -->
+        <div v.if="currentView === 'quizResults'">
+            <h2 class="non-printable">Quiz Results for {{ currentGroup }}!</h2>
+            <p id="celebration">{{ celebrationMessage }}</p>
+            <button @click="setView('groupSelection')" class="non-printable">Choose Another Group</button>
+            <button @click="startLessonOrQuiz(currentGroup, 'lesson')" class="non-printable">Review {{ currentGroup }}</button>
+        </div>
+
+
+        <!-- Cheatsheet View -->
+        <div v-if="currentView === 'cheatsheet'" class="cheatsheet-page">
+            <h2>Verb Cheatsheet <button @click="printCheatsheet" class="non-printable" style="font-size: 0.8em; padding: 5px 10px;">🖨️ Print</button></h2>
+            <div v-for="(verbs, groupName) in groupedVerbsForCheatsheet" :key="groupName" class="cheatsheet-group">
+                <h3>{{ groupName }}</h3>
+                <div v-for="verb in verbs" :key="verb.verb" class="cheatsheet-verb">
+                    <strong>{{ verb.verb.toUpperCase() }}</strong> ({{ verb.tenses.past }}, {{ verb.tenses.pastParticiple }}): {{ verb.meaning }}
+                    <br><em>e.g., {{ verb.examples[0] }}</em>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tense Lookup View -->
+        <div v-if="currentView === 'tenseLookup'" class="tense-lookup-page">
+            <h2>Verb Tense Lookup</h2>
+            <input type="text" v-model="tenseSearchTerm" placeholder="Search for a verb...">
+            <table class="tense-table">
+                <thead>
+                    <tr>
+                        <th>Verb</th>
+                        <th>Present</th>
+                        <th>Past</th>
+                        <th>Past Participle</th>
+                        <th>Present Participle (-ing)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-if="filteredVerbsForLookup.length === 0">
+                        <td colspan="5">No verbs found matching your search. Try another term or see all verbs.</td>
+                    </tr>
+                    <tr v-for="verb in filteredVerbsForLookup" :key="verb.verb">
+                        <td><strong>{{ verb.verb }}</strong></td>
+                        <td>{{ verb.tenses.present }}</td>
+                        <td>{{ verb.tenses.past }}</td>
+                        <td>{{ verb.tenses.pastParticiple }}</td>
+                        <td>{{ verb.tenses.presentParticiple }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script src="verbs.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
