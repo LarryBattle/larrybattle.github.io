@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Charlie's Bake-Off Adventure</title>
+    <style>
+        /* --- General Setup & Theming --- */
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap');
+
+        :root {
+            --primary-color: #ff6b35; /* Orange */
+            --secondary-color: #4a2c2a; /* Dark Brown */
+            --background-color: #fdf6e4; /* Creamy Beige */
+            --text-color: #3d3522;
+            --chocolate-color: #6b4226;
+            --chocolate-filled: #d2691e;
+            --correct-color: #4caf50;
+            --incorrect-color: #f44336;
+            --focus-outline: 3px solid var(--primary-color);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 900px;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 2rem;
+            border: 5px solid var(--secondary-color);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        button {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 30px;
+            border: 2px solid var(--secondary-color);
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 0 var(--secondary-color);
+            transform: translateY(-4px);
+        }
+        button:hover {
+            background-color: #ff8552;
+        }
+        button:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        h1, h2 { text-align: center; margin-bottom: 1rem; }
+        h1 { color: var(--secondary-color); }
+        
+        /* --- Game Screens --- */
+        .screen { padding: 1rem; }
+        .start-screen .difficulty-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .quiz-screen { display: flex; flex-direction: column; gap: 1.5rem; }
+        .end-screen { text-align: center; }
+        .end-screen p { font-size: 1.2rem; margin: 1rem 0; }
+        .end-screen h2 { color: var(--primary-color); font-size: 2rem;}
+
+        /* --- Component: Progress Tracker --- */
+        .progress-tracker {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            height: 30px;
+            border: 2px solid var(--secondary-color);
+            position: relative;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: var(--correct-color);
+            transition: width 0.5s ease-in-out;
+            text-align: center;
+            line-height: 26px;
+            color: white;
+            font-weight: 700;
+        }
+        .progress-text {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            line-height: 26px;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+
+        /* --- Component: Charlie Dialog --- */
+        .charlie-dialog {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background-color: #fffaf0;
+            padding: 1rem;
+            border-radius: 15px;
+            border: 2px dashed var(--secondary-color);
+        }
+        .charlie-avatar img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid var(--secondary-color);
+            transition: transform 0.3s ease;
+        }
+        .charlie-dialog.expression-celebrating .charlie-avatar img {
+            transform: scale(1.1) rotate(10deg);
+        }
+        .speech-bubble { flex-grow: 1; }
+        .speech-bubble p { margin: 0; line-height: 1.5; }
+        .typing-indicator {
+            display: inline-block;
+            width: 5px; height: 5px;
+            background: var(--text-color);
+            border-radius: 50%;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+        .hint-section {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background-color: #fffde7;
+            border-radius: 8px;
+            border-left: 4px solid #fbc02d;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .hint-icon { font-size: 1.5rem; }
+
+        /* --- Component: Fraction Display --- */
+        .fraction-display {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        .fraction-display .whole-part {
+            font-size: 2.5rem;
+            line-height: 1;
+        }
+        .fraction-display .fraction-part, .fraction-display .simple-fraction {
+            display: inline-flex;
+            flex-direction: column;
+            text-align: center;
+        }
+        .fraction-line {
+            border-bottom: 3px solid var(--text-color);
+            display: block;
+            width: 120%;
+            margin: 0 -10%;
+        }
+
+        /* --- Quiz Interaction Area --- */
+        .interaction-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: center;
+            padding: 1rem;
+            border-top: 1px solid #eee;
+            border-bottom: 1px solid #eee;
+        }
+        .target-fraction-area, .user-builder-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+        .choc-builder {
+            display: flex; flex-direction: column; gap: 0.5rem;
+            min-height: 150px;
+        }
+        .builder-controls { display: flex; gap: 0.5rem; }
+
+        /* --- Component: Chocolate Bar --- */
+        .chocolate-bar {
+            display: flex;
+            border: 2px solid var(--secondary-color);
+            border-radius: 5px;
+            padding: 4px;
+            background-color: var(--chocolate-color);
+        }
+        .chocolate-square {
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--secondary-color);
+            margin: 2px;
+            background-color: #fff;
+            transition: background-color 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .chocolate-square.interactive { cursor: pointer; }
+        .chocolate-square:focus {
+            outline: var(--focus-outline);
+            outline-offset: 2px;
+            z-index: 10;
+        }
+        .chocolate-square.filled {
+            background-color: var(--chocolate-filled);
+        }
+        .fill-animation {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: var(--chocolate-filled);
+            transform: scaleY(0);
+            transform-origin: bottom;
+        }
+        .chocolate-square.animating .fill-animation {
+            animation: fillUp 0.3s ease-out forwards;
+        }
+        @keyframes fillUp {
+            from { transform: scaleY(0); }
+            to { transform: scaleY(1); }
+        }
+
+        /* --- Component: Celebration Animation --- */
+        .celebration-container {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 100;
+        }
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 20px;
+            background-color: var(--primary-color);
+            opacity: 0;
+            animation: fall 3s ease-out forwards;
+        }
+        @keyframes fall {
+            0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* --- Accessibility --- */
+        @media (prefers-reduced-motion: reduce) {
+            .fill-animation, .celebration-animation, .confetti, .charlie-avatar img {
+                animation: none;
+                transition: none;
+            }
+        }
+        
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Start Screen -->
+        <div v-if="gameState === 'startScreen'" class="screen start-screen">
+            <h1>Charlie's Bake-Off Adventure</h1>
+            <charlie-dialog 
+                :message="'Welcome to my bake-off! We need to make some very specific chocolate orders. Can you help me learn about fractions?'"
+                expression="happy">
+            </charlie-dialog>
+            <div class="difficulty-buttons">
+                <button @click="startGame('easy')">Easy</button>
+                <button @click="startGame('medium')">Medium</button>
+                <button @click="startGame('hard')">Hard</button>
+            </div>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div v-if="gameState === 'quiz' && currentQuestion" class="screen quiz-screen">
+            <progress-tracker 
+                :current="currentQuestionIndex + 1" 
+                :total="quizQuestions.length">
+            </progress-tracker>
+            
+            <charlie-dialog 
+                :message="charlieMessage"
+                :expression="charlieExpression"
+                :show-hint="showHint"
+                :hint-text="currentHint"
+                @request-hint="provideHint">
+            </charlie-dialog>
+
+            <div class="interaction-area">
+                <div class="target-fraction-area">
+                    <h2>The Order:</h2>
+                    <fraction-display 
+                        :wholes="currentQuestion.fraction.wholes"
+                        :numerator="currentQuestion.fraction.numerator"
+                        :denominator="currentQuestion.fraction.denominator">
+                    </fraction-display>
+                </div>
+                <div class="user-builder-area">
+                    <h2>Your Creation:</h2>
+                    <div class="choc-builder">
+                        <chocolate-bar 
+                            v-for="(bar, index) in userBars" 
+                            :key="index"
+                            :total-squares="currentQuestion.fraction.denominator"
+                            :filled-count="bar.filled"
+                            :is-interactive="true"
+                            :animate-on-change="true"
+                            @square-click="handleBarUpdate(index, $event)">
+                        </chocolate-bar>
+                    </div>
+                    <fraction-display 
+                        :wholes="userBuiltFraction.wholes"
+                        :numerator="userBuiltFraction.numerator"
+                        :denominator="userBuiltFraction.denominator">
+                    </fraction-display>
+                </div>
+            </div>
+
+            <div style="text-align: center; display: flex; justify-content: center; gap: 1rem;">
+                <button @click="handleAnswer" :disabled="isSubmitting">Check Answer</button>
+                <button @click="showHint = !showHint" :disabled="hintLevel >= 3">💡 Hint</button>
+            </div>
+        </div>
+        
+        <!-- End Screen -->
+        <div v-if="gameState === 'endScreen'" class="screen end-screen">
+            <charlie-dialog 
+                message="Wow, we did it! You're a fraction master. Thanks for helping me with the bake-off!"
+                expression="celebrating">
+            </charlie-dialog>
+            <h2>Bake-Off Complete!</h2>
+            <p>Your Score: {{ score }} / {{ quizQuestions.length }}</p>
+            <p>Total Time: {{ Math.round(sessionData.totalTime / 1000) }} seconds</p>
+            <button @click="restart">Play Again</button>
+        </div>
+
+        <!-- Celebration Animation -->
+        <celebration-animation v-if="showCelebration"></celebration-animation>
+    </div>
+
+    <!-- Component Templates -->
+
+    <script type="text/x-template" id="chocolate-bar-template">
+        <div class="chocolate-bar" :class="['size-' + size]">
+            <div 
+                v-for="n in totalSquares" 
+                :key="n"
+                class="chocolate-square"
+                :class="{
+                    filled: n <= filledCount,
+                    interactive: isInteractive,
+                    animating: animatingSquares.has(n),
+                }"
+                :tabindex="isInteractive ? 0 : -1"
+                :aria-label="'Square ' + n + ' of ' + totalSquares + (n <= filledCount ? ', filled' : ', empty')"
+                :aria-pressed="n <= filledCount"
+                role="button"
+                @click="handleSquareClick(n)"
+                @keydown.enter.prevent="handleSquareClick(n)"
+                @keydown.space.prevent="handleSquareClick(n)"
+            >
+                <div v-if="animateOnChange" class="fill-animation"></div>
+            </div>
+        </div>
+    </script>
+    
+    <script type="text/x-template" id="charlie-dialog-template">
+        <div class="charlie-dialog" :class="'expression-' + expression">
+            <div class="charlie-avatar">
+                <img :src="`https://placehold.co/100x100/${secondaryColor}/${primaryColor}/png?text=${expression.charAt(0).toUpperCase()}`" :alt="'Charlie the baker with a ' + expression + ' expression.'">
+            </div>
+            <div class="speech-bubble" role="status" aria-live="polite">
+                <p class="main-message">
+                    {{ displayedMessage }}
+                    <span v-if="isTyping" class="typing-indicator"></span>
+                </p>
+                <div v-if="showHint && hintText" class="hint-section">
+                    <div class="hint-icon">💡</div>
+                    <p class="hint-text">{{ hintText }}</p>
+                </div>
+            </div>
+        </div>
+    </script>
+    
+    <script type="text/x-template" id="fraction-display-template">
+        <div class="fraction-display" :class="'size-' + size">
+            <div v-if="wholes > 0" class="whole-part">{{ wholes }}</div>
+            <div v-if="numerator > 0 || wholes === 0" class="fraction-part">
+                <span class="numerator">{{ numerator }}</span>
+                <span class="fraction-line"></span>
+                <span class="denominator">{{ denominator }}</span>
+            </div>
+        </div>
+    </script>
+    
+    <script type="text/x-template" id="progress-tracker-template">
+        <div class="progress-tracker" role="progressbar" :aria-valuenow="current" :aria-valuemin="1" :aria-valuemax="total" :aria-label="`Question ${current} of ${total}`">
+            <div class="progress-bar" :style="{ width: progressPercentage + '%' }"></div>
+            <div class="progress-text">{{ current }} / {{ total }}</div>
+        </div>
+    </script>
+
+    <script type="text/x-template" id="celebration-animation-template">
+        <div class="celebration-container" aria-hidden="true">
+            <div 
+                v-for="c in confettiCount" 
+                :key="c"
+                class="confetti"
+                :style="confettiStyle(c)">
+            </div>
+        </div>
+    </script>
+    
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script>
+        const { createApp, ref, computed, watch, onMounted } = Vue;
+
+        const app = createApp({
+            data() {
+                return {
+                    // Core Game State
+                    gameState: 'startScreen', // startScreen, quiz, endScreen
+                    difficulty: null,
+                    isSubmitting: false,
+                    
+                    // Quiz Management
+                    quizQuestions: [],
+                    currentQuestionIndex: 0,
+                    score: 0,
+                    attempts: 0,
+                    
+                    // User Interaction State
+                    userBars: [{ filled: 0 }],
+                    showHint: false,
+                    hintLevel: 0, // 0: no hint, 1: gentle, 2: specific, 3: show answer
+                    currentHint: '',
+
+                    // Visual State
+                    charlieExpression: 'happy',
+                    charlieMessage: '',
+                    showCelebration: false,
+                    
+                    // Performance Tracking
+                    startTime: null,
+                    sessionData: {
+                        questionsAttempted: 0,
+                        totalTime: 0,
+                        errorsByType: {}
+                    }
+                }
+            },
+            
+            computed: {
+                currentQuestion() {
+                    return this.quizQuestions[this.currentQuestionIndex];
+                },
+                userBuiltFraction() {
+                    if (!this.currentQuestion) return { wholes: 0, numerator: 0, denominator: 3 };
+
+                    const denominator = this.currentQuestion.fraction.denominator;
+                    let totalSquares = 0;
+                    this.userBars.forEach(bar => {
+                        totalSquares += bar.filled;
+                    });
+                    
+                    const wholes = Math.floor(totalSquares / denominator);
+                    const numerator = totalSquares % denominator;
+
+                    return { wholes, numerator, denominator };
+                }
+            },
+
+            methods: {
+                // --- Game Flow ---
+                startGame(difficulty) {
+                    this.difficulty = difficulty;
+                    this.generateQuizQuestions();
+                    this.gameState = 'quiz';
+                    this.startTime = Date.now();
+                    this.loadQuestion();
+                },
+
+                nextQuestion() {
+                    this.trackProgress();
+                    if (this.currentQuestionIndex < this.quizQuestions.length - 1) {
+                        this.currentQuestionIndex++;
+                        this.loadQuestion();
+                    } else {
+                        this.endGame();
+                    }
+                },
+
+                loadQuestion() {
+                    this.resetForNewQuestion();
+                    if(this.currentQuestion) {
+                        this.charlieMessage = this.currentQuestion.prompt;
+                        this.userBars = [{ filled: 0 }];
+                    }
+                },
+                
+                endGame() {
+                    this.sessionData.totalTime = Date.now() - this.startTime;
+                    this.gameState = 'endScreen';
+                },
+
+                restart() {
+                    Object.assign(this.$data, this.$options.data.call(this));
+                },
+
+                resetForNewQuestion() {
+                    this.attempts = 0;
+                    this.isSubmitting = false;
+                    this.resetHints();
+                    this.charlieExpression = 'happy';
+                },
+
+                // --- Question Generation ---
+                generateQuizQuestions() {
+                    const configs = {
+                        easy:   { qCount: 5, denoms: [3, 4], maxWhole: 2, types: ['build'] },
+                        medium: { qCount: 8, denoms: [2, 3, 4, 5], maxWhole: 3, types: ['build', 'build'] },
+                        hard:   { qCount: 10, denoms: [3, 4, 5, 6, 8], maxWhole: 4, types: ['build', 'build'] }
+                    };
+                    const config = configs[this.difficulty];
+                    const questions = [];
+
+                    for(let i = 0; i < config.qCount; i++) {
+                        const denominator = config.denoms[Math.floor(Math.random() * config.denoms.length)];
+                        const wholes = Math.floor(Math.random() * (config.maxWhole + 1));
+                        const numerator = Math.floor(Math.random() * denominator);
+                        
+                        if (wholes === 0 && numerator === 0) { i--; continue; } // Avoid 0/x fractions
+                        
+                        questions.push({
+                            prompt: `We need an order for ${wholes > 0 ? wholes : ''} ${wholes > 0 && numerator > 0 ? 'and' : ''} ${numerator > 0 ? `${numerator}/${denominator}` : ''} chocolate bars. Can you build it?`,
+                            fraction: { wholes, numerator, denominator },
+                            answer: { wholes, numerator, denominator }
+                        });
+                    }
+                    this.quizQuestions = questions;
+                },
+
+                // --- User Interaction & Answer Handling ---
+                handleBarUpdate(barIndex, squareIndex) {
+                    // If clicking the currently filled square, unfill to it. Otherwise, fill to it.
+                    const currentFilled = this.userBars[barIndex].filled;
+                    this.userBars[barIndex].filled = (currentFilled === squareIndex) ? squareIndex - 1 : squareIndex;
+                    
+                    // Logic to add/remove bars automatically
+                    const denominator = this.currentQuestion.fraction.denominator;
+                    if(this.userBars[barIndex].filled === denominator && barIndex === this.userBars.length - 1) {
+                         this.userBars.push({ filled: 0 });
+                    }
+                    if(this.userBars[barIndex].filled === 0 && barIndex < this.userBars.length - 1 && this.userBars.length > 1) {
+                         this.userBars.splice(barIndex + 1);
+                    }
+                },
+
+                handleAnswer() {
+                    if(this.isSubmitting) return;
+                    this.isSubmitting = true;
+                    this.attempts++;
+                    
+                    const isCorrect = this.checkAnswer();
+
+                    if (isCorrect) {
+                        this.score++;
+                        this.celebrateSuccess();
+                        setTimeout(() => this.nextQuestion(), 2500);
+                    } else {
+                        this.handleIncorrectAnswer();
+                        setTimeout(() => this.isSubmitting = false, 1000);
+                    }
+                },
+                
+                checkAnswer() {
+                    const correct = this.currentQuestion.answer;
+                    const user = this.userBuiltFraction;
+                    return user.wholes === correct.wholes && user.numerator === correct.numerator;
+                },
+
+                // --- Learning Support & Feedback ---
+                handleIncorrectAnswer() {
+                    this.hintLevel = Math.min(this.hintLevel + 1, 3);
+                    this.charlieExpression = 'thinking';
+                    this.charlieMessage = this.analyzeUserError();
+                    this.showHint = true;
+                    this.provideHint();
+                },
+
+                celebrateSuccess() {
+                    this.charlieExpression = 'celebrating';
+                    this.charlieMessage = "Perfect! That's exactly right!";
+                    this.showCelebration = true;
+                    setTimeout(() => this.showCelebration = false, 3000);
+                },
+
+                resetHints() {
+                    this.showHint = false;
+                    this.hintLevel = 0;
+                    this.currentHint = '';
+                },
+
+                provideHint() {
+                    const question = this.currentQuestion;
+                    const answer = question.answer;
+
+                    switch(this.hintLevel) {
+                        case 1:
+                            this.currentHint = this.getGentleHint();
+                            break;
+                        case 2:
+                             this.currentHint = `You need ${answer.wholes} full bar(s) and ${answer.numerator} extra piece(s).`;
+                            break;
+                        case 3:
+                            this.currentHint = `Let's solve it! We need ${answer.wholes} whole bar(s) and ${answer.numerator}/${answer.denominator}. Click the squares to match!`;
+                            this.charlieExpression = 'encouraging';
+                            break;
+                    }
+                },
+
+                getGentleHint() {
+                    const correct = this.currentQuestion.answer;
+                    const user = this.userBuiltFraction;
+                    if (user.wholes < correct.wholes) return "You might need more whole bars!";
+                    if (user.wholes > correct.wholes) return "Looks like you have too many whole bars.";
+                    if (user.numerator !== correct.numerator) return "Double-check the pieces in the last bar!";
+                    return "Something's not quite right. Try again!";
+                },
+
+                analyzeUserError() {
+                    const gentleHint = this.getGentleHint();
+                    if (this.attempts > 1) {
+                        return "Still not quite right. " + gentleHint;
+                    }
+                    return "Oops! Not quite. " + gentleHint;
+                },
+
+                // --- Analytics ---
+                trackProgress() {
+                    this.sessionData.questionsAttempted++;
+                    if (this.attempts > 1) {
+                        const errorType = this.getGentleHint();
+                        this.sessionData.errorsByType[errorType] = (this.sessionData.errorsByType[errorType] || 0) + 1;
+                    }
+                },
+            },
+            
+            watch: {
+                // Reset user's build when question changes
+                currentQuestionIndex() {
+                    this.userBars = [{ filled: 0 }];
+                }
+            },
+
+            created() {
+                // Set initial message on load
+                this.charlieMessage = 'Welcome to my bake-off! We need to make some very specific chocolate orders. Can you help me learn about fractions?';
+            }
+        });
+
+        // --- Component Definitions ---
+
+        app.component('chocolate-bar', {
+            props: {
+                totalSquares: { type: Number, required: true },
+                filledCount: { type: Number, default: 0 },
+                isInteractive: { type: Boolean, default: false },
+                animateOnChange: { type: Boolean, default: true },
+                size: { type: String, default: 'normal' }
+            },
+            data() { return { animatingSquares: new Set() } },
+            methods: {
+                handleSquareClick(index) {
+                    if (!this.isInteractive) return;
+                    this.animatingSquares.add(index);
+                    setTimeout(() => this.animatingSquares.delete(index), 300);
+                    this.$emit('square-click', index);
+                }
+            },
+            template: '#chocolate-bar-template'
+        });
+
+        app.component('charlie-dialog', {
+            props: ['message', 'expression', 'showHint', 'hintText'],
+            data() {
+                return {
+                    isTyping: false,
+                    displayedMessage: '',
+                    typewriterSpeed: 30,
+                    primaryColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim().substring(1),
+                    secondaryColor: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color').trim().substring(1),
+                }
+            },
+            watch: {
+                message: {
+                    immediate: true,
+                    handler(newMessage) { this.typeMessage(newMessage); }
+                }
+            },
+            methods: {
+                typeMessage(message) {
+                    if (this.typingTimeout) clearTimeout(this.typingTimeout);
+                    this.isTyping = true;
+                    this.displayedMessage = '';
+                    let i = 0;
+                    const type = () => {
+                        if (i < message.length) {
+                            this.displayedMessage += message.charAt(i);
+                            i++;
+                            this.typingTimeout = setTimeout(type, this.typewriterSpeed);
+                        } else {
+                            this.isTyping = false;
+                        }
+                    };
+                    type();
+                }
+            },
+            template: '#charlie-dialog-template'
+        });
+
+        app.component('fraction-display', {
+            props: ['wholes', 'numerator', 'denominator', 'size'],
+            template: '#fraction-display-template'
+        });
+
+        app.component('progress-tracker', {
+            props: ['current', 'total'],
+            computed: {
+                progressPercentage() {
+                    return this.total > 0 ? ((this.current -1) / this.total) * 100 : 0;
+                }
+            },
+            template: '#progress-tracker-template'
+        });
+
+        app.component('celebration-animation', {
+            data() { return { confettiCount: 30 }; },
+            methods: {
+                confettiStyle(c) {
+                    return {
+                        left: `${Math.random() * 100}%`,
+                        backgroundColor: `hsl(${Math.random() * 360}, 70%, 60%)`,
+                        animationDelay: `${Math.random() * 2}s`
+                    };
+                }
+            },
+            template: '#celebration-animation-template'
+        });
+
+        app.mount('#app');
+
+    </script>
+</body>
+</html>
