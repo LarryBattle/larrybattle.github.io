@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Charlie's Fraction Converter Adventure</title>
+    <style>
+        /* --- General Setup & Theming --- */
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap');
+
+        :root {
+            --primary-color: #8e44ad; /* Purple */
+            --secondary-color: #2c3e50; /* Dark Blue */
+            --background-color: #ecf0f1; /* Light Gray */
+            --text-color: #2c3e50;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --error-color: #e74c3c;
+            --step-color: #3498db;
+            --highlight-color: #e8f4fd;
+            --focus-outline: 3px solid var(--primary-color);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, var(--background-color) 0%, #bdc3c7 100%);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 1000px;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            padding: 2rem;
+            border: 3px solid var(--secondary-color);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        button {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            border: none;
+            background: linear-gradient(135deg, var(--primary-color), #9b59b6);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(142, 68, 173, 0.3);
+            /* Removed transform: translateY(-2px); to align better with active state */
+        }
+        button:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 20px rgba(142, 68, 173, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+            box-shadow: none; /* Remove shadow on active state for clarity */
+        }
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        h1, h2 { text-align: center; margin-bottom: 1rem; }
+        h1 { color: var(--secondary-color); font-size: 2.5rem; }
+        h2 { color: var(--primary-color); font-size: 1.8rem; }
+        
+        /* --- Game Screens --- */
+        .screen { padding: 1rem; }
+        .start-screen .mode-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .quiz-screen { display: flex; flex-direction: column; gap: 2rem; }
+        .end-screen { text-align: center; }
+        .end-screen p { font-size: 1.2rem; margin: 1rem 0; }
+
+        /* --- Component: Progress Tracker --- */
+        .progress-tracker {
+            width: 100%;
+            background-color: #ecf0f1;
+            border-radius: 10px;
+            overflow: hidden;
+            height: 35px;
+            border: 2px solid var(--secondary-color);
+            position: relative;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success-color), #2ecc71);
+            transition: width 0.6s ease-in-out;
+        }
+        .progress-text {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            line-height: 31px;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+
+        /* --- Component: Charlie Dialog --- */
+        .charlie-dialog {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 1.5rem;
+            border-radius: 15px;
+            border: 2px solid var(--secondary-color);
+            margin-bottom: 1rem;
+        }
+        .charlie-avatar img {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: 3px solid var(--primary-color);
+            transition: transform 0.3s ease;
+        }
+        .charlie-dialog.expression-excited .charlie-avatar img,
+        .charlie-dialog.expression-happy .charlie-avatar img { /* Default to a slightly happy stance */
+            transform: scale(1.05);
+        }
+        .charlie-dialog.expression-excited .charlie-avatar img {
+            transform: scale(1.1) rotate(5deg);
+        }
+        .speech-bubble { flex-grow: 1; }
+        .speech-bubble p { margin: 0; line-height: 1.6; font-size: 1.1rem; }
+
+        /* --- Main Conversion Area --- */
+        .conversion-workspace {
+            background: var(--highlight-color);
+            border-radius: 15px;
+            padding: 2rem;
+            border: 2px dashed var(--step-color);
+            margin: 1rem 0;
+        }
+
+        .conversion-display {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 2rem;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .fraction-side {
+            text-align: center;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 10px;
+            border: 2px solid var(--secondary-color);
+        }
+
+        .conversion-arrow {
+            font-size: 2rem;
+            color: var(--step-color);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* --- Fraction Display Components --- */
+        .fraction-display {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--secondary-color);
+        }
+        
+        .whole-part {
+            font-size: 3rem;
+            color: var(--primary-color);
+        }
+        
+        .fraction-part {
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+            line-height: 1;
+        }
+        
+        .fraction-line {
+            border-bottom: 4px solid var(--text-color);
+            margin: 0.2rem 0;
+            width: 100%;
+        }
+
+        /* --- Visual Math Steps --- */
+        .math-steps {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            border: 2px solid var(--warning-color);
+            margin-top: 1rem;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            background: var(--highlight-color);
+            border-radius: 8px;
+            border-left: 4px solid var(--step-color);
+            transition: all 0.3s ease;
+        }
+
+        .step.highlight {
+            background: #fff3cd;
+            border-left-color: var(--warning-color);
+            transform: translateX(10px);
+        }
+
+        .step-number {
+            background: var(--step-color);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .step-content {
+            flex-grow: 1;
+            font-size: 1.1rem;
+        }
+
+        .math-equation {
+            font-family: 'Courier New', monospace;
+            background: #f8f9fa;
+            padding: 0.5rem;
+            border-radius: 5px;
+            margin: 0.5rem 0;
+            border-left: 3px solid var(--primary-color);
+        }
+
+        /* --- Interactive Elements --- */
+        .user-input-area {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            border: 2px solid var(--secondary-color);
+            text-align: center;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+
+        .number-input {
+            width: 80px;
+            height: 50px;
+            font-size: 1.5rem;
+            text-align: center;
+            border: 2px solid var(--secondary-color);
+            border-radius: 8px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .number-input:focus {
+            outline: var(--focus-outline);
+            border-color: var(--primary-color);
+            transform: scale(1.05);
+        }
+
+        .input-label {
+            font-weight: bold;
+            color: var(--secondary-color);
+            min-width: 100px;
+        }
+        
+        .placeholder {
+            font-size: 2.5rem;
+            color: #aaa; /* Lighter color for placeholders */
+            font-weight: bold;
+        }
+
+        /* --- Visual Fraction Representation --- */
+        .visual-representation {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .fraction-bar {
+            display: flex;
+            border: 3px solid var(--secondary-color);
+            border-radius: 8px;
+            background: var(--secondary-color);
+            padding: 3px;
+        }
+
+        .fraction-piece {
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--secondary-color);
+            margin: 2px;
+            transition: all 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .fraction-piece.filled {
+            background: var(--primary-color);
+        }
+
+        .fraction-piece.highlight {
+            background: var(--warning-color);
+            animation: glow 1s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 5px var(--warning-color); }
+            to { box-shadow: 0 0 15px var(--warning-color); }
+        }
+
+        /* --- Celebration Animation --- */
+        .celebration-container {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: var(--primary-color); /* Default color */
+            border-radius: 50%;
+            animation: fall 3s ease-out forwards;
+        }
+
+        @keyframes fall {
+            0% { 
+                transform: translateY(-10vh) rotate(0deg); 
+                opacity: 1; 
+            }
+            100% { 
+                transform: translateY(110vh) rotate(720deg); 
+                opacity: 0; 
+            }
+        }
+
+        /* --- Responsive Design --- */
+        @media (max-width: 768px) {
+            .conversion-display {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .conversion-arrow {
+                transform: rotate(90deg);
+            }
+            
+            .fraction-display {
+                font-size: 2rem;
+            }
+            
+            .whole-part {
+                font-size: 2.5rem;
+            }
+            
+            .start-screen .mode-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .charlie-dialog {
+                flex-direction: column;
+                text-align: center;
+            }
+            .charlie-avatar {
+                margin-bottom: 1rem;
+            }
+        }
+
+        /* --- Accessibility --- */
+        @media (prefers-reduced-motion: reduce) {
+            .conversion-arrow,
+            .confetti,
+            .step.highlight {
+                animation: none;
+            }
+            
+            .fraction-piece.highlight {
+                animation: none;
+                background: var(--warning-color);
+            }
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-style: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Start Screen -->
+        <div v-if="gameState === 'start'" class="screen start-screen">
+            <h1>Charlie's Fraction Converter</h1>
+            <charlie-dialog 
+                message="Welcome to my conversion kitchen! I need help converting between improper fractions and mixed numbers. Want to learn the magic behind fraction conversions?"
+                expression="happy">
+            </charlie-dialog>
+            <div class="mode-buttons">
+                <button @click="startGame('improperToMixed')">
+                    Improper → Mixed<br>
+                    <small>(like 7/3 → 2⅓)</small>
+                </button>
+                <button @click="startGame('mixedToImproper')">
+                    Mixed → Improper<br>
+                    <small>(like 2⅓ → 7/3)</small>
+                </button>
+                <button @click="startGame('both')">
+                    Both Directions<br>
+                    <small>(mixed practice)</small>
+                </button>
+            </div>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div v-if="gameState === 'quiz'" class="screen quiz-screen">
+            <progress-tracker 
+                :current="currentQuestionIndex + 1" 
+                :total="questions.length">
+            </progress-tracker>
+            
+            <charlie-dialog 
+                :message="charlieMessage"
+                :expression="charlieExpression">
+            </charlie-dialog>
+
+            <div class="conversion-workspace">
+                <h2>{{ currentQuestion.direction === 'improperToMixed' ? 'Convert to Mixed Number' : 'Convert to Improper Fraction' }}</h2>
+                
+                <div class="conversion-display">
+                    <div class="fraction-side">
+                        <h3>Given:</h3>
+                        <fraction-display 
+                            v-if="currentQuestion.direction === 'improperToMixed'"
+                            :numerator="currentQuestion.improper.numerator"
+                            :denominator="currentQuestion.improper.denominator"
+                            type="improper">
+                        </fraction-display>
+                        <fraction-display 
+                            v-else
+                            :whole="currentQuestion.mixed.whole"
+                            :numerator="currentQuestion.mixed.numerator"
+                            :denominator="currentQuestion.mixed.denominator"
+                            type="mixed">
+                        </fraction-display>
+                    </div>
+                    
+                    <div class="conversion-arrow">→</div>
+                    
+                    <div class="fraction-side">
+                        <h3>Convert to:</h3>
+                        <div v-if="showAnswer">
+                            <fraction-display 
+                                v-if="currentQuestion.direction === 'improperToMixed'"
+                                :whole="currentQuestion.mixed.whole"
+                                :numerator="currentQuestion.mixed.numerator"
+                                :denominator="currentQuestion.mixed.denominator"
+                                type="mixed">
+                            </fraction-display>
+                            <fraction-display 
+                                v-else
+                                :numerator="currentQuestion.improper.numerator"
+                                :denominator="currentQuestion.improper.denominator"
+                                type="improper">
+                            </fraction-display>
+                        </div>
+                        <div v-else class="placeholder">?</div>
+                    </div>
+                </div>
+
+                <!-- Visual Representation -->
+                <visual-representation 
+                    :numerator="currentQuestion.direction === 'improperToMixed' ? currentQuestion.improper.numerator : currentQuestion.improper.numerator"
+                    :denominator="currentQuestion.direction === 'improperToMixed' ? currentQuestion.improper.denominator : currentQuestion.improper.denominator"
+                    :highlight-groups="visualHighlight">
+                </visual-representation>
+
+                <!-- Math Steps -->
+                <div v-if="showSteps" class="math-steps">
+                    <h3>Step-by-Step Solution:</h3>
+                    <math-steps 
+                        :question="currentQuestion"
+                        :current-step="currentStep">
+                    </math-steps>
+                </div>
+
+                <!-- User Input -->
+                <div class="user-input-area">
+                    <h3>Your Answer:</h3>
+                    <user-input 
+                        :direction="currentQuestion.direction"
+                        v-model:whole="userAnswer.whole"
+                        v-model:numerator="userAnswer.numerator"
+                        v-model:denominator="userAnswer.denominator">
+                    </user-input>
+                </div>
+            </div>
+
+            <div style="text-align: center; display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+                <button @click="checkAnswer" :disabled="!isAnswerComplete">Check Answer</button>
+                <button @click="showSteps = !showSteps">{{ showSteps ? 'Hide' : 'Show' }} Steps</button>
+                <button @click="provideHint" :disabled="hintLevel >= 3">💡 Hint</button>
+            </div>
+        </div>
+        
+        <!-- End Screen -->
+        <div v-if="gameState === 'end'" class="screen end-screen">
+            <charlie-dialog 
+                message="Fantastic work! You've mastered fraction conversions. You're ready to tackle any fraction that comes your way!"
+                expression="excited">
+            </charlie-dialog>
+            <h2>Conversion Master!</h2>
+            <p>Your Score: {{ score }} / {{ questions.length }}</p>
+            <p>Accuracy: {{ Math.round((score / questions.length) * 100) }}%</p>
+            <button @click="restart">Convert More Fractions</button>
+        </div>
+
+        <!-- Celebration Animation -->
+        <celebration-animation v-if="showCelebration"></celebration-animation>
+    </div>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script>
+        const { createApp, ref, computed, watch } = Vue;
+
+        const app = createApp({
+            data() {
+                return {
+                    gameState: 'start', // start, quiz, end
+                    gameMode: null, // improperToMixed, mixedToImproper, both
+                    questions: [],
+                    currentQuestionIndex: 0,
+                    score: 0,
+                    attempts: 0,
+                    
+                    userAnswer: {
+                        whole: null,
+                        numerator: null,
+                        denominator: null
+                    },
+                    
+                    showSteps: false,
+                    showAnswer: false,
+                    currentStep: 0, // Index for step-by-step hints
+                    hintLevel: 0,
+                    
+                    charlieMessage: '',
+                    charlieExpression: 'happy',
+                    showCelebration: false,
+                    visualHighlight: [] // Array to store indices for visual highlighting
+                }
+            },
+            
+            computed: {
+                currentQuestion() {
+                    return this.questions[this.currentQuestionIndex];
+                },
+                
+                isAnswerComplete() {
+                    if (!this.currentQuestion) return false;
+                    
+                    if (this.currentQuestion.direction === 'improperToMixed') {
+                        return this.userAnswer.whole !== null && 
+                               this.userAnswer.numerator !== null && 
+                               this.userAnswer.denominator !== null;
+                    } else {
+                        // For mixedToImproper, we only need numerator and denominator
+                        return this.userAnswer.numerator !== null && 
+                               this.userAnswer.denominator !== null;
+                    }
+                }
+            },
+
+            methods: {
+                startGame(mode) {
+                    this.gameMode = mode;
+                    this.generateQuestions();
+                    this.gameState = 'quiz';
+                    this.loadQuestion();
+                },
+
+                generateQuestions() {
+                    const questions = [];
+                    const questionCount = 8; // Number of questions per game
+                    
+                    for (let i = 0; i < questionCount; i++) {
+                        let direction;
+                        if (this.gameMode === 'both') {
+                            direction = Math.random() < 0.5 ? 'improperToMixed' : 'mixedToImproper';
+                        } else {
+                            direction = this.gameMode;
+                        }
+                        
+                        // Generate a mixed number first for consistency
+                        const whole = Math.floor(Math.random() * 4) + 1; // Whole number from 1 to 4
+                        const denominator = [2, 3, 4, 5, 6, 8][Math.floor(Math.random() * 6)]; // Common denominators
+                        const numerator = Math.floor(Math.random() * (denominator - 1)) + 1; // Numerator < Denominator
+                        
+                        // Calculate the corresponding improper fraction
+                        const improperNumerator = (whole * denominator) + numerator;
+                        
+                        questions.push({
+                            direction,
+                            mixed: { whole, numerator, denominator },
+                            improper: { numerator: improperNumerator, denominator }
+                        });
+                    }
+                    
+                    this.questions = questions;
+                },
+
+                loadQuestion() {
+                    this.resetQuestionState();
+                    if (this.currentQuestion) {
+                        if (this.currentQuestion.direction === 'improperToMixed') {
+                            this.charlieMessage = `Let's convert ${this.currentQuestion.improper.numerator}/${this.currentQuestion.improper.denominator} to a mixed number!`;
+                        } else {
+                            this.charlieMessage = `Now let's convert ${this.currentQuestion.mixed.whole} ${this.currentQuestion.mixed.numerator}/${this.currentQuestion.mixed.denominator} to an improper fraction!`;
+                        }
+                    }
+                },
+
+                resetQuestionState() {
+                    this.userAnswer = { whole: null, numerator: null, denominator: null };
+                    this.showSteps = false;
+                    this.showAnswer = false;
+                    this.currentStep = 0;
+                    this.hintLevel = 0;
+                    this.attempts = 0;
+                    this.charlieExpression = 'happy';
+                    this.visualHighlight = [];
+                },
+
+                checkAnswer() {
+                    this.attempts++; // Increment attempts for this question
+                    let isCorrect = false;
+                    
+                    if (this.currentQuestion.direction === 'improperToMixed') {
+                        isCorrect = this.userAnswer.whole === this.currentQuestion.mixed.whole &&
+                                   this.userAnswer.numerator === this.currentQuestion.mixed.numerator &&
+                                   this.userAnswer.denominator === this.currentQuestion.mixed.denominator;
+                    } else { // mixedToImproper
+                        isCorrect = this.userAnswer.numerator === this.currentQuestion.improper.numerator &&
+                                   this.userAnswer.denominator === this.currentQuestion.improper.denominator;
+                    }
+                    
+                    if (isCorrect) {
+                        this.score++;
+                        this.celebrateSuccess();
+                        setTimeout(() => this.nextQuestion(), 2500); // Delay before moving to the next question
+                    } else {
+                        this.handleIncorrectAnswer();
+                    }
+                },
+
+                celebrateSuccess() {
+                    this.charlieExpression = 'excited';
+                    this.charlieMessage = "Perfect! You've got the conversion down!";
+                    this.showAnswer = true; // Reveal correct answer on success
+                    this.showCelebration = true;
+                    setTimeout(() => this.showCelebration = false, 3000); // Hide celebration after 3 seconds
+                },
+
+                handleIncorrectAnswer() {
+                    this.charlieExpression = 'thinking';
+                    this.charlieMessage = "Not quite right. Let me help you understand the process!";
+                    this.hintLevel++; // Increase hint level
+                    this.showSteps = true; // Automatically show steps on incorrect answer
+                    if (this.hintLevel === 3) { // If they've failed multiple times, reveal the answer
+                        this.showAnswer = true;
+                    }
+                },
+
+                provideHint() {
+                    this.hintLevel++;
+                    
+                    switch (this.hintLevel) {
+                        case 1:
+                            this.charlieMessage = "Think about the math steps involved. Division and multiplication are key!";
+                            this.currentStep = 0; // Show the first step
+                            break;
+                        case 2:
+                            this.showSteps = true;
+                            this.charlieMessage = "Let me show you the step-by-step process!";
+                            this.currentStep = 1; // Show the second step
+                            break;
+                        case 3:
+                            this.showAnswer = true;
+                            this.charlieMessage = "Here's the answer! Study how we got there.";
+                            // The correct answer is already revealed via showAnswer, no need to increment currentStep further
+                            break;
+                    }
+                },
+
+                nextQuestion() {
+                    if (this.currentQuestionIndex < this.questions.length - 1) {
+                        this.currentQuestionIndex++;
+                        this.loadQuestion();
+                    } else {
+                        this.endGame();
+                    }
+                },
+
+                endGame() {
+                    this.gameState = 'end';
+                },
+
+                restart() {
+                    // Reset all data properties to their initial state
+                    Object.assign(this.$data, this.$options.data.call(this));
+                }
+            },
+
+            created() {
+                // Set initial welcome message
+                this.charlieMessage = "Welcome to my conversion kitchen! I need help converting between improper fractions and mixed numbers. Want to learn the magic behind fraction conversions?";
+            }
+        });
+
+        // --- Component Definitions ---
+
+        // Charlie Dialog Component
+        app.component('charlie-dialog', {
+            props: ['message', 'expression'],
+            computed: {
+                // Dynamically set avatar color based on expression
+                avatarColor() {
+                    switch (this.expression) {
+                        case 'excited': return 'ff6b35'; // Orange
+                        case 'thinking': return 'f39c12'; // Yellow/Orange
+                        case 'happy':
+                        default: return '8e44ad'; // Purple
+                    }
+                }
+            },
+            template: `
+                <div class="charlie-dialog" :class="'expression-' + expression">
+                    <div class="charlie-avatar">
+                        <img :src="'https://placehold.co/100x100/' + avatarColor + '/ffffff/png?text=C'" :alt="'Charlie with ' + expression + ' expression'">
+                    </div>
+                    <div class="speech-bubble">
+                        <p>{{ message }}</p>
+                    </div>
+                </div>
+            `
+        });
+
+        // Fraction Display Component
+        app.component('fraction-display', {
+            props: ['whole', 'numerator', 'denominator', 'type'],
+            template: `
+                <div class="fraction-display">
+                    <!-- Display whole number if it exists and is greater than 0 -->
+                    <div v-if="whole && whole > 0" class="whole-part">{{ whole }}</div>
+                    <div class="fraction-part">
+                        <span class="numerator">{{ numerator }}</span>
+                        <span class="fraction-line"></span>
+                        <span class="denominator">{{ denominator }}</span>
+                    </div>
+                </div>
+            `
+        });
+
+        // Visual Representation Component
+        app.component('visual-representation', {
+            props: ['numerator', 'denominator', 'highlightGroups'],
+            computed: {
+                bars() {
+                    const totalBars = Math.ceil(this.numerator / this.denominator);
+                    const bars = [];
+                    
+                    for (let i = 0; i < totalBars; i++) {
+                        const startPiece = i * this.denominator;
+                        const pieces = [];
+                        
+                        for (let j = 0; j < this.denominator; j++) {
+                            const pieceIndex = startPiece + j;
+                            pieces.push({
+                                filled: pieceIndex < this.numerator,
+                                highlight: this.highlightGroups.includes(pieceIndex) // Check if this piece should be highlighted
+                            });
+                        }
+                        
+                        bars.push(pieces);
+                    }
+                    
+                    return bars;
+                }
+            },
+            template: `
+                <div class="visual-representation">
+                    <div v-for="(bar, barIndex) in bars" :key="barIndex" class="fraction-bar">
+                        <div 
+                            v-for="(piece, pieceIndex) in bar" 
+                            :key="pieceIndex" 
+                            class="fraction-piece"
+                            :class="{ 
+                                filled: piece.filled, 
+                                highlight: piece.highlight 
+                            }">
+                        </div>
+                    </div>
+                </div>
+            `
+        });
+
+        // Math Steps Component
+        app.component('math-steps', {
+            props: ['question', 'currentStep'], // currentStep determines which step to highlight
+            computed: {
+                steps() {
+                    if (this.question.direction === 'improperToMixed') {
+                        return [
+                            {
+                                title: 'Divide numerator by denominator',
+                                content: `${this.question.improper.numerator} ÷ ${this.question.improper.denominator} = ${this.question.mixed.whole} remainder ${this.question.mixed.numerator}`,
+                                equation: `${this.question.improper.numerator} ÷ ${this.question.improper.denominator} = ${this.question.mixed.whole} R ${this.question.mixed.numerator}`
+                            },
+                            {
+                                title: 'The quotient is the whole number',
+                                content: `Whole number = ${this.question.mixed.whole}`,
+                                equation: `Whole = ${this.question.mixed.whole}`
+                            },
+                            {
+                                title: 'The remainder is the new numerator',
+                                content: `New numerator = ${this.question.mixed.numerator}`,
+                                equation: `Numerator = ${this.question.mixed.numerator}`
+                            },
+                            {
+                                title: 'The denominator stays the same',
+                                content: `Denominator = ${this.question.mixed.denominator}`,
+                                equation: `Final answer: ${this.question.mixed.whole} ${this.question.mixed.numerator}/${this.question.mixed.denominator}`
+                            }
+                        ];
+                    } else { // mixedToImproper
+                        return [
+                            {
+                                title: 'Multiply whole number by denominator',
+                                content: `${this.question.mixed.whole} × ${this.question.mixed.denominator} = ${this.question.mixed.whole * this.question.mixed.denominator}`,
+                                equation: `${this.question.mixed.whole} × ${this.question.mixed.denominator} = ${this.question.mixed.whole * this.question.mixed.denominator}`
+                            },
+                            {
+                                title: 'Add the original numerator',
+                                content: `${this.question.mixed.whole * this.question.mixed.denominator} + ${this.question.mixed.numerator} = ${this.question.improper.numerator}`,
+                                equation: `${this.question.mixed.whole * this.question.mixed.denominator} + ${this.question.mixed.numerator} = ${this.question.improper.numerator}`
+                            },
+                            {
+                                title: 'Keep the same denominator',
+                                content: `Denominator stays ${this.question.mixed.denominator}`,
+                                equation: `Final answer: ${this.question.improper.numerator}/${this.question.improper.denominator}`
+                            }
+                        ];
+                    }
+                }
+            },
+            template: `
+                <div>
+                    <div v-for="(step, index) in steps" :key="index" class="step" :class="{ highlight: index === currentStep }">
+                        <div class="step-number">{{ index + 1 }}</div>
+                        <div class="step-content">
+                            <strong>{{ step.title }}</strong>
+                            <div class="math-equation">{{ step.equation }}</div>
+                            <em>{{ step.content }}</em>
+                        </div>
+                    </div>
+                </div>
+            `
+        });
+
+        // User Input Component
+        app.component('user-input', {
+            props: ['direction', 'whole', 'numerator', 'denominator'],
+            emits: ['update:whole', 'update:numerator', 'update:denominator'],
+            template: `
+                <div>
+                    <div v-if="direction === 'improperToMixed'" class="input-group">
+                        <label class="input-label">Whole Number:</label>
+                        <input 
+                            type="number" 
+                            class="number-input" 
+                            :value="whole"
+                            @input="$emit('update:whole', parseInt($event.target.value) || null)"
+                            placeholder="?"
+                            min="0"> <!-- Ensure whole number is non-negative -->
+                        
+                        <label class="input-label">Numerator:</label>
+                        <input 
+                            type="number" 
+                            class="number-input" 
+                            :value="numerator"
+                            @input="$emit('update:numerator', parseInt($event.target.value) || null)"
+                            placeholder="?"
+                            min="0"> <!-- Ensure numerator is non-negative -->
+                        
+                        <label class="input-label">Denominator:</label>
+                        <input 
+                            type="number" 
+                            class="number-input" 
+                            :value="denominator"
+                            @input="$emit('update:denominator', parseInt($event.target.value) || null)"
+                            placeholder="?"
+                            min="1"> <!-- Denominator must be at least 1 -->
+                    </div>
+                    
+                    <div v-else class="input-group"> <!-- Mixed to Improper -->
+                        <label class="input-label">Numerator:</label>
+                        <input 
+                            type="number" 
+                            class="number-input" 
+                            :value="numerator"
+                            @input="$emit('update:numerator', parseInt($event.target.value) || null)"
+                            placeholder="?"
+                            min="1"> <!-- Numerator must be positive for improper fraction -->
+                        
+                        <label class="input-label">Denominator:</label>
+                        <input 
+                            type="number" 
+                            class="number-input" 
+                            :value="denominator"
+                            @input="$emit('update:denominator', parseInt($event.target.value) || null)"
+                            placeholder="?"
+                            min="1"> <!-- Denominator must be at least 1 -->
+                    </div>
+                </div>
+            `
+        });
+
+        // Progress Tracker Component
+        app.component('progress-tracker', {
+            props: ['current', 'total'],
+            computed: {
+                progressPercentage() {
+                    return this.total > 0 ? (this.current / this.total) * 100 : 0;
+                }
+            },
+            template: `
+                <div class="progress-tracker" role="progressbar" :aria-valuenow="current" :aria-valuemin="1" :aria-valuemax="total">
+                    <div class="progress-bar" :style="{ width: progressPercentage + '%' }"></div>
+                    <div class="progress-text">{{ current }} / {{ total }}</div>
+                </div>
+            `
+        });
+
+        // Celebration Animation Component
+        app.component('celebration-animation', {
+            data() {
+                return { confettiCount: 25 }; // Number of confetti pieces
+            },
+            methods: {
+                confettiStyle(c) {
+                    return {
+                        left: `${Math.random() * 100}%`, // Random horizontal position
+                        backgroundColor: `hsl(${Math.random() * 360}, 70%, 60%)`, // Random color
+                        animationDelay: `${Math.random() * 2}s` // Staggered animation start
+                    };
+                }
+            },
+            template: `
+                <div class="celebration-container" aria-hidden="true">
+                    <div 
+                        v-for="c in confettiCount" 
+                        :key="c"
+                        class="confetti"
+                        :style="confettiStyle(c)">
+                    </div>
+                </div>
+            `
+        });
+
+        // Mount the Vue app
+        app.mount('#app');
+    </script>
+</body>
+</html>
