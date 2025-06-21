@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraction Fun with Pizza!</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        /* Adds a standard Vue directive to prevent "flash of un-styled content" */
+        [v-cloak] {
+            display: none;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #app {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #e67e22;
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+        }
+        
+        h2 {
+            color: #f39c12;
+            font-size: 2.2rem;
+            margin: 20px 0;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            gap: 10px;
+        }
+
+        .step-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ddd;
+        }
+
+        .step-dot.active { background: #e67e22; }
+        .step-dot.completed { background: #27ae60; }
+
+        p {
+            font-size: 1.4rem;
+            line-height: 1.6;
+            margin: 15px 0;
+        }
+
+        .pizza-playground {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+        }
+
+        .pizza-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+
+        .pizza {
+            width: 200px;
+            height: 200px;
+            border: 6px solid #d35400;
+            background: #f1c40f;
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+
+        .pizza-slice {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+
+        .slice {
+            position: absolute;
+            background: #e74c3c;
+            border: 2px solid #c0392b;
+            width: 50%;
+            height: 50%;
+            transform-origin: 100% 100%;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .number-control {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .number-display {
+            font-size: 4rem;
+            font-weight: bold;
+            color: #2c3e50;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-btn {
+            width: 50px;
+            height: 50px;
+            border: none;
+            border-radius: 50%;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .control-btn.minus {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .control-btn.plus {
+            background: #27ae60;
+            color: white;
+        }
+
+        .control-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .fraction-display {
+            font-size: 4rem;
+            font-weight: bold;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+        }
+
+        .fraction {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .numerator, .denominator {
+            font-size: 4rem;
+            line-height: 1;
+            padding: 10px 20px;
+        }
+
+        .fraction-line {
+            width: 120px;
+            height: 4px;
+            background: #2c3e50;
+            margin: 5px 0;
+        }
+
+        .explanation {
+            background: #e8f6ff;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 5px solid #3498db;
+        }
+
+        button {
+            background: #2ecc71;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.3rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 10px;
+        }
+
+        button:hover:not(:disabled) {
+            background: #27ae60;
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        button.secondary {
+            background: #3498db;
+        }
+
+        button.secondary:hover:not(:disabled) {
+            background: #2980b9;
+        }
+
+        .quiz-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+        }
+
+        .quiz-options {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+
+        .quiz-option {
+            background: white;
+            border: 3px solid #3498db;
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 100px;
+        }
+
+        .quiz-option:hover:not(.disabled) {
+            background: #3498db;
+            color: white;
+            transform: translateY(-3px);
+        }
+
+        .quiz-option.selected {
+            background: #3498db;
+            color: white;
+        }
+
+        .quiz-option.correct {
+            background: #27ae60 !important;
+            border-color: #27ae60 !important;
+            color: white;
+        }
+
+        .quiz-option.incorrect {
+            background: #e74c3c !important;
+            border-color: #e74c3c !important;
+            color: white;
+        }
+
+        /* Improved: A class to disable clicking other options after one is selected */
+        .quiz-option.disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .feedback {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 15px;
+        }
+
+        .feedback.correct {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #27ae60;
+        }
+
+        .feedback.incorrect {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #e74c3c;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #ddd;
+            border-radius: 5px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #27ae60;
+            transition: width 0.5s ease;
+        }
+
+        .mastery-check {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .celebration {
+            font-size: 5rem;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-20px); }
+            60% { transform: translateY(-10px); }
+        }
+
+        .test-mode {
+            background: #f0f0f0;
+            border: 3px solid #666;
+        }
+
+        .learn-mode {
+            background: #e8f6ff;
+            border: 3px solid #3498db;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app" v-cloak>
+    <h1>🍕 Fraction Fun with Pizza! 🍕</h1>
+    
+    <!-- Progress Indicator -->
+    <div class="step-indicator">
+        <div class="step-dot" :class="{ active: step === 'intro', completed: completedSteps.includes('intro') }"></div>
+        <div class="step-dot" :class="{ active: step === 'explore', completed: completedSteps.includes('explore') }"></div>
+        <div class="step-dot" :class="{ active: step === 'practice', completed: completedSteps.includes('practice') }"></div>
+        <div class="step-dot" :class="{ active: step === 'mastery', completed: completedSteps.includes('mastery') }"></div>
+        <div class="step-dot" :class="{ active: step === 'test', completed: completedSteps.includes('test') }"></div>
+    </div>
+
+    <!-- Introduction -->
+    <div v-if="step === 'intro'">
+        <h2>Welcome, Pizza Chef! 👨‍🍳</h2>
+        <p>Let's learn about fractions using delicious pizza! 🍕</p>
+        
+        <div class="pizza-playground">
+            <p><strong>A fraction has two parts:</strong></p>
+            <div class="fraction-display">
+                <div class="fraction">
+                    <div class="numerator" style="color: #e74c3c;">3</div>
+                    <div class="fraction-line"></div>
+                    <div class="denominator" style="color: #3498db;">4</div>
+                </div>
+                <div>=</div>
+                <div class="pizza">
+                    <div class="pizza-slice">
+                        <div class="slice" style="transform: rotate(0deg);"></div>
+                        <div class="slice" style="transform: rotate(90deg);"></div>
+                        <div class="slice" style="transform: rotate(180deg);"></div>
+                    </div>
+                    <span style="position: relative; z-index: 10;">🍕</span>
+                </div>
+            </div>
+            
+            <div class="explanation">
+                <p><strong style="color: #3498db;">Bottom number (Denominator)</strong>: How many equal slices the whole pizza is cut into.</p>
+                <p><strong style="color: #e74c3c;">Top number (Numerator)</strong>: How many of those slices we have.</p>
+            </div>
+        </div>
+        
+        <button @click="nextStep">Let's explore fractions! 🚀</button>
+    </div>
+
+    <!-- Interactive Exploration -->
+    <div v-if="step === 'explore'">
+        <h2>Let's Play with Fractions! 🎮</h2>
+        <p>Change the numbers and watch what happens to your pizza!</p>
+        
+        <div class="pizza-playground">
+            <div class="controls">
+                <div class="number-control">
+                    <label style="font-size: 1.2rem; font-weight: bold; color: #e74c3c;">Numerator (Slices you have)</label>
+                    <div class="number-display" style="color: #e74c3c;">{{ numerator }}</div>
+                    <div class="control-buttons">
+                        <button class="control-btn minus" @click="changeNumerator(-1)" :disabled="numerator <= 0">−</button>
+                        <button class="control-btn plus" @click="changeNumerator(1)" :disabled="numerator >= 12">+</button>
+                    </div>
+                </div>
+
+                <div class="fraction-display">
+                    <div class="fraction">
+                        <div class="numerator" style="color: #e74c3c;">{{ numerator }}</div>
+                        <div class="fraction-line"></div>
+                        <div class="denominator" style="color: #3498db;">{{ denominator }}</div>
+                    </div>
+                </div>
+
+                <div class="number-control">
+                    <label style="font-size: 1.2rem; font-weight: bold; color: #3498db;">Denominator (Slices per pizza)</label>
+                    <div class="number-display" style="color: #3498db;">{{ denominator }}</div>
+                    <div class="control-buttons">
+                        <button class="control-btn minus" @click="changeDenominator(-1)" :disabled="denominator <= 1">−</button>
+                        <button class="control-btn plus" @click="changeDenominator(1)" :disabled="denominator >= 8">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pizza-container">
+                <div v-for="pizza in pizzasNeeded" :key="pizza" class="pizza">
+                    <div class="pizza-slice">
+                        <div v-for="slice in getSlicesForPizza(pizza)" 
+                             :key="slice" 
+                             class="slice" 
+                             :style="{ transform: `rotate(${(slice-1) * (360/denominator)}deg) skewY(${denominator > 2 ? (90 - 360/denominator) : 0}deg)` }">
+                        </div>
+                    </div>
+                    <span style="position: relative; z-index: 10;">🍕</span>
+                </div>
+            </div>
+
+            <div class="explanation">
+                <p v-if="numerator < denominator && numerator > 0">
+                    <strong>Proper Fraction!</strong> You have less than one whole pizza. 
+                    ({{ numerator }} slices out of {{ denominator }} total slices)
+                </p>
+                <p v-else-if="numerator === 0">
+                    <strong>Zero!</strong> You have no slices at all.
+                </p>
+                <p v-else-if="numerator === denominator">
+                    <strong>Whole Number!</strong> You have exactly one complete pizza! 
+                    ({{ numerator }}/{{ denominator }} = 1 whole pizza)
+                </p>
+                <p v-else>
+                    <strong>Improper Fraction!</strong> You have more than one whole pizza! 
+                    ({{ numerator }} slices = {{ Math.floor(numerator/denominator) }} whole pizza{{ Math.floor(numerator/denominator) > 1 ? 's' : '' }} + {{ numerator % denominator }} extra slice{{ (numerator % denominator) !== 1 ? 's' : '' }})
+                </p>
+            </div>
+
+            <div class="mastery-check" v-if="explorationCount >= 5">
+                <p><strong>Great exploring! 🎉</strong> You've tried {{ explorationCount }} different fractions!</p>
+                <p>Ready to test your understanding?</p>
+                <button @click="nextStep">I understand fractions! 💪</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Practice Mode -->
+    <div v-if="step === 'practice'">
+        <h2>Practice Time! 📚</h2>
+        <div class="quiz-section learn-mode">
+            <p>Question {{ currentQuestionIndex + 1 }} of {{ practiceQuestions.length }}</p>
+            <div class="progress-bar">
+                <div class="progress-fill" :style="{ width: practiceProgress + '%' }"></div>
+            </div>
+            
+            <div v-if="!practiceComplete">
+                <p style="font-size: 1.5rem;">{{ currentQuestion.text }}</p>
+                
+                <div class="pizza-container">
+                    <div v-for="pizza in Math.ceil(currentQuestion.visual.numerator / currentQuestion.visual.denominator) || 1" :key="pizza" class="pizza">
+                        <div class="pizza-slice">
+                            <div v-for="slice in getSlicesForQuestionPizza(currentQuestion, pizza)" 
+                                 :key="slice" 
+                                 class="slice" 
+                                 :style="{ transform: `rotate(${(slice-1) * (360/currentQuestion.visual.denominator)}deg) skewY(${currentQuestion.visual.denominator > 2 ? (90 - 360/currentQuestion.visual.denominator) : 0}deg)` }">
+                            </div>
+                        </div>
+                        <span style="position: relative; z-index: 10;">🍕</span>
+                    </div>
+                </div>
+
+                <div class="quiz-options">
+                    <div v-for="option in currentQuestion.options" 
+                         :key="option"
+                         class="quiz-option"
+                         :class="[getOptionClass(option), { 'disabled': selectedOption }]"
+                         @click="selectOption(option)">
+                        <div style="font-size: 2rem;">{{ option }}</div>
+                    </div>
+                </div>
+
+                <div v-if="feedback" class="feedback" :class="feedback.type">
+                    {{ feedback.message }}
+                </div>
+
+                <button v-if="selectedOption" @click="nextQuestion">Next Question ➡️</button>
+            </div>
+            
+            <div v-else>
+                <div class="celebration">🎉</div>
+                <h2>Great practice!</h2>
+                <p>You got {{ practiceScore }} out of {{ practiceQuestions.length }} correct!</p>
+                <div v-if="practiceScore >= practiceQuestions.length * 0.7">
+                    <button @click="nextStep">Ready for the test! 🎯</button>
+                </div>
+                <div v-else>
+                    <p>You're getting there! Let's review the basics one more time to build your confidence.</p>
+                    <button @click="step = 'explore'" class="secondary">Explore and Learn More 📚</button>
+                    <button @click="restartPractice">Try Practice Again 🔄</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mastery Check -->
+    <div v-if="step === 'mastery'">
+        <h2>Understanding Check ✓</h2>
+        <div class="mastery-check">
+            <p><strong>Before the test, let's confirm you've got the key ideas!</strong></p>
+            
+            <div v-if="!masteryComplete">
+                <p>{{ masteryQuestions[masteryIndex].question }}</p>
+                
+                <div v-if="masteryQuestions[masteryIndex].type === 'multiple-choice'">
+                    <div class="quiz-options">
+                        <div v-for="option in masteryQuestions[masteryIndex].options" 
+                             :key="option"
+                             class="quiz-option"
+                             :class="[getMasteryOptionClass(option), { 'disabled': masterySelected }]"
+                             @click="selectMasteryOption(option)">
+                            {{ option }}
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="masteryFeedback" class="feedback" :class="masteryFeedback.type">
+                    {{ masteryFeedback.message }}
+                </div>
+
+                <button v-if="masterySelected" @click="nextMasteryQuestion">Next ➡️</button>
+            </div>
+            
+            <div v-else>
+                <div v-if="masteryScore >= masteryQuestions.length">
+                    <div class="celebration">🏆</div>
+                    <h2>Perfect! You're ready for the test!</h2>
+                    <button @click="nextStep">Take the test! 🎯</button>
+                </div>
+                <div v-else>
+                    <p>Almost there! Let's explore a bit more to build your confidence.</p>
+                    <button @click="step = 'explore'" class="secondary">Practice more 📚</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Mode -->
+    <div v-if="step === 'test'">
+        <h2>Final Test! 🎯</h2>
+        <div class="quiz-section test-mode">
+            <p><strong>No hints this time! Show what you've learned!</strong></p>
+            <p>Question {{ testQuestionIndex + 1 }} of {{ testQuestions.length }}</p>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" :style="{ width: testProgress + '%' }"></div>
+            </div>
+            
+            <div v-if="!testComplete">
+                <p style="font-size: 1.5rem;">{{ currentTestQuestion.text }}</p>
+                
+                <div class="pizza-container">
+                    <div v-for="pizza in Math.ceil(currentTestQuestion.visual.numerator / currentTestQuestion.visual.denominator) || 1" :key="pizza" class="pizza">
+                        <div class="pizza-slice">
+                             <div v-for="slice in getSlicesForQuestionPizza(currentTestQuestion, pizza)" 
+                                 :key="slice" 
+                                 class="slice" 
+                                 :style="{ transform: `rotate(${(slice-1) * (360/currentTestQuestion.visual.denominator)}deg) skewY(${currentTestQuestion.visual.denominator > 2 ? (90 - 360/currentTestQuestion.visual.denominator) : 0}deg)` }">
+                            </div>
+                        </div>
+                        <span style="position: relative; z-index: 10;">🍕</span>
+                    </div>
+                </div>
+
+                <div class="quiz-options">
+                    <div v-for="option in currentTestQuestion.options" 
+                         :key="option"
+                         class="quiz-option"
+                         :class="{ selected: testSelectedOption === option }"
+                         @click="selectTestOption(option)">
+                        <div style="font-size: 2rem;">{{ option }}</div>
+                    </div>
+                </div>
+
+                <button @click="nextTestQuestion" :disabled="!testSelectedOption">Next Question ➡️</button>
+            </div>
+            
+            <div v-else>
+                <div class="celebration">🎖️</div>
+                <h2>Test Complete!</h2>
+                <p style="font-size: 2rem;">Score: {{ testScore }} / {{ testQuestions.length }}</p>
+                <p v-if="testScore >= testQuestions.length * 0.8" style="color: #27ae60; font-size: 1.5rem;">
+                    <strong>Excellent! You're a Fraction Master! 🏆</strong>
+                </p>
+                <p v-else-if="testScore >= testQuestions.length * 0.6" style="color: #f39c12; font-size: 1.5rem;">
+                    <strong>Good job! A little more practice and you'll be an expert! 📚</strong>
+                </p>
+                <p v-else style="color: #e74c3c; font-size: 1.5rem;">
+                    <strong>No worries! The best chefs practice every day. Let's try again! 💪</strong>
+                </p>
+                
+                <button @click="restart">Start Over 🔄</button>
+                <button @click="step = 'explore'" class="secondary">Practice More 📚</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const { createApp } = Vue;
+
+// Helper function to shuffle an array
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+createApp({
+    data() {
+        return {
+            step: 'intro',
+            completedSteps: [],
+            
+            // Exploration variables
+            numerator: 1,
+            denominator: 4,
+            explorationCount: 0,
+            
+            // Practice mode
+            currentQuestionIndex: 0,
+            selectedOption: null,
+            feedback: null,
+            practiceScore: 0,
+            practiceComplete: false,
+            
+            // Mastery check
+            masteryIndex: 0,
+            masterySelected: null,
+            masteryFeedback: null,
+            masteryScore: 0,
+            masteryComplete: false,
+            
+            // Test mode
+            testQuestionIndex: 0,
+            testSelectedOption: null,
+            testScore: 0,
+            testComplete: false,
+            
+            // REFACTORED: Standardized question data structure
+            practiceQuestions: shuffleArray([
+                {
+                    text: "What fraction shows 2 slices out of 6?",
+                    visual: { numerator: 2, denominator: 6 },
+                    options: ["2/6", "6/2", "2/4"],
+                    correct: "2/6"
+                },
+                {
+                    text: "What fraction shows 3 slices out of 4?",
+                    visual: { numerator: 3, denominator: 4 },
+                    options: ["4/3", "3/4", "1/4"],
+                    correct: "3/4"
+                },
+                {
+                    text: "What fraction shows 1 slice out of 2?",
+                    visual: { numerator: 1, denominator: 2 },
+                    options: ["1/2", "2/1", "1/3"],
+                    correct: "1/2"
+                },
+                {
+                    text: "What fraction shows 5 slices out of 5?",
+                    visual: { numerator: 5, denominator: 5 },
+                    options: ["5/5", "1/5", "5/1"],
+                    correct: "5/5"
+                }
+            ]),
+            
+            masteryQuestions: [
+                {
+                    question: "In the fraction 3/7, which number is the denominator (tells us how many slices the pizza is cut into)?",
+                    type: "multiple-choice",
+                    options: ["3 (top number)", "7 (bottom number)", "Both numbers"],
+                    correct: "7 (bottom number)"
+                },
+                {
+                    question: "In the fraction 4/9, which number is the numerator (tells us how many slices we have)?",
+                    type: "multiple-choice",
+                    options: ["4 (top number)", "9 (bottom number)", "Both numbers"],
+                    correct: "4 (top number)"
+                },
+                {
+                    question: "If we cut a pizza into more pieces (e.g., change 2/5 to 2/8), what happens to the size of each slice?",
+                    type: "multiple-choice",
+                    options: ["Slices get bigger", "Slices get smaller", "Slices stay the same"],
+                    correct: "Slices get smaller"
+                },
+                {
+                    question: "If we change 3/6 to 5/6, what happens?",
+                    type: "multiple-choice",
+                    options: ["We have more slices", "We have fewer slices", "The slices get smaller"],
+                    correct: "We have more slices"
+                }
+            ],
+            
+            testQuestions: shuffleArray([
+                {
+                    text: "Which fraction represents this pizza?",
+                    visual: { numerator: 3, denominator: 8 },
+                    options: ["3/8", "8/3", "3/5"],
+                    correct: "3/8"
+                },
+                {
+                    text: "Which fraction represents this pizza?",
+                    visual: { numerator: 6, denominator: 6 },
+                    options: ["6/6", "1/6", "5/6"],
+                    correct: "6/6"
+                },
+                {
+                    text: "Which fraction represents these pizzas?",
+                    visual: { numerator: 7, denominator: 3 },
+                    options: ["7/3", "3/7", "2 1/3"],
+                    correct: "7/3"
+                },
+                {
+                    text: "Which fraction shows 4 slices out of 5?",
+                    visual: { numerator: 4, denominator: 5 },
+                    options: ["4/5", "5/4", "1/5"],
+                    correct: "4/5"
+                },
+                {
+                    text: "Which fraction represents these pizzas?",
+                    visual: { numerator: 9, denominator: 4 },
+                    options: ["4/9", "9/4", "2 1/4"],
+                    correct: "9/4"
+                }
+            ])
+        }
+    },
+    
+    computed: {
+        pizzasNeeded() {
+            if (this.denominator === 0) return 1;
+            return Math.ceil(this.numerator / this.denominator) || 1;
+        },
+        currentQuestion() {
+            return this.practiceQuestions[this.currentQuestionIndex];
+        },
+        currentTestQuestion() {
+            return this.testQuestions[this.testQuestionIndex];
+        },
+        // IMPROVEMENT: Moved progress calculation to computed property for cleaner template
+        practiceProgress() {
+            return (this.currentQuestionIndex / this.practiceQuestions.length) * 100;
+        },
+        testProgress() {
+            return (this.testQuestionIndex / this.testQuestions.length) * 100;
+        }
+    },
+    
+    methods: {
+        nextStep() {
+            if (!this.completedSteps.includes(this.step)) {
+                this.completedSteps.push(this.step);
+            }
+            const steps = ['intro', 'explore', 'practice', 'mastery', 'test'];
+            const currentIndex = steps.indexOf(this.step);
+            if (currentIndex < steps.length - 1) {
+                this.step = steps[currentIndex + 1];
+            }
+        },
+        
+        changeNumerator(change) {
+            const newValue = this.numerator + change;
+            if (newValue >= 0 && newValue <= 12) {
+                this.numerator = newValue;
+                this.explorationCount++;
+            }
+        },
+        
+        changeDenominator(change) {
+            const newValue = this.denominator + change;
+            if (newValue >= 1 && newValue <= 8) {
+                this.denominator = newValue;
+                this.explorationCount++;
+            }
+        },
+        
+        getSlicesForPizza(pizzaNumber) {
+            const startSlice = (pizzaNumber - 1) * this.denominator;
+            const endSlice = Math.min(startSlice + this.denominator, this.numerator);
+            const slicesInThisPizza = Math.max(0, endSlice - startSlice);
+            return Array.from({ length: slicesInThisPizza }, (_, i) => i + 1);
+        },
+
+        // REFACTORED: A single, robust function to render pizza slices for any question
+        getSlicesForQuestionPizza(question, pizzaNumber) {
+            const { numerator, denominator } = question.visual;
+            const startSlice = (pizzaNumber - 1) * denominator;
+            const endSlice = Math.min(startSlice + denominator, numerator);
+            const slicesInThisPizza = Math.max(0, endSlice - startSlice);
+            return Array.from({ length: slicesInThisPizza }, (_, i) => i + 1);
+        },
+        
+        selectOption(option) {
+            if (this.selectedOption) return;
+            
+            this.selectedOption = option;
+            
+            if (option === this.currentQuestion.correct) {
+                this.practiceScore++;
+                this.feedback = { type: 'correct', message: '🎉 Correct! Great job!' };
+            } else {
+                this.feedback = {
+                    type: 'incorrect',
+                    message: `Not quite! The correct answer is ${this.currentQuestion.correct}. ${this.getExplanation()}`
+                };
+            }
+        },
+        
+        getExplanation() {
+            const q = this.currentQuestion.visual;
+            return `The pizza shows ${q.numerator} red slice${q.numerator !== 1 ? 's' : ''} and is cut into ${q.denominator} total slices.`;
+        },
+        
+        getOptionClass(option) {
+            if (!this.selectedOption) return '';
+            if (option === this.currentQuestion.correct) return 'correct';
+            if (option === this.selectedOption) return 'incorrect';
+            return '';
+        },
+        
+        nextQuestion() {
+            if (this.currentQuestionIndex < this.practiceQuestions.length - 1) {
+                this.currentQuestionIndex++;
+                this.selectedOption = null;
+                this.feedback = null;
+            } else {
+                this.practiceComplete = true;
+                if (!this.completedSteps.includes('practice')) {
+                   this.completedSteps.push('practice');
+                }
+            }
+        },
+        
+        restartPractice() {
+            this.currentQuestionIndex = 0;
+            this.selectedOption = null;
+            this.feedback = null;
+            this.practiceScore = 0;
+            this.practiceComplete = false;
+            this.practiceQuestions = shuffleArray([...this.practiceQuestions]);
+        },
+        
+        selectMasteryOption(option) {
+            if (this.masterySelected) return;
+            
+            this.masterySelected = option;
+            
+            if (option === this.masteryQuestions[this.masteryIndex].correct) {
+                this.masteryScore++;
+                this.masteryFeedback = { type: 'correct', message: '✓ Exactly right!' };
+            } else {
+                this.masteryFeedback = {
+                    type: 'incorrect',
+                    message: `Let's think about that. The correct answer is: ${this.masteryQuestions[this.masteryIndex].correct}`
+                };
+            }
+        },
+        
+        getMasteryOptionClass(option) {
+            if (!this.masterySelected) return '';
+            if (option === this.masteryQuestions[this.masteryIndex].correct) return 'correct';
+            if (option === this.masterySelected) return 'incorrect';
+            return '';
+        },
+        
+        nextMasteryQuestion() {
+            if (this.masteryIndex < this.masteryQuestions.length - 1) {
+                this.masteryIndex++;
+                this.masterySelected = null;
+                this.masteryFeedback = null;
+            } else {
+                this.masteryComplete = true;
+                if (!this.completedSteps.includes('mastery')) {
+                   this.completedSteps.push('mastery');
+                }
+            }
+        },
+        
+        selectTestOption(option) {
+            this.testSelectedOption = option;
+        },
+        
+        nextTestQuestion() {
+            if (this.testSelectedOption === this.currentTestQuestion.correct) {
+                this.testScore++;
+            }
+            
+            if (this.testQuestionIndex < this.testQuestions.length - 1) {
+                this.testQuestionIndex++;
+                this.testSelectedOption = null;
+            } else {
+                this.testComplete = true;
+                if (!this.completedSteps.includes('test')) {
+                   this.completedSteps.push('test');
+                }
+            }
+        },
+        
+        restart() {
+            this.step = 'intro';
+            this.completedSteps = [];
+            this.numerator = 1;
+            this.denominator = 4;
+            this.explorationCount = 0;
+
+            this.restartPractice();
+            this.practiceQuestions = shuffleArray(this.practiceQuestions);
+
+            this.masteryIndex = 0;
+            this.masterySelected = null;
+            this.masteryFeedback = null;
+            this.masteryScore = 0;
+            this.masteryComplete = false;
+            
+            this.testQuestionIndex = 0;
+            this.testSelectedOption = null;
+            this.testScore = 0;
+            this.testComplete = false;
+            this.testQuestions = shuffleArray(this.testQuestions);
+        }
+    }
+}).mount('#app');
+</script>
+
+</body>
+</html>
