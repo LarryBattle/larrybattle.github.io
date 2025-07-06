@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Division Learning App</title>
+    <style>
+        /* --- Basic Styles & Fonts --- */
+        :root {
+            --primary-color: #007bff;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --light-bg: #f0f7ff;
+            --white-bg: #ffffff;
+            --dark-text: #333;
+            --light-text: #f8f9fa;
+            --border-color: #dee2e6;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--light-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: var(--dark-text);
+        }
+
+        /* --- Main App Container --- */
+        .container {
+            background-color: var(--white-bg);
+            padding: 2rem 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+        }
+
+        /* --- Problem & Answer Area --- */
+        #problem-container {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background-color: #e9ecef;
+            border-radius: 8px;
+        }
+
+        .answer-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap; /* Allows wrapping on smaller screens */
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .answer-area label {
+            font-size: 1rem;
+            color: #6c757d;
+        }
+
+        .answer-area input {
+            width: 70px;
+            padding: 0.75rem;
+            font-size: 1.25rem;
+            text-align: center;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            transition: border-color 0.2s;
+        }
+
+        .answer-area input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        /* --- Buttons --- */
+        .actions button {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--light-text);
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        
+        .actions button:hover {
+            opacity: 0.9;
+        }
+        
+        .actions button:active {
+            transform: scale(0.98);
+        }
+
+        #check-btn {
+            background-color: var(--primary-color);
+        }
+
+        #next-btn {
+            background-color: var(--success-color);
+            display: none; /* Initially hidden */
+        }
+        
+        /* --- Feedback & Score --- */
+        #feedback {
+            margin-top: 1.5rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            min-height: 2rem; /* Prevents layout shift */
+        }
+
+        .correct {
+            color: var(--success-color);
+        }
+
+        .incorrect {
+            color: var(--danger-color);
+        }
+
+        #score {
+            margin-top: 1rem;
+            color: #6c757d;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Division Practice Fun!</h1>
+        
+        <div id="problem-container">
+            <span id="dividend">12</span> ÷ <span id="divisor">4</span> = ?
+        </div>
+
+        <div class="answer-area">
+            <div class="input-group">
+                <input type="number" id="quotient-input" aria-label="Quotient Answer">
+            </div>
+            <div class="input-group">
+                <label for="remainder-input">R:</label>
+                <input type="number" id="remainder-input" aria-label="Remainder Answer">
+            </div>
+        </div>
+
+        <div class="actions">
+            <button id="check-btn">Check Answer</button>
+            <button id="next-btn">Next Question</button>
+        </div>
+
+        <div id="feedback"></div>
+
+        <div id="score">
+            Correct: <span id="correct-score">0</span> | Incorrect: <span id="incorrect-score">0</span>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Element Selection ---
+        const dividendEl = document.getElementById('dividend');
+        const divisorEl = document.getElementById('divisor');
+        const quotientInput = document.getElementById('quotient-input');
+        const remainderInput = document.getElementById('remainder-input');
+        const checkBtn = document.getElementById('check-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const feedbackEl = document.getElementById('feedback');
+        const correctScoreEl = document.getElementById('correct-score');
+        const incorrectScoreEl = document.getElementById('incorrect-score');
+
+        // --- State Variables ---
+        let currentDividend;
+        let currentDivisor;
+        let correctQuotient;
+        let correctRemainder;
+        let scoreCorrect = 0;
+        let scoreIncorrect = 0;
+
+        // --- Functions ---
+
+        /**
+         * Generates a new division problem and updates the UI.
+         */
+        function generateProblem() {
+            // Generate a divisor between 2 and 12
+            currentDivisor = Math.floor(Math.random() * 11) + 2; 
+            
+            // Generate a dividend that makes the problem non-trivial
+            // It will be between the divisor and the divisor * 12
+            const maxMultiplier = 12;
+            currentDividend = Math.floor(Math.random() * (currentDivisor * maxMultiplier - currentDivisor + 1)) + currentDivisor;
+            
+            // Calculate the correct answers
+            correctQuotient = Math.floor(currentDividend / currentDivisor);
+            correctRemainder = currentDividend % currentDivisor;
+
+            // Update the display
+            dividendEl.textContent = currentDividend;
+            divisorEl.textContent = currentDivisor;
+            
+            // Reset UI for the new problem
+            resetUI();
+        }
+
+        /**
+         * Checks the user's answer against the correct one.
+         */
+        function checkAnswer() {
+            // Get user input, defaulting to 0 if empty
+            const userQuotient = parseInt(quotientInput.value) || 0;
+            const userRemainder = parseInt(remainderInput.value) || 0;
+
+            // Disable inputs after checking
+            quotientInput.disabled = true;
+            remainderInput.disabled = true;
+
+            if (userQuotient === correctQuotient && userRemainder === correctRemainder) {
+                // Correct Answer
+                feedbackEl.textContent = "🎉 Correct! Great job!";
+                feedbackEl.className = 'correct';
+                scoreCorrect++;
+                correctScoreEl.textContent = scoreCorrect;
+            } else {
+                // Incorrect Answer
+                feedbackEl.innerHTML = `Not quite. The correct answer is <strong>${correctQuotient}</strong> with a remainder of <strong>${correctRemainder}</strong>.`;
+                feedbackEl.className = 'incorrect';
+                scoreIncorrect++;
+                incorrectScoreEl.textContent = scoreIncorrect;
+            }
+            
+            // Swap buttons
+            checkBtn.style.display = 'none';
+            nextBtn.style.display = 'block';
+            nextBtn.focus(); // Set focus to the next button for easy progression
+        }
+
+        /**
+         * Resets the UI elements for a new question.
+         */
+        function resetUI() {
+            quotientInput.value = '';
+            remainderInput.value = '';
+            feedbackEl.textContent = '';
+            feedbackEl.className = '';
+            
+            quotientInput.disabled = false;
+            remainderInput.disabled = false;
+
+            checkBtn.style.display = 'block';
+            nextBtn.style.display = 'none';
+            
+            quotientInput.focus(); // Set focus to the first input field
+        }
+
+        // --- Event Listeners ---
+        checkBtn.addEventListener('click', checkAnswer);
+        nextBtn.addEventListener('click', generateProblem);
+
+        // Allow pressing 'Enter' to check the answer
+        quotientInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                remainderInput.focus(); // Move to next input
+            }
+        });
+        
+        remainderInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                // Only check if the check button is visible
+                if (checkBtn.style.display !== 'none') {
+                    checkAnswer();
+                }
+            }
+        });
+
+        // --- Initial Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            generateProblem();
+        });
+    </script>
+
+</body>
+</html>
