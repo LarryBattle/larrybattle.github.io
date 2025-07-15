@@ -1,0 +1,1819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Memory Game</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --card-size: clamp(60px, 8vmin, 120px);
+            --grid-cols: 4;
+            --grid-rows: 4;
+            --grid-size: 8;
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --success-color: #22c55e;
+            --danger-color: #ef4444;
+            --text-color: #1f2937;
+            --bg-color: #f3f4f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            min-height: 100vh;
+            background-image: var(--bg-image, none);
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        .app-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .app-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: -1;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        /* Navigation */
+        .nav {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .nav-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Game Board */
+        .game-view {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .score-panel {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .score-item {
+            text-align: center;
+        }
+
+        .score-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .score-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .game-controls {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .btn.secondary {
+            background: #6b7280;
+        }
+
+        .btn.success {
+            background: var(--success-color);
+        }
+
+        .btn.danger {
+            background: var(--danger-color);
+        }
+
+        /* Game Board - Enhanced with 3D */
+        .game-board {
+            display: grid;
+            gap: 10px;
+            padding: 20px;
+            max-width: 90vmin;
+            max-height: 90vmin;
+            margin: 0 auto;
+            grid-template-columns: repeat(var(--grid-cols), 1fr);
+            grid-template-rows: repeat(var(--grid-rows), 1fr);
+            background: rgba(255,255,255,0.8);
+            border-radius: 16px;
+            box-shadow: 
+                0 20px 40px rgba(0,0,0,0.15),
+                0 30px 60px rgba(0,0,0,0.1);
+            transform: perspective(1500px) rotateX(8deg);
+            transform-style: preserve-3d;
+            transition: transform 0.3s ease;
+        }
+
+        .game-board:hover {
+            transform: perspective(1500px) rotateX(5deg) scale(1.02);
+        }
+
+        .game-board.unique-layout {
+            display: block;
+            position: relative;
+            width: 90vmin;
+            height: 90vmin;
+            max-width: 600px;
+            max-height: 600px;
+            margin: 0 auto;
+        }
+
+        .game-board.unique-layout .card {
+            position: absolute;
+            width: var(--card-size);
+            height: var(--card-size);
+        }
+
+        /* Cards - Enhanced with 3D effects */
+        .card {
+            perspective: 1000px;
+            width: var(--card-size);
+            height: var(--card-size);
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            user-select: none;
+            transform-style: preserve-3d;
+        }
+
+        /* Card floating animation */
+        @keyframes cardFloat {
+            0%, 100% { transform: translateZ(0px); }
+            50% { transform: translateZ(10px); }
+        }
+
+        .card:nth-child(even) {
+            animation: cardFloat 4s ease-in-out infinite;
+            animation-delay: 0s;
+        }
+
+        .card:nth-child(odd) {
+            animation: cardFloat 4s ease-in-out infinite;
+            animation-delay: 2s;
+        }
+
+        .card:hover:not(.flipped):not(.matched) {
+            transform: translateY(-4px) translateZ(20px) rotateX(-5deg);
+            box-shadow: 
+                0 10px 20px rgba(0,0,0,0.2),
+                0 15px 30px rgba(0,0,0,0.1),
+                0 0 40px rgba(102, 126, 234, 0.1);
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        /* Card shine effect */
+        .card-inner::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent 30%,
+                rgba(255,255,255,0.1) 50%,
+                transparent 70%
+            );
+            transform: rotate(45deg) translate(-70%, -70%);
+            transition: transform 0.6s;
+            pointer-events: none;
+        }
+
+        .card:hover .card-inner::after {
+            transform: rotate(45deg) translate(-30%, -30%);
+        }
+
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: calc(var(--card-size) * 0.5);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .card-back {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            font-weight: bold;
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            transform: rotateY(180deg);
+            font-family: 'Segoe UI Emoji', 'Noto Color Emoji', 'Apple Color Emoji', sans-serif;
+        }
+
+        .card.matched {
+            animation: matchSuccess 0.6s ease-out forwards;
+        }
+
+        .card.unmatched-end {
+            filter: grayscale(100%) opacity(0.5);
+        }
+
+        @keyframes matchSuccess {
+            0% { transform: scale(1); }
+            50% { 
+                transform: scale(1.1);
+                box-shadow: 0 0 20px rgba(34, 197, 94, 0.6);
+            }
+            100% { 
+                transform: scale(0);
+                opacity: 0;
+            }
+        }
+
+        /* Enhanced Score Popup */
+        .score-popup {
+            position: fixed;
+            animation: scoreFloatEnhanced 2.5s ease-out forwards;
+            font-weight: 900;
+            color: var(--success-color);
+            font-size: 3.5rem;
+            z-index: 1000;
+            pointer-events: none;
+            text-shadow: 
+                0 0 20px rgba(34, 197, 94, 0.8),
+                0 0 40px rgba(34, 197, 94, 0.4),
+                0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        @keyframes scoreFloatEnhanced {
+            0% { 
+                opacity: 0;
+                transform: translateY(0) scale(0.3) rotateZ(-15deg);
+            }
+            15% {
+                opacity: 1;
+                transform: translateY(-20px) scale(1.8) rotateZ(10deg);
+            }
+            30% {
+                transform: translateY(-40px) scale(1.5) rotateZ(-5deg);
+            }
+            50% {
+                opacity: 1;
+                transform: translateY(-60px) scale(1.3) rotateZ(3deg);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-120px) scale(0.8) rotateZ(0deg);
+            }
+        }
+
+        /* Match Connection Line */
+        @keyframes matchLinePulse {
+            0% {
+                opacity: 0;
+                transform: scaleX(0);
+            }
+            50% {
+                opacity: 1;
+                transform: scaleX(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scaleX(1);
+            }
+        }
+
+        /* Victory Confetti */
+        @keyframes confettiFall {
+            to {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .confetti-piece {
+            border-radius: 50%;
+        }
+
+        /* Menu View */
+        .menu-view {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .menu-title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .menu-subtitle {
+            font-size: 1.25rem;
+            color: #6b7280;
+            margin-bottom: 3rem;
+        }
+
+        .quick-start {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .quick-start h3 {
+            margin-bottom: 1rem;
+            color: var(--text-color);
+        }
+
+        .quick-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .quick-option {
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .quick-option:hover, .quick-option.selected {
+            background: #e0e7ff;
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .option-label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .option-value {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        /* Settings View */
+        .settings-view {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .settings-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .settings-section h3 {
+            margin-bottom: 1.5rem;
+            color: var(--text-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .setting-item {
+            margin-bottom: 1.5rem;
+        }
+
+        .setting-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .setting-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .setting-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .radio-item:hover, .radio-item.selected {
+            border-color: var(--primary-color);
+            background: #e0e7ff;
+        }
+
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .theme-option {
+            padding: 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .theme-option:hover, .theme-option.selected {
+            border-color: var(--primary-color);
+            background: #e0e7ff;
+        }
+
+        .theme-preview {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* High Scores View */
+        .scores-view {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .scores-filters {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .scores-list {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .score-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto auto;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            align-items: center;
+        }
+
+        .score-item:last-child {
+            border-bottom: none;
+        }
+
+        .score-rank {
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--primary-color);
+            min-width: 40px;
+        }
+
+        .score-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .score-points {
+            font-weight: 700;
+            font-size: 1.125rem;
+        }
+
+        .score-meta {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        /* Game Over Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal h2 {
+            margin-bottom: 1rem;
+            font-size: 2rem;
+            color: var(--text-color);
+        }
+
+        .final-score {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--success-color);
+            margin: 1rem 0;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            :root {
+                --card-size: clamp(50px, 12vw, 80px);
+            }
+            
+            .main-content {
+                padding: 1rem;
+            }
+            
+            .game-header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .score-panel {
+                justify-content: center;
+            }
+            
+            .game-board {
+                gap: 5px;
+                padding: 10px;
+            }
+            
+            .nav {
+                flex-wrap: wrap;
+            }
+            
+            .menu-title {
+                font-size: 2rem;
+            }
+            
+            .modal {
+                margin: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                padding: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .score-item {
+                grid-template-columns: auto 1fr auto;
+                gap: 0.5rem;
+            }
+            
+            .modal-actions {
+                flex-direction: column;
+            }
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-2 {
+            margin-top: 1rem;
+        }
+
+        .mb-2 {
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="app-container">
+            <!-- Header -->
+            <header class="header">
+                <h1>🧠 3D Memory Game</h1>
+                <nav class="nav">
+                    <button class="nav-btn" :class="{ active: currentView === 'menu' }" @click="setView('menu')">
+                        🏠 Menu
+                    </button>
+                    <button class="nav-btn" :class="{ active: currentView === 'game' }" @click="startNewGame">
+                        🎮 Play
+                    </button>
+                    <button class="nav-btn" :class="{ active: currentView === 'settings' }" @click="setView('settings')">
+                        ⚙️ Settings
+                    </button>
+                    <button class="nav-btn" :class="{ active: currentView === 'scores' }" @click="setView('scores')">
+                        🏆 High Scores
+                    </button>
+                </nav>
+            </header>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Menu View -->
+                <div v-if="currentView === 'menu'" class="menu-view">
+                    <h2 class="menu-title">Welcome!</h2>
+                    <p class="menu-subtitle">Test your memory with this exciting card matching game</p>
+                    
+                    <div class="quick-start">
+                        <h3>Quick Start</h3>
+                        <div class="quick-options">
+                            <div class="quick-option" 
+                                 :class="{ selected: quickSettings.pairs === 4 }" 
+                                 @click="quickSettings.pairs = 4">
+                                <div class="option-label">Easy</div>
+                                <div class="option-value">4 pairs • No timer</div>
+                            </div>
+                            <div class="quick-option" 
+                                 :class="{ selected: quickSettings.pairs === 8 }" 
+                                 @click="quickSettings.pairs = 8">
+                                <div class="option-label">Medium</div>
+                                <div class="option-value">8 pairs • 60 seconds</div>
+                            </div>
+                            <div class="quick-option" 
+                                 :class="{ selected: quickSettings.pairs === 12 }" 
+                                 @click="quickSettings.pairs = 12">
+                                <div class="option-label">Hard</div>
+                                <div class="option-value">12 pairs • 90 seconds</div>
+                            </div>
+                            <div class="quick-option" 
+                                 :class="{ selected: quickSettings.pairs === 20 }" 
+                                 @click="quickSettings.pairs = 20">
+                                <div class="option-label">Expert</div>
+                                <div class="option-value">20 pairs • 120 seconds</div>
+                            </div>
+                        </div>
+                        <button class="btn success" @click="startQuickGame" style="font-size: 1.25rem; padding: 1rem 2rem;">
+                            🚀 Start Game
+                        </button>
+                    </div>
+
+                    <div class="text-center">
+                        <p style="color: #6b7280; margin-bottom: 1rem;">Or customize your experience in Settings</p>
+                        <button class="btn secondary" @click="setView('settings')">
+                            ⚙️ Custom Settings
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Game View -->
+                <div v-if="currentView === 'game'" class="game-view">
+                    <div class="game-header">
+                        <div class="score-panel">
+                            <div class="score-item">
+                                <div class="score-label">Score</div>
+                                <div class="score-value">{{ gameState.score }}</div>
+                            </div>
+                            <div class="score-item" v-if="settings.timer > 0">
+                                <div class="score-label">Time</div>
+                                <div class="score-value" :style="{ color: gameState.timeRemaining <= 10 ? 'var(--danger-color)' : 'var(--primary-color)' }">
+                                    {{ formatTime(gameState.timeRemaining) }}
+                                </div>
+                            </div>
+                            <div class="score-item">
+                                <div class="score-label">Matches</div>
+                                <div class="score-value">{{ gameState.matchedPairs }}/{{ gameState.totalPairs }}</div>
+                            </div>
+                        </div>
+                        <div class="game-controls">
+                            <button class="btn secondary" @click="pauseGame" v-if="gameState.status === 'playing'">
+                                ⏸️ Pause
+                            </button>
+                            <button class="btn success" @click="resumeGame" v-if="gameState.status === 'paused'">
+                                ▶️ Resume
+                            </button>
+                            <button class="btn danger" @click="setView('menu')">
+                                🏠 Menu
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="game-board" 
+                         :class="{ 'unique-layout': boardLayout.layout !== 'rectangular' }"
+                         :style="boardStyle">
+                        <div v-for="card in gameState.cards" 
+                             :key="card.id"
+                             class="card"
+                             :class="{ 
+                                 flipped: card.isFlipped, 
+                                 matched: card.isMatched,
+                                 'unmatched-end': gameState.status === 'gameOver' && !card.isMatched
+                             }"
+                             :style="getCardStyle(card)"
+                             :data-card-id="card.id"
+                             @click="handleCardClick(card.id)"
+                             @touchend.prevent="handleCardClick(card.id)">
+                            <div class="card-inner">
+                                <div class="card-face card-back">
+                                    ?
+                                </div>
+                                <div class="card-face card-front">
+                                    {{ card.emoji }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="gameState.status === 'paused'" class="text-center">
+                        <h3 style="margin-bottom: 1rem;">Game Paused</h3>
+                        <button class="btn success" @click="resumeGame">▶️ Continue Playing</button>
+                    </div>
+                </div>
+
+                <!-- Settings View -->
+                <div v-if="currentView === 'settings'" class="settings-view">
+                    <div class="settings-section">
+                        <h3>⏱️ Timer Settings</h3>
+                        <div class="setting-item">
+                            <label class="setting-label">Countdown Timer</label>
+                            <div class="radio-group">
+                                <div class="radio-item" 
+                                     :class="{ selected: settings.timer === 0 }" 
+                                     @click="settings.timer = 0">
+                                    <span>Disabled</span>
+                                </div>
+                                <div class="radio-item" 
+                                     :class="{ selected: settings.timer === 30 }" 
+                                     @click="settings.timer = 30">
+                                    <span>30s</span>
+                                </div>
+                                <div class="radio-item" 
+                                     :class="{ selected: settings.timer === 60 }" 
+                                     @click="settings.timer = 60">
+                                    <span>60s</span>
+                                </div>
+                                <div class="radio-item" 
+                                     :class="{ selected: settings.timer === 90 }" 
+                                     @click="settings.timer = 90">
+                                    <span>90s</span>
+                                </div>
+                                <div class="radio-item" 
+                                     :class="{ selected: settings.timer === 120 }" 
+                                     @click="settings.timer = 120">
+                                    <span>120s</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>🎯 Difficulty</h3>
+                        <div class="setting-item">
+                            <label class="setting-label">Number of Pairs</label>
+                            <div class="radio-group">
+                                <div class="radio-item" 
+                                     :class="{ selected: settings.pairs === 4 }" 
+                                     @click="settings.pairs = 4">
+                                    <span>4 pairs (Easy)</span>
+                                </div>
+                                <div class="radio-item" 
+                                     :class="{ selected: settings.pairs === 8 }" 
+                                     @click="settings.pairs = 8">
+                                    <span>8 pairs (Medium)</span>
+                                </div>
+                                <div class="radio-item" 
+                                     :class="{ selected: settings.pairs === 12 }" 
+                                     @click="settings.pairs = 12">
+                                    <span>12 pairs (Hard)</span>
+                                </div>
+                                <div class="radio-item" 
+                                     :class="{ selected: settings.pairs === 20 }" 
+                                     @click="settings.pairs = 20">
+                                    <span>20 pairs (Expert)</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                <input type="checkbox" v-model="settings.uniqueShapes" style="margin-right: 0.5rem;">
+                                Use unique board shapes (Diamond, Circle, etc.)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>🎨 Theme</h3>
+                        <div class="theme-grid">
+                            <div v-for="(theme, key) in themes" 
+                                 :key="key"
+                                 class="theme-option"
+                                 :class="{ selected: settings.theme === key }"
+                                 @click="settings.theme = key">
+                                <div class="theme-preview">{{ theme.emojis.slice(0, 3).join('') }}</div>
+                                <div>{{ theme.name }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>🖼️ Background</h3>
+                        <div class="setting-item">
+                            <label class="setting-label">Background Image URL (optional)</label>
+                            <input type="url" 
+                                   class="setting-input" 
+                                   v-model="settings.backgroundImage"
+                                   placeholder="https://example.com/image.jpg">
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <button class="btn success" @click="saveSettings">💾 Save Settings</button>
+                    </div>
+                </div>
+
+                <!-- High Scores View -->
+                <div v-if="currentView === 'scores'" class="scores-view">
+                    <div class="scores-filters">
+                        <select v-model="scoreFilters.theme" class="setting-input" style="max-width: 150px;">
+                            <option value="">All Themes</option>
+                            <option v-for="(theme, key) in themes" :key="key" :value="key">{{ theme.name }}</option>
+                        </select>
+                        <select v-model="scoreFilters.pairs" class="setting-input" style="max-width: 150px;">
+                            <option value="">All Difficulties</option>
+                            <option value="4">4 pairs (Easy)</option>
+                            <option value="8">8 pairs (Medium)</option>
+                            <option value="12">12 pairs (Hard)</option>
+                            <option value="20">20 pairs (Expert)</option>
+                        </select>
+                        <button class="btn danger" @click="clearHighScores">🗑️ Clear Scores</button>
+                    </div>
+
+                    <div class="scores-list" v-if="filteredScores.length > 0">
+                        <div v-for="score in filteredScores" :key="score.id" class="score-item">
+                            <div class="score-rank">#{{ score.rank }}</div>
+                            <div class="score-details">
+                                <div class="score-points">{{ score.score }} points</div>
+                                <div class="score-meta">
+                                    {{ score.totalPairs }} pairs • {{ themes[score.theme]?.name || score.theme }} • 
+                                    {{ formatTime(Math.round(score.completionTime / 1000)) }}
+                                </div>
+                            </div>
+                            <div class="score-date">{{ formatDate(score.date) }}</div>
+                        </div>
+                    </div>
+
+                    <div v-else class="text-center" style="padding: 3rem;">
+                        <h3 style="color: #6b7280; margin-bottom: 1rem;">No high scores yet!</h3>
+                        <p style="color: #9ca3af; margin-bottom: 2rem;">Play some games to see your best scores here.</p>
+                        <button class="btn success" @click="startNewGame">🎮 Play Now</button>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Game Over Modal -->
+            <div v-if="showGameOverModal" class="modal-overlay" @click="closeGameOverModal">
+                <div class="modal" @click.stop>
+                    <h2>{{ gameState.matchedPairs === gameState.totalPairs ? '🎉 Congratulations!' : '⏰ Time\'s Up!' }}</h2>
+                    <div class="final-score">{{ gameState.score }}</div>
+                    <p v-if="gameState.matchedPairs === gameState.totalPairs">
+                        You matched all {{ gameState.totalPairs }} pairs!
+                    </p>
+                    <p v-else>
+                        You matched {{ gameState.matchedPairs }} out of {{ gameState.totalPairs }} pairs.
+                    </p>
+                    <p v-if="isNewHighScore" style="color: var(--success-color); font-weight: bold; margin-top: 1rem;">
+                        🏆 New High Score!
+                    </p>
+                    <div class="modal-actions">
+                        <button class="btn success" @click="startNewGame">🔄 Play Again</button>
+                        <button class="btn secondary" @click="setView('menu')">🏠 Menu</button>
+                        <button class="btn" @click="setView('scores')">🏆 High Scores</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, reactive, computed, ref, onMounted, watch, nextTick } = Vue;
+
+        createApp({
+            setup() {
+                // Themes data with fixed flag emojis
+                const themes = {
+                    animals: {
+                        name: 'Animals',
+                        emojis: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐸', '🐵', '🐷', '🐮', '🐗', '🐴', '🦄', '🐝', '🐛']
+                    },
+                    emojis: {
+                        name: 'Faces', 
+                        emojis: ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚']
+                    },
+                    jobs: {
+                        name: 'Professions',
+                        emojis: ['👮‍♂️', '👷‍♂️', '💂‍♂️', '🕵️‍♂️', '👨‍⚕️', '👨‍🌾', '👨‍🍳', '👨‍🎓', '👨‍🎤', '👨‍🏫', '👨‍🏭', '👨‍💻', '👨‍💼', '👨‍🔧', '👨‍🔬', '👨‍🎨', '👨‍🚒', '👨‍✈️', '👨‍🚀', '👨‍⚖️']
+                    },
+                    flags: {
+                        name: 'Countries',
+                        emojis: [
+                            '\u{1F1FA}\u{1F1F8}', // US
+                            '\u{1F1EC}\u{1F1E7}', // GB
+                            '\u{1F1EB}\u{1F1F7}', // FR
+                            '\u{1F1E9}\u{1F1EA}', // DE
+                            '\u{1F1EE}\u{1F1F9}', // IT
+                            '\u{1F1EA}\u{1F1F8}', // ES
+                            '\u{1F1EF}\u{1F1F5}', // JP
+                            '\u{1F1F0}\u{1F1F7}', // KR
+                            '\u{1F1E8}\u{1F1F3}', // CN
+                            '\u{1F1EE}\u{1F1F3}', // IN
+                            '\u{1F1E7}\u{1F1F7}', // BR
+                            '\u{1F1E8}\u{1F1E6}', // CA
+                            '\u{1F1E6}\u{1F1FA}', // AU
+                            '\u{1F1F7}\u{1F1FA}', // RU
+                            '\u{1F1F2}\u{1F1FD}', // MX
+                            '\u{1F1FF}\u{1F1E6}', // ZA
+                            '\u{1F1F3}\u{1F1F1}', // NL
+                            '\u{1F1F8}\u{1F1EA}', // SE
+                            '\u{1F1F3}\u{1F1F4}', // NO
+                            '\u{1F1E9}\u{1F1F0}'  // DK
+                        ]
+                    },
+                    "flags2": {
+                        "name": "Country Items",
+                        "emojis": [
+                            "", // US
+                            "", // GB
+                            "", // FR
+                            "", // DE
+                            "", // IT
+                            "", // ES
+                            "", // JP
+                            "", // KR
+                            "", // CN
+                            "", // IN
+                            "", // BR
+                            "", // CA
+                            "", // AU
+                            "", // RU
+                            "", // MX
+                            "", // ZA
+                            "", // NL
+                            "", // SE
+                            "", // NO
+                            ""  // DK
+                        ]
+                    },
+                    adult: {
+                        name: 'Adult Theme',
+                        emojis: ['🍆', '🍑', '🥒', '🌽', '🥕', '🍌', '🥖', '🌭', '🍭', '🍯', '🥛', '🍼', '🍾', '🥂', '🍷', '🍸', '🍹', '🍺', '🍻', '🥃']
+                    }
+                };
+
+                // Reactive state
+                const currentView = ref('menu');
+                const showGameOverModal = ref(false);
+                const isNewHighScore = ref(false);
+
+                const settings = reactive({
+                    timer: 60,
+                    pairs: 8,
+                    uniqueShapes: false,
+                    theme: 'animals',
+                    backgroundImage: ''
+                });
+
+                const quickSettings = reactive({
+                    pairs: 8
+                });
+
+                const gameState = reactive({
+                    status: 'menu', // menu, playing, paused, gameOver
+                    score: 0,
+                    timeRemaining: 0,
+                    gameStartTime: 0,
+                    cards: [],
+                    selectedCards: [],
+                    matchedPairs: 0,
+                    totalPairs: 0,
+                    comboStreak: 0,
+                    allowInteraction: true
+                });
+
+                const boardLayout = reactive({
+                    layout: 'rectangular',
+                    rows: 4,
+                    cols: 4,
+                    positions: []
+                });
+
+                const scoreFilters = reactive({
+                    theme: '',
+                    pairs: ''
+                });
+
+                let timerInterval = null;
+                let animationQueue = [];
+
+                // Computed properties
+                const boardStyle = computed(() => {
+                    const style = {
+                        '--grid-cols': boardLayout.cols,
+                        '--grid-rows': boardLayout.rows,
+                        '--grid-size': Math.max(boardLayout.rows, boardLayout.cols)
+                    };
+
+                    if (settings.backgroundImage) {
+                        style['--bg-image'] = `url(${settings.backgroundImage})`;
+                    }
+
+                    return style;
+                });
+
+                const filteredScores = computed(() => {
+                    let scores = getHighScores();
+                    
+                    if (scoreFilters.theme) {
+                        scores = scores.filter(s => s.theme === scoreFilters.theme);
+                    }
+                    
+                    if (scoreFilters.pairs) {
+                        scores = scores.filter(s => s.totalPairs === parseInt(scoreFilters.pairs));
+                    }
+                    
+                    return scores;
+                });
+
+                // Utility functions
+                const formatTime = (seconds) => {
+                    const mins = Math.floor(seconds / 60);
+                    const secs = seconds % 60;
+                    return `${mins}:${secs.toString().padStart(2, '0')}`;
+                };
+
+                const formatDate = (dateString) => {
+                    return new Date(dateString).toLocaleDateString();
+                };
+
+                const shuffle = (array) => {
+                    const shuffled = [...array];
+                    for (let i = shuffled.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                    }
+                    return shuffled;
+                };
+
+                // Grid calculation functions
+                const calculateGridDimensions = (cardCount, useUniqueShapes) => {
+                    if (!useUniqueShapes) {
+                        const sqrt = Math.sqrt(cardCount);
+                        let bestDiff = cardCount;
+                        let bestRows = 1, bestCols = cardCount;
+                        
+                        for (let rows = 1; rows <= sqrt; rows++) {
+                            if (cardCount % rows === 0) {
+                                const cols = cardCount / rows;
+                                const diff = Math.abs(cols - rows);
+                                if (diff < bestDiff) {
+                                    bestDiff = diff;
+                                    bestRows = rows;
+                                    bestCols = cols;
+                                }
+                            }
+                        }
+                        return { layout: 'rectangular', rows: bestRows, cols: bestCols };
+                    } else {
+                        return getUniqueShapeLayout(cardCount);
+                    }
+                };
+
+                const getUniqueShapeLayout = (cardCount) => {
+                    const shapes = ['diamond', 'circle', 'heart'];
+                    const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
+                    
+                    const size = Math.ceil(Math.sqrt(cardCount * 1.5));
+                    const center = Math.floor(size / 2);
+                    
+                    let positions = [];
+                    
+                    if (randomShape === 'diamond') {
+                        positions = getDiamondPositions(cardCount, center, size);
+                    } else if (randomShape === 'circle') {
+                        positions = getCirclePositions(cardCount, center, size);
+                    } else {
+                        positions = getHeartPositions(cardCount, center, size);
+                    }
+                    
+                    return {
+                        layout: randomShape,
+                        rows: size,
+                        cols: size,
+                        positions
+                    };
+                };
+
+                const getDiamondPositions = (cardCount, center, size) => {
+                    const positions = [];
+                    let cardIndex = 0;
+                    
+                    for (let layer = 0; layer < center && cardIndex < cardCount; layer++) {
+                        if (layer === 0) {
+                            positions.push({ row: center, col: center, cardIndex: cardIndex++ });
+                        } else {
+                            for (let i = 0; i < layer * 4 && cardIndex < cardCount; i++) {
+                                const side = Math.floor(i / layer);
+                                const pos = i % layer;
+                                
+                                let row, col;
+                                if (side === 0) { // top
+                                    row = center - layer + pos;
+                                    col = center + pos;
+                                } else if (side === 1) { // right
+                                    row = center + pos;
+                                    col = center + layer - pos;
+                                } else if (side === 2) { // bottom
+                                    row = center + layer - pos;
+                                    col = center - pos;
+                                } else { // left
+                                    row = center - pos;
+                                    col = center - layer + pos;
+                                }
+                                
+                                if (row >= 0 && row < size && col >= 0 && col < size) {
+                                    positions.push({ row, col, cardIndex: cardIndex++ });
+                                }
+                            }
+                        }
+                    }
+                    
+                    return positions;
+                };
+
+                const getCirclePositions = (cardCount, center, size) => {
+                    const positions = [];
+                    const layers = Math.ceil(cardCount / 8);
+                    let cardIndex = 0;
+                    
+                    // Center card
+                    if (cardIndex < cardCount) {
+                        positions.push({ row: center, col: center, cardIndex: cardIndex++ });
+                    }
+                    
+                    for (let layer = 1; layer <= layers && cardIndex < cardCount; layer++) {
+                        const radius = layer * 1.5;
+                        const circumference = 2 * Math.PI * radius;
+                        const cardsInLayer = Math.min(Math.floor(circumference / 2), cardCount - cardIndex);
+                        
+                        for (let i = 0; i < cardsInLayer && cardIndex < cardCount; i++) {
+                            const angle = (i / cardsInLayer) * 2 * Math.PI;
+                            const row = center + Math.round(radius * Math.sin(angle));
+                            const col = center + Math.round(radius * Math.cos(angle));
+                            
+                            if (row >= 0 && row < size && col >= 0 && col < size) {
+                                positions.push({ row, col, cardIndex: cardIndex++ });
+                            }
+                        }
+                    }
+                    
+                    return positions;
+                };
+
+                const getHeartPositions = (cardCount, center, size) => {
+                    const positions = [];
+                    let cardIndex = 0;
+                    
+                    // Simple heart approximation using two circles and a triangle
+                    const leftCenter = { row: center - 1, col: center - 1 };
+                    const rightCenter = { row: center - 1, col: center + 1 };
+                    
+                    // Left circle
+                    for (let layer = 0; layer < 2 && cardIndex < cardCount; layer++) {
+                        if (layer === 0) {
+                            positions.push({ ...leftCenter, cardIndex: cardIndex++ });
+                        } else {
+                            for (let i = 0; i < 6 && cardIndex < cardCount; i++) {
+                                const angle = (i / 6) * 2 * Math.PI;
+                                const row = leftCenter.row + Math.round(layer * Math.sin(angle));
+                                const col = leftCenter.col + Math.round(layer * Math.cos(angle));
+                                if (row >= 0 && row < size && col >= 0 && col < size) {
+                                    positions.push({ row, col, cardIndex: cardIndex++ });
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Right circle
+                    for (let layer = 0; layer < 2 && cardIndex < cardCount; layer++) {
+                        if (layer === 0) {
+                            positions.push({ ...rightCenter, cardIndex: cardIndex++ });
+                        } else {
+                            for (let i = 0; i < 6 && cardIndex < cardCount; i++) {
+                                const angle = (i / 6) * 2 * Math.PI;
+                                const row = rightCenter.row + Math.round(layer * Math.sin(angle));
+                                const col = rightCenter.col + Math.round(layer * Math.cos(angle));
+                                if (row >= 0 && row < size && col >= 0 && col < size) {
+                                    positions.push({ row, col, cardIndex: cardIndex++ });
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Bottom triangle
+                    for (let i = 1; i < 4 && cardIndex < cardCount; i++) {
+                        for (let j = 0; j <= i && cardIndex < cardCount; j++) {
+                            const row = center + i;
+                            const col = center - j + (j * 2 / i);
+                            if (row >= 0 && row < size && col >= 0 && col < size) {
+                                positions.push({ row: Math.round(row), col: Math.round(col), cardIndex: cardIndex++ });
+                            }
+                        }
+                    }
+                    
+                    return positions;
+                };
+
+                // Game logic functions
+                const generateCards = (pairCount, themeEmojis) => {
+                    const selectedEmojis = shuffle(themeEmojis).slice(0, pairCount);
+                    const cards = [];
+                    
+                    selectedEmojis.forEach((emoji, index) => {
+                        const pairId = `pair_${index}`;
+                        cards.push(
+                            { id: `${pairId}_a`, emoji, pairId, isFlipped: false, isMatched: false },
+                            { id: `${pairId}_b`, emoji, pairId, isFlipped: false, isMatched: false }
+                        );
+                    });
+                    
+                    return shuffle(cards);
+                };
+
+                const calculateMatchScore = (timeRemaining, totalTime, pairCount, isTimerEnabled) => {
+                    const basePoints = 10;
+                    const timeBonus = isTimerEnabled ? Math.round((timeRemaining / totalTime) * 20) : 10;
+                    const difficultyMultipliers = { 4: 1.0, 8: 1.5, 12: 2.0, 20: 3.0 };
+                    const multiplier = difficultyMultipliers[pairCount] || 1.0;
+                    const comboBonus = gameState.comboStreak * 2;
+                    
+                    return Math.round((basePoints + timeBonus + comboBonus) * multiplier);
+                };
+
+                const getCardStyle = (card) => {
+                    if (boardLayout.layout === 'rectangular') {
+                        return {};
+                    }
+                    
+                    const cardIndex = gameState.cards.indexOf(card);
+                    const position = boardLayout.positions.find(p => p.cardIndex === cardIndex);
+                    if (!position) return {};
+                    
+                    // Use percentages for responsive positioning
+                    const gridSize = Math.max(boardLayout.rows, boardLayout.cols);
+                    const cellPercentage = 100 / gridSize;
+                    
+                    return {
+                        position: 'absolute',
+                        left: `${position.col * cellPercentage}%`,
+                        top: `${position.row * cellPercentage}%`,
+                        width: `${cellPercentage * 0.85}%`,
+                        height: `${cellPercentage * 0.85}%`,
+                        transform: `translate(-50%, -50%)`,
+                        marginLeft: '50%',
+                        marginTop: '50%'
+                    };
+                };
+
+                // Animation functions
+                const playScorePopup = (score) => {
+                    const popup = document.createElement('div');
+                    popup.className = 'score-popup';
+                    popup.textContent = `+${score}`;
+                    popup.style.left = '50%';
+                    popup.style.top = '20%';
+                    popup.style.transform = 'translateX(-50%)';
+                    
+                    document.body.appendChild(popup);
+                    
+                    setTimeout(() => {
+                        if (popup.parentNode) {
+                            popup.parentNode.removeChild(popup);
+                        }
+                    }, 2500);
+                };
+
+                const playVictoryConfetti = () => {
+                    const colors = ['#667eea', '#764ba2', '#22c55e', '#f59e0b', '#ef4444'];
+                    const confettiCount = 50;
+                    
+                    for (let i = 0; i < confettiCount; i++) {
+                        const confetti = document.createElement('div');
+                        confetti.className = 'confetti-piece';
+                        confetti.style.cssText = `
+                            position: fixed;
+                            width: ${Math.random() * 10 + 5}px;
+                            height: ${Math.random() * 10 + 5}px;
+                            background: ${colors[Math.floor(Math.random() * colors.length)]};
+                            left: ${Math.random() * 100}%;
+                            top: -20px;
+                            transform: rotate(${Math.random() * 360}deg);
+                            animation: confettiFall ${Math.random() * 3 + 2}s ease-out forwards;
+                        `;
+                        document.body.appendChild(confetti);
+                        
+                        setTimeout(() => confetti.remove(), 5000);
+                    }
+                };
+
+                const playMatchConnection = (card1Element, card2Element) => {
+                    const rect1 = card1Element.getBoundingClientRect();
+                    const rect2 = card2Element.getBoundingClientRect();
+                    
+                    const x1 = rect1.left + rect1.width / 2;
+                    const y1 = rect1.top + rect1.height / 2;
+                    const x2 = rect2.left + rect2.width / 2;
+                    const y2 = rect2.top + rect2.height / 2;
+                    
+                    const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+                    const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+                    
+                    const line = document.createElement('div');
+                    line.className = 'match-line';
+                    line.style.cssText = `
+                        position: fixed;
+                        left: ${x1}px;
+                        top: ${y1}px;
+                        width: ${distance}px;
+                        height: 3px;
+                        background: linear-gradient(90deg, 
+                            transparent, 
+                            var(--success-color) 20%, 
+                            var(--success-color) 80%, 
+                            transparent);
+                        transform-origin: 0 50%;
+                        transform: rotate(${angle}deg);
+                        animation: matchLinePulse 0.8s ease-out forwards;
+                        z-index: 999;
+                    `;
+                    
+                    document.body.appendChild(line);
+                    setTimeout(() => line.remove(), 800);
+                };
+
+                // Game control functions
+                const startGame = (customSettings = null) => {
+                    const gameSettings = customSettings || settings;
+                    
+                    // Reset game state
+                    Object.assign(gameState, {
+                        status: 'playing',
+                        score: 0,
+                        timeRemaining: gameSettings.timer,
+                        gameStartTime: Date.now(),
+                        selectedCards: [],
+                        matchedPairs: 0,
+                        totalPairs: gameSettings.pairs,
+                        comboStreak: 0,
+                        allowInteraction: true
+                    });
+
+                    // Calculate board layout
+                    const layout = calculateGridDimensions(gameSettings.pairs * 2, gameSettings.uniqueShapes);
+                    Object.assign(boardLayout, layout);
+
+                    // Generate cards
+                    const themeEmojis = themes[gameSettings.theme].emojis;
+                    gameState.cards = generateCards(gameSettings.pairs, themeEmojis);
+
+                    // Set CSS variables
+                    nextTick(() => {
+                        const root = document.documentElement;
+                        root.style.setProperty('--grid-cols', boardLayout.cols);
+                        root.style.setProperty('--grid-rows', boardLayout.rows);
+                        root.style.setProperty('--grid-size', Math.max(boardLayout.rows, boardLayout.cols));
+                        
+                        if (gameSettings.backgroundImage) {
+                            root.style.setProperty('--bg-image', `url(${gameSettings.backgroundImage})`);
+                        } else {
+                            root.style.removeProperty('--bg-image');
+                        }
+                    });
+
+                    // Start timer if enabled
+                    if (gameSettings.timer > 0) {
+                        startTimer();
+                    }
+
+                    currentView.value = 'game';
+                };
+
+                const startTimer = () => {
+                    if (timerInterval) clearInterval(timerInterval);
+                    
+                    timerInterval = setInterval(() => {
+                        if (gameState.status === 'playing') {
+                            gameState.timeRemaining--;
+                            
+                            if (gameState.timeRemaining <= 0) {
+                                endGame();
+                            }
+                        }
+                    }, 1000);
+                };
+
+                const pauseGame = () => {
+                    gameState.status = 'paused';
+                    gameState.allowInteraction = false;
+                };
+
+                const resumeGame = () => {
+                    gameState.status = 'playing';
+                    gameState.allowInteraction = true;
+                };
+
+                const endGame = () => {
+                    gameState.status = 'gameOver';
+                    gameState.allowInteraction = false;
+                    
+                    if (timerInterval) {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                    }
+
+                    // Check if it's a new high score
+                    const completionTime = Date.now() - gameState.gameStartTime;
+                    const scoreData = {
+                        score: gameState.score,
+                        completionTime,
+                        totalPairs: gameState.totalPairs,
+                        theme: settings.theme,
+                        timerSetting: settings.timer,
+                        matchedPairs: gameState.matchedPairs
+                    };
+
+                    const rank = addHighScore(scoreData);
+                    isNewHighScore.value = rank <= 10;
+
+                    // Play victory confetti if all pairs matched
+                    if (gameState.matchedPairs === gameState.totalPairs) {
+                        playVictoryConfetti();
+                    }
+
+                    showGameOverModal.value = true;
+                };
+
+                const handleCardClick = async (cardId) => {
+                    if (!gameState.allowInteraction || gameState.status !== 'playing') return;
+
+                    const card = gameState.cards.find(c => c.id === cardId);
+                    if (!card || card.isMatched || card.isFlipped) return;
+                    if (gameState.selectedCards.length >= 2) return;
+
+                    // Flip card
+                    card.isFlipped = true;
+                    gameState.selectedCards.push(card);
+
+                    if (gameState.selectedCards.length === 2) {
+                        gameState.allowInteraction = false;
+                        
+                        await new Promise(resolve => setTimeout(resolve, 600));
+                        
+                        const [card1, card2] = gameState.selectedCards;
+                        const isMatch = card1.pairId === card2.pairId;
+
+                        if (isMatch) {
+                            // Handle match
+                            const scoreIncrease = calculateMatchScore(
+                                gameState.timeRemaining,
+                                settings.timer,
+                                gameState.totalPairs,
+                                settings.timer > 0
+                            );
+
+                            gameState.score += scoreIncrease;
+                            gameState.matchedPairs++;
+                            gameState.comboStreak++;
+
+                            card1.isMatched = true;
+                            card2.isMatched = true;
+
+                            playScorePopup(scoreIncrease);
+
+                            // Play match connection animation
+                            const card1Element = document.querySelector(`[data-card-id="${card1.id}"]`);
+                            const card2Element = document.querySelector(`[data-card-id="${card2.id}"]`);
+                            if (card1Element && card2Element) {
+                                playMatchConnection(card1Element, card2Element);
+                            }
+
+                            // Check win condition
+                            if (gameState.matchedPairs === gameState.totalPairs) {
+                                setTimeout(() => endGame(), 500);
+                            }
+                        } else {
+                            // Handle mismatch
+                            gameState.comboStreak = 0;
+                            
+                            await new Promise(resolve => setTimeout(resolve, 500));
+                            
+                            card1.isFlipped = false;
+                            card2.isFlipped = false;
+                        }
+
+                        gameState.selectedCards = [];
+                        gameState.allowInteraction = true;
+                    }
+                };
+
+                // High score functions
+                const getHighScores = () => {
+                    try {
+                        const scores = JSON.parse(localStorage.getItem('memoryGameScores') || '[]');
+                        return scores.sort((a, b) => {
+                            if (b.score !== a.score) return b.score - a.score;
+                            return a.completionTime - b.completionTime;
+                        }).map((score, index) => ({ ...score, rank: index + 1 }));
+                    } catch {
+                        return [];
+                    }
+                };
+
+                const addHighScore = (scoreData) => {
+                    const scores = getHighScores();
+                    const newScore = {
+                        ...scoreData,
+                        id: Date.now().toString(),
+                        date: new Date().toISOString()
+                    };
+
+                    scores.push(newScore);
+                    scores.sort((a, b) => {
+                        if (b.score !== a.score) return b.score - a.score;
+                        return a.completionTime - b.completionTime;
+                    });
+
+                    const trimmedScores = scores.slice(0, 50);
+                    localStorage.setItem('memoryGameScores', JSON.stringify(trimmedScores));
+
+                    return trimmedScores.findIndex(s => s.id === newScore.id) + 1;
+                };
+
+                const clearHighScores = () => {
+                    if (confirm('Are you sure you want to clear all high scores?')) {
+                        localStorage.removeItem('memoryGameScores');
+                    }
+                };
+
+                // View functions
+                const setView = (view) => {
+                    currentView.value = view;
+                    
+                    if (view !== 'game' && gameState.status === 'playing') {
+                        pauseGame();
+                    }
+                };
+
+                const startNewGame = () => {
+                    startGame();
+                };
+
+                const startQuickGame = () => {
+                    const quickGameSettings = {
+                        timer: quickSettings.pairs === 4 ? 0 : quickSettings.pairs === 8 ? 60 : quickSettings.pairs === 12 ? 90 : 120,
+                        pairs: quickSettings.pairs,
+                        uniqueShapes: false,
+                        theme: settings.theme,
+                        backgroundImage: settings.backgroundImage
+                    };
+                    startGame(quickGameSettings);
+                };
+
+                const closeGameOverModal = () => {
+                    showGameOverModal.value = false;
+                };
+
+                const saveSettings = () => {
+                    localStorage.setItem('memoryGameSettings', JSON.stringify(settings));
+                    alert('Settings saved!');
+                };
+
+                const loadSettings = () => {
+                    try {
+                        const saved = localStorage.getItem('memoryGameSettings');
+                        if (saved) {
+                            Object.assign(settings, JSON.parse(saved));
+                        }
+                    } catch {
+                        // Use default settings
+                    }
+                };
+
+                // Lifecycle
+                onMounted(() => {
+                    loadSettings();
+                });
+
+                // Watch for theme changes to update background
+                watch(() => settings.backgroundImage, (newBg) => {
+                    const root = document.documentElement;
+                    if (newBg) {
+                        root.style.setProperty('--bg-image', `url(${newBg})`);
+                    } else {
+                        root.style.removeProperty('--bg-image');
+                    }
+                });
+
+                return {
+                    // Data
+                    themes,
+                    currentView,
+                    showGameOverModal,
+                    isNewHighScore,
+                    settings,
+                    quickSettings,
+                    gameState,
+                    boardLayout,
+                    scoreFilters,
+
+                    // Computed
+                    boardStyle,
+                    filteredScores,
+
+                    // Methods
+                    formatTime,
+                    formatDate,
+                    getCardStyle,
+                    handleCardClick,
+                    startGame,
+                    startNewGame,
+                    startQuickGame,
+                    pauseGame,
+                    resumeGame,
+                    setView,
+                    closeGameOverModal,
+                    saveSettings,
+                    clearHighScores
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
