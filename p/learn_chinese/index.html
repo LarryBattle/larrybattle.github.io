@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intermediate Chinese Lessons</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background-color: #d9534f;
+            color: white;
+            text-align: center;
+            padding: 1rem 0;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        nav button {
+            background-color: #5bc0de;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        nav button:hover {
+            background-color: #31b0d5;
+            transform: translateY(-2px);
+        }
+        nav button.active {
+            background-color: #0275d8;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+        .lesson {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #d9534f;
+            border-bottom: 2px solid #f0f2f5;
+            padding-bottom: 10px;
+        }
+        .explanation, .vocabulary, .sentence-generator, .quiz {
+            margin-bottom: 20px;
+        }
+        .vocab-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .vocab-table th, .vocab-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .vocab-table th {
+            background-color: #f7f7f7;
+        }
+        .pinyin {
+            color: #555;
+            font-size: 0.9em;
+        }
+        .sentence-output {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .quiz-question {
+            margin-bottom: 15px;
+        }
+        .quiz-options label {
+            display: block;
+            margin-bottom: 5px;
+            padding: 8px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .quiz-options label:hover {
+            background-color: #f5f5f5;
+        }
+        .quiz-results {
+            margin-top: 15px;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        button {
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #449d44;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Intermediate Chinese Grammar</h1>
+        </header>
+
+        <nav id="lesson-nav"></nav>
+
+        <main id="lesson-content"></main>
+    </div>
+
+    <script>
+        const lessonsData = [
+            {
+                id: 1,
+                title: "Lesson 1: Completed Actions with '了' (le)",
+                explanation: "The particle '了' (le) is one of the most important concepts. It's often placed after a verb to indicate that an action is completed or that a new situation has occurred. It doesn't strictly mean past tense, but signifies a completed action in a specific context.",
+                vocabulary: [
+                    { pinyin: "le", character: "了", translation: "completed action particle" },
+                    { pinyin: "mǎi", character: "买", translation: "to buy" },
+                    { pinyin: "kàn", character: "看", translation: "to see, to watch, to read" },
+                    { pinyin: "diànyǐng", character: "电影", translation: "movie" },
+                    { pinyin: "zuótiān", character: "昨天", translation: "yesterday" }
+                ],
+                sentenceGenerator: {
+                    parts: [
+                        { type: "Subject", items: ["我 (wǒ)", "他 (tā)"] },
+                        { type: "Time", items: ["昨天 (zuótiān)"] },
+                        { type: "Verb", items: ["看 (kàn)了", "买 (mǎi)了"] },
+                        { type: "Object", items: ["一个苹果 (yí ge píngguǒ)", "那部电影 (nà bù diànyǐng)"] }
+                    ]
+                },
+                quiz: [
+                    { question: "How do you say 'I bought a book'?", options: ["我买书 (wǒ mǎi shū)", "我买了书 (wǒ mǎi le shū)", "我了买书 (wǒ le mǎi shū)"], answer: "我买了书 (wǒ mǎi le shū)" },
+                    { question: "What is the primary function of '了' (le) in a sentence like '他来了 (tā lái le)'?", options: ["Indicates future tense", "Indicates a new situation or completed action", "Makes the sentence negative"], answer: "Indicates a new situation or completed action" },
+                    { question: "'电影 (diànyǐng)' means:", options: ["television", "book", "movie"], answer: "movie" }
+                ]
+            },
+            {
+                id: 2,
+                title: "Lesson 2: Directional Complements '来/去' (lái/qù)",
+                explanation: "Verbs can be combined with '来' (lái, to come) or '去' (qù, to go) to show the direction of the action relative to the speaker. If the action moves towards the speaker, use '来'. If it moves away, use '去'. For example, 'jìn' (to enter) becomes 'jìnlái' (come in) or 'jìnqù' (go in).",
+                vocabulary: [
+                    { pinyin: "lái", character: "来", translation: "to come (directional)" },
+                    { pinyin: "qù", character: "去", translation: "to go (directional)" },
+                    { pinyin: "jìn", character: "进", translation: "to enter" },
+                    { pinyin: "chū", character: "出", translation: "to exit" },
+                    { pinyin: "shàng", character: "上", translation: "to go up" },
+                    { pinyin: "xià", character: "下", translation: "to go down" }
+                ],
+                sentenceGenerator: {
+                    parts: [
+                        { type: "Subject", items: ["老师 (lǎoshī)", "学生 (xuéshēng)"] },
+                        { type: "Verb+Direction", items: ["走进来了 (zǒu jìnlái le)", "跑出去了 (pǎo chūqù le)", "拿上来了 (ná shànglái le)"] },
+                        { type: "Object", items: ["教室 (jiàoshì)", "一本书 (yì běn shū)"] }
+                    ]
+                },
+                quiz: [
+                    { question: "If a friend is outside your room and you want them to enter, you say:", options: ["进来 (jìnlái)!", "进去 (jìnqù)!", "出去 (chūqù)!"], answer: "进来 (jìnlái)!" },
+                    { question: "He ran downstairs (away from me).", options: ["他跑下来了 (tā pǎo xiàlái le)", "他跑下去了 (tā pǎo xiàqù le)", "他跑上了 (tā pǎo shàng le)"], answer: "他跑下去了 (tā pǎo xiàqù le)" },
+                    { question: "The verb 'chū' (出) means:", options: ["to enter", "to exit", "to go up"], answer: "to exit" }
+                ]
+            },
+            {
+                id: 3,
+                title: "Lesson 3: Resultative Complements",
+                explanation: "A second verb can be attached to a main verb to show the result. Common results include '完' (wán - to finish), '到' (dào - to attain/succeed), '见' (jiàn - to perceive), '懂' (dǒng - to understand). For example, '看' (kàn) is 'to look', but '看见' (kànjiàn) is 'to see'.",
+                vocabulary: [
+                    { pinyin: "wán", character: "完", translation: "to finish (result)" },
+                    { pinyin: "dào", character: "到", translation: "to succeed in (result)" },
+                    { pinyin: "jiàn", character: "见", translation: "to perceive (result)" },
+                    { pinyin: "dǒng", character: "懂", translation: "to understand (result)" },
+                    { pinyin: "tīng", character: "听", translation: "to listen" },
+                    { pinyin: "zuò", character: "做", translation: "to do" }
+                ],
+                sentenceGenerator: {
+                    parts: [
+                        { type: "Subject", items: ["我 (wǒ)", "你 (nǐ)"] },
+                        { type: "Verb+Result", items: ["听懂了 (tīng dǒng le)", "做完了 (zuò wán le)", "找到了 (zhǎo dào le)"] },
+                        { type: "Object", items: ["作业 (zuòyè)", "你的钥匙 (nǐ de yàoshi)", "老师的话 (lǎoshī de huà)"] }
+                    ]
+                },
+                quiz: [
+                    { question: "What is the difference between '听' (tīng) and '听懂' (tīng dǒng)?", options: ["No difference", "'tīng' is listen, 'tīng dǒng' is listen and understand", "'tīng' is formal, 'tīng dǒng' is informal"], answer: "'tīng' is listen, 'tīng dǒng' is listen and understand" },
+                    { question: "How do you say 'I have finished eating'?", options: ["我吃饭了 (wǒ chīfàn le)", "我吃完饭了 (wǒ chī wán fàn le)", "我饭吃了 (wǒ fàn chī le)"], answer: "我吃完饭了 (wǒ chī wán fàn le)" },
+                    { question: "'找到' (zhǎo dào) means:", options: ["to look for", "to lose", "to find (succeed in looking)"], answer: "to find (succeed in looking)" }
+                ]
+            },
+            {
+                id: 4,
+                title: "Lesson 4: The '把' (bǎ) Sentence",
+                explanation: "The '把' (bǎ) structure (Subject + 把 + Object + Verb + Other element) is used to show what someone does to something, emphasizing the disposal of the object. It's very common but requires a result or some complexity after the verb.",
+                vocabulary: [
+                    { pinyin: "bǎ", character: "把", translation: "disposal marker" },
+                    { pinyin: "fàng", character: "放", translation: "to put" },
+                    { pinyin: "zài", character: "在", translation: "at, in" },
+                    { pinyin: "zhuōzi", character: "桌子", translation: "table" },
+                    { pinyin: "gěi", character: "给", translation: "to give" }
+                ],
+                sentenceGenerator: {
+                    parts: [
+                        { type: "Subject", items: ["请你 (qǐng nǐ)", "我 (wǒ)"] },
+                        { type: "Marker", items: ["把 (bǎ)"] },
+                        { type: "Object", items: ["那本书 (nà běn shū)", "这个杯子 (zhè ge bēizi)"] },
+                        { type: "Verb+Complement", items: ["放在桌子上 (fàng zài zhuōzi shang)", "给我 (gěi wǒ)"] }
+                    ]
+                },
+                quiz: [
+                    { question: "Which sentence correctly means 'He ate the apple'?", options: ["他吃苹果了 (tā chī píngguǒ le)", "他把苹果吃了 (tā bǎ píngguǒ chī le)", "Both are correct, but the second emphasizes the action on the apple."], answer: "Both are correct, but the second emphasizes the action on the apple." },
+                    { question: "Rearrange into a correct sentence: (我 wǒ, 作业 zuòyè, 做完了 zuò wán le, 把 bǎ)", options: ["我做完了把作业", "我把作业做完了", "作业我把做完了"], answer: "我把作业做完了" },
+                    { question: "The '把' sentence structure is:", options: ["S + V + 把 + O", "S + 把 + O + V", "S + O + 把 + V"], answer: "S + 把 + O + V" }
+                ]
+            },
+            {
+                id: 5,
+                title: "Lesson 5: Comparisons with '比' (bǐ)",
+                explanation: "To compare two things, use the structure: A + 比 + B + Adjective. For example, '我比他高' (wǒ bǐ tā gāo) means 'I am taller than him'. You cannot use adverbs like '很' (hěn) before the adjective in this structure.",
+                vocabulary: [
+                    { pinyin: "bǐ", character: "比", translation: "to compare; than" },
+                    { pinyin: "gāo", character: "高", translation: "tall" },
+                    { pinyin: "dà", character: "大", translation: "big" },
+                    { pinyin: "piàoliang", character: "漂亮", translation: "beautiful" },
+                    { pinyin: "gèng", character: "更", translation: "even more" },
+                    { pinyin: "yīdiǎnr", character: "一点儿", translation: "a little bit" }
+                ],
+                sentenceGenerator: {
+                    parts: [
+                        { type: "Noun A", items: ["哥哥 (gēge)", "这个房间 (zhè ge fángjiān)"] },
+                        { type: "Marker", items: ["比 (bǐ)"] },
+                        { type: "Noun B", items: ["弟弟 (dìdi)", "那个房间 (nà ge fángjiān)"] },
+                        { type: "Adjective", items: ["高一点儿 (gāo yīdiǎnr)", "更干净 (gèng gānjìng)"] }
+                    ]
+                },
+                quiz: [
+                    { question: "How do you say 'China is bigger than the USA'?", options: ["中国比美国大 (Zhōngguó bǐ Měiguó dà)", "中国很大比美国 (Zhōngguó hěn dà bǐ Měiguó)", "中国大比美国 (Zhōngguó dà bǐ Měiguó)"], answer: "中国比美国大 (Zhōngguó bǐ Měiguó dà)" },
+                    { question: "Which sentence is grammatically INCORRECT?", options: ["他比我跑得快 (tā bǐ wǒ pǎo de kuài)", "今天比昨天很冷 (jīntiān bǐ zuótiān hěn lěng)", "苹果比西瓜便宜 (píngguǒ bǐ xīguā piányi)"], answer: "今天比昨天很冷 (jīntiān bǐ zuótiān hěn lěng)" },
+                    { question: "'更' (gèng) is used to mean:", options: ["not", "also", "even more"], answer: "even more" }
+                ]
+            },
+            {
+                id: 6,
+                title: "Lesson 6: Modal Verbs (会, 能, 可以)",
+                explanation: "These three words all translate to 'can', but have different nuances. '会' (huì) is for a learned skill (I can speak Chinese). '能' (néng) is for physical ability or possibility (I'm busy, I can't go). '可以' (kěyǐ) is for permission (Can I come in?).",
+                vocabulary: [
+                    { pinyin: "huì", character: "会", translation: "can (learned skill)" },
+                    { pinyin: "néng", character: "能", translation: "can (ability, possibility)" },
+                    { pinyin: "kěyǐ", character: "可以", translation: "can (permission)" },
+                    { pinyin: "shuō", character: "说", translation: "to speak" },
+                    { pinyin: "kāi chē", character: "开车", translation: "to drive a car" }
+                ],
+                sentenceGenerator: {
+                    parts: [
+                        { type: "Subject", items: ["我 (wǒ)", "你 (nǐ)"] },
+                        { type: "Modal Verb", items: ["会 (huì)", "能 (néng)", "可以 (kěyǐ)"] },
+                        { type: "Verb Phrase", items: ["说中文 (shuō Zhōngwén)", "帮我吗 (bāng wǒ ma)?", "用你的电脑吗 (yòng nǐ de diànnǎo ma)?"] }
+                    ]
+                },
+                quiz: [
+                    { question: "To ask 'Can you drive?' (as in, do you have the skill), you should use:", options: ["你会开车吗 (nǐ huì kāichē ma)?", "你能开车吗 (nǐ néng kāichē ma)?", "你可以开车吗 (nǐ kěyǐ kāichē ma)?"], answer: "你会开车吗 (nǐ huì kāichē ma)?" },
+                    { question: "To ask for permission, 'Can I sit here?', you should use:", options: ["我能坐这里吗 (wǒ néng zuò zhèlǐ ma)?", "我可以坐这里吗 (wǒ kěyǐ zuò zhèlǐ ma)?", "我会坐这里吗 (wǒ huì zuò zhèlǐ ma)?"], answer: "我可以坐这里吗 (wǒ kěyǐ zuò zhèlǐ ma)?" },
+                    { question: "'我今天很忙，不___去' (I'm busy today, I can't go). Fill in the blank.", options: ["会 (huì)", "可以 (kěyǐ)", "能 (néng)"], answer: "能 (néng)" }
+                ]
+            },
+            {
+                id: 7,
+                title: "Lesson 7: The Passive '被' (bèi) Sentence",
+                explanation: "The '被' (bèi) sentence is the passive voice, counterpart to the active '把' sentence. The structure is: Receiver + 被 + Agent + Verb + Other Element. It's often used for unfortunate events. For example, '我的钱包被偷了' (My wallet was stolen).",
+                vocabulary: [
+                    { pinyin: "bèi", character: "被", translation: "passive voice marker" },
+                    { pinyin: "qiánbāo", character: "钱包", translation: "wallet" },
+                    { pinyin: "tōu", character: "偷", translation: "to steal" },
+                    { pinyin: "pīpíng", character: "批评", translation: "to criticize" },
+                    { pinyin: "bēizi", character: "杯子", translation: "cup" },
+                    { pinyin: "dǎ pò le", character: "打破了", translation: "smashed" }
+                ],
+                sentenceGenerator: {
+                    parts: [
+                        { type: "Receiver", items: ["那个杯子 (nà ge bēizi)", "他 (tā)"] },
+                        { type: "Marker", items: ["被 (bèi)"] },
+                        { type: "Agent", items: ["弟弟 (dìdi)", "老师 (lǎoshī)"] },
+                        { type: "Action", items: ["打破了 (dǎ pò le)", "批评了 (pīpíng le)"] }
+                    ]
+                },
+                quiz: [
+                    { question: "How would you say 'My homework was eaten by the dog'?", options: ["狗被我的作业吃了 (gǒu bèi wǒ de zuòyè chī le)", "我的作业被狗吃了 (wǒ de zuòyè bèi gǒu chī le)", "我被狗吃作业了 (wǒ bèi gǒu chī zuòyè le)"], answer: "我的作业被狗吃了 (wǒ de zuòyè bèi gǒu chī le)" },
+                    { question: "The '被' (bèi) structure is often associated with:", options: ["Happy events", "Unfortunate or negative events", "Formal requests"], answer: "Unfortunate or negative events" },
+                    { question: "'The cake was eaten.' In Chinese, this can be expressed as:", options: ["蛋糕吃了 (dàngāo chī le)", "蛋糕被吃了 (dàngāo bèi chī le)", "吃了蛋糕 (chī le dàngāo)"], answer: "蛋糕被吃了 (dàngāo bèi chī le)" }
+                ]
+            },
+            {
+                id: 8,
+                title: "Lesson 8: Expressing Duration",
+                explanation: "To express the duration of an action, the structure is: Verb + (了) + Duration + (的) + Object. For example, '我学了一年的中文' (wǒ xué le yì nián de Zhōngwén) - I studied Chinese for one year. If there is no object, it's simpler: Verb + 了 + Duration.",
+                vocabulary: [
+                    { pinyin: "nián", character: "年", translation: "year" },
+                    { pinyin: "xiǎoshí", character: "小时", translation: "hour" },
+                    { pinyin: "fēnzhōng", character: "分钟", translation: "minute" },
+                    { pinyin: "děng", character: "等", translation: "to wait" },
+                    { pinyin: "zhù", character: "住", translation: "to live" }
+                ],
+                sentenceGenerator: {
+                    parts: [
+                        { type: "Subject", items: ["我 (wǒ)", "他 (tā)"] },
+                        { type: "Verb+Duration+Object", items: ["学了三年的中文 (xué le sān nián de Zhōngwén)", "等了二十分钟的朋友 (děng le èrshí fēnzhōng de péngyou)"] }
+                    ]
+                },
+                quiz: [
+                    { question: "How do you say 'I watched TV for two hours'?", options: ["我看了两个小时电视 (wǒ kàn le liǎng ge xiǎoshí diànshì)", "我看了电视两个小时 (wǒ kàn le diànshì liǎng ge xiǎoshí)", "我两个小时看了电视 (wǒ liǎng ge xiǎoshí kàn le diànshì)"], answer: "我看了两个小时电视 (wǒ kàn le liǎng ge xiǎoshí diànshì)" },
+                    { question: "'He lived in Beijing for five years.' Which is correct?", options: ["他在北京住了五年 (tā zài Běijīng zhù le wǔ nián)", "他住了五年在北京 (tā zhù le wǔ nián zài Běijīng)", "他住了北京五年 (tā zhù le Běijīng wǔ nián)"], answer: "他在北京住了五年 (tā zài Běijīng zhù le wǔ nián)" },
+                    { question: "'小时 (xiǎoshí)' means:", options: ["minute", "hour", "second"], answer: "hour" }
+                ]
+            },
+            {
+                id: 9,
+                title: "Lesson 9: 'If... then...' (如果...就...)",
+                explanation: "'如果...就...' (rúguǒ...jiù...) is the most common way to form conditional 'if...then...' sentences. The structure is: 如果 + Condition, (那/那么) + Subject + 就 + Result.",
+                vocabulary: [
+                    { pinyin: "rúguǒ", character: "如果", translation: "if" },
+                    { pinyin: "jiù", character: "就", translation: "then (connects condition and result)" },
+                    { pinyin: "yàoshi", character: "要是", translation: "if (more informal)" },
+                    { pinyin: "xià yǔ", character: "下雨", translation: "to rain" },
+                    { pinyin: "dài sǎn", character: "带伞", translation: "to bring an umbrella" }
+                ],
+                sentenceGenerator: {
+                    parts: [
+                        { type: "Condition", items: ["如果明天天气好 (rúguǒ míngtiān tiānqì hǎo)", "要是你不想去 (yàoshi nǐ bù xiǎng qù)"] },
+                        { type: "Result", items: ["我们就去公园 (wǒmen jiù qù gōngyuán)", "就在家休息吧 (jiù zài jiā xiūxi ba)"] }
+                    ]
+                },
+                quiz: [
+                    { question: "Translate: 'If you are tired, then go to sleep.'", options: ["如果你累了，就睡觉吧 (rúguǒ nǐ lèi le, jiù shuìjiào ba)", "就你累了，如果睡觉吧 (jiù nǐ lèi le, rúguǒ shuìjiào ba)", "如果你睡觉吧，就累了 (rúguǒ nǐ shuìjiào ba, jiù lèi le)"], answer: "如果你累了，就睡觉吧 (rúguǒ nǐ lèi le, jiù shuìjiào ba)" },
+                    { question: "In the '如果...就...' structure, where does '就' go?", options: ["Before the condition", "At the very end of the sentence", "Before the result/consequence"], answer: "Before the result/consequence" },
+                    { question: "'下雨 (xià yǔ)' means:", options: ["sunny", "windy", "to rain"], answer: "to rain" }
+                ]
+            },
+            {
+                id: 10,
+                title: "Lesson 10: Potential Complements (得/不)",
+                explanation: "To express whether an action can or cannot be achieved, we insert '得' (de) for positive potential or '不' (bù) for negative potential between a verb and its resultative/directional complement. E.g., '听得懂' (tīng de dǒng - can understand) vs. '听不懂' (tīng bu dǒng - can't understand).",
+                vocabulary: [
+                    { pinyin: "de", character: "得", translation: "potential complement particle (positive)" },
+                    { pinyin: "bù", character: "不", translation: "potential complement particle (negative)" },
+                    { pinyin: "chī de wán", character: "吃得完", translation: "can finish eating" },
+                    { pinyin: "chī bu wán", character: "吃不完", translation: "can't finish eating" },
+                    { pinyin: "kàn de jiàn", character: "看得见", translation: "can see" },
+                    { pinyin: "kàn bu jiàn", character: "看不见", translation: "can't see" }
+                ],
+                sentenceGenerator: {
+                    parts: [
+                        { type: "Context", items: ["菜太多了 (cài tài duō le)", "他坐得太远了 (tā zuò de tài yuǎn le)"] },
+                        { type: "Subject", items: ["我 (wǒ)", "我们 (wǒmen)"] },
+                        { type: "Potential", items: ["吃不完 (chī bu wán)", "看不见 (kàn bu jiàn)"] }
+                    ]
+                },
+                quiz: [
+                    { question: "'The homework is too difficult, I can't finish it.'", options: ["作业太难了，我做得完 (zuòyè tài nán le, wǒ zuò de wán)", "作业太难了，我做不完 (zuòyè tài nán le, wǒ zuò bu wán)", "作业太难了，我不做完 (zuòyè tài nán le, wǒ bù zuò wán)"], answer: "作业太难了，我做不完 (zuòyè tài nán le, wǒ zuò bu wán)" },
+                    { question: "What is the positive potential form of 'go in' (进去 jìnqu)?", options: ["进得去 (jìn de qù)", "进不去 (jìn bu qù)", "进去了 (jìnqù le)"], answer: "进得去 (jìn de qù)" },
+                    { question: "'我听不懂' (wǒ tīng bu dǒng) means:", options: ["I don't listen", "I don't want to listen", "I can't understand (what I'm listening to)"], answer: "I can't understand (what I'm listening to)" }
+                ]
+            }
+        ];
+
+        const lessonNav = document.getElementById('lesson-nav');
+        const lessonContent = document.getElementById('lesson-content');
+        let currentLessonId = 1;
+
+        function renderNav() {
+            lessonNav.innerHTML = '';
+            lessonsData.forEach(lesson => {
+                const button = document.createElement('button');
+                button.textContent = `Lesson ${lesson.id}`;
+                button.dataset.id = lesson.id;
+                if (lesson.id === currentLessonId) {
+                    button.classList.add('active');
+                }
+                button.addEventListener('click', () => {
+                    currentLessonId = lesson.id;
+                    renderLesson(currentLessonId);
+                    updateNav();
+                });
+                lessonNav.appendChild(button);
+            });
+        }
+        
+        function updateNav() {
+            const buttons = lessonNav.querySelectorAll('button');
+            buttons.forEach(btn => {
+                btn.classList.remove('active');
+                if (parseInt(btn.dataset.id) === currentLessonId) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+        
+        function renderLesson(id) {
+            const lesson = lessonsData.find(l => l.id === id);
+            if (!lesson) return;
+
+            const vocabRows = lesson.vocabulary.map(word => `
+                <tr>
+                    <td>${word.character}</td>
+                    <td><span class="pinyin">${word.pinyin}</span></td>
+                    <td>${word.translation}</td>
+                </tr>
+            `).join('');
+
+            const sentenceGeneratorHTML = `
+                <div class="sentence-generator">
+                    <h3>Sentence Generator</h3>
+                    <p>Click the button to create a random sentence based on this lesson's grammar.</p>
+                    <button id="generate-sentence-btn">Generate Sentence</button>
+                    <div id="sentence-output" class="sentence-output"></div>
+                </div>
+            `;
+
+            const quizQuestions = lesson.quiz.map((q, index) => `
+                <div class="quiz-question">
+                    <p><strong>Question ${index + 1}:</strong> ${q.question}</p>
+                    <div class="quiz-options">
+                        ${q.options.map(opt => `
+                            <label>
+                                <input type="radio" name="q${index}" value="${opt}"> ${opt}
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            const quizHTML = `
+                <div class="quiz">
+                    <h3>Quiz</h3>
+                    <p>Test your knowledge from this lesson.</p>
+                    <form id="quiz-form">${quizQuestions}</form>
+                    <button id="submit-quiz-btn">Check Answers</button>
+                    <div id="quiz-results" class="quiz-results" style="display: none;"></div>
+                </div>
+            `;
+
+            lessonContent.innerHTML = `
+                <div class="lesson">
+                    <h2>${lesson.title}</h2>
+                    <div class="explanation"><p>${lesson.explanation}</p></div>
+                    <div class="vocabulary">
+                        <h3>Key Vocabulary</h3>
+                        <table class="vocab-table">
+                            <thead><tr><th>Character</th><th>Pinyin</th><th>Translation</th></tr></thead>
+                            <tbody>${vocabRows}</tbody>
+                        </table>
+                    </div>
+                    ${sentenceGeneratorHTML}
+                    ${quizHTML}
+                </div>
+            `;
+            
+            addEventListeners(lesson);
+        }
+
+        function addEventListeners(lesson) {
+            const generateBtn = document.getElementById('generate-sentence-btn');
+            const sentenceOutput = document.getElementById('sentence-output');
+            if (generateBtn) {
+                 generateBtn.addEventListener('click', () => {
+                    let sentence = [];
+                     lesson.sentenceGenerator.parts.forEach(part => {
+                        const randomIndex = Math.floor(Math.random() * part.items.length);
+                        sentence.push(part.items[randomIndex]);
+                    });
+                    sentenceOutput.textContent = sentence.join(' ');
+                });
+            }
+
+            const submitQuizBtn = document.getElementById('submit-quiz-btn');
+            const quizForm = document.getElementById('quiz-form');
+            const quizResults = document.getElementById('quiz-results');
+            if (submitQuizBtn) {
+                submitQuizBtn.addEventListener('click', () => {
+                    let score = 0;
+                    lesson.quiz.forEach((q, index) => {
+                        const formData = new FormData(quizForm);
+                        const userAnswer = formData.get(`q${index}`);
+                        if (userAnswer === q.answer) {
+                            score++;
+                        }
+                    });
+                    quizResults.textContent = `You scored ${score} out of ${lesson.quiz.length}!`;
+                    quizResults.style.display = 'block';
+                });
+            }
+        }
+        
+        // Initial Load
+        renderNav();
+        renderLesson(currentLessonId);
+
+    </script>
+
+</body>
+</html>
