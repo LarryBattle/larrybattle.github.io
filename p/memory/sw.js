@@ -3,6 +3,9 @@ const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/p/memory/',
+  '/p/memory/index.html',
+  '/p/memory/manifest.json',
   'https://unpkg.com/vue@3/dist/vue.global.js'
 ];
 
