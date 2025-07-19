@@ -4,9 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Memory Game</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#667eea">
+    
+    <!-- PWA Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+    
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
-
         * {
             margin: 0;
             padding: 0;
@@ -206,22 +214,6 @@
             transform: perspective(1500px) rotateX(5deg) scale(1.02);
         }
 
-        .game-board.unique-layout {
-            display: block;
-            position: relative;
-            width: 90vmin;
-            height: 90vmin;
-            max-width: 600px;
-            max-height: 600px;
-            margin: 0 auto;
-        }
-
-        .game-board.unique-layout .card {
-            position: absolute;
-            width: var(--card-size);
-            height: var(--card-size);
-        }
-
         /* Cards - Enhanced with 3D effects */
         .card {
             perspective: 1000px;
@@ -266,29 +258,6 @@
             transform-style: preserve-3d;
         }
 
-        /* Card shine effect */
-        .card-inner::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(
-                45deg,
-                transparent 30%,
-                rgba(255,255,255,0.1) 50%,
-                transparent 70%
-            );
-            transform: rotate(45deg) translate(-70%, -70%);
-            transition: transform 0.6s;
-            pointer-events: none;
-        }
-
-        .card:hover .card-inner::after {
-            transform: rotate(45deg) translate(-30%, -30%);
-        }
-
         .card.flipped .card-inner {
             transform: rotateY(180deg);
         }
@@ -321,10 +290,6 @@
 
         .card.matched {
             animation: matchSuccess 0.6s ease-out forwards;
-        }
-
-        .card.unmatched-end {
-            filter: grayscale(100%) opacity(0.5);
         }
 
         @keyframes matchSuccess {
@@ -373,22 +338,6 @@
             100% {
                 opacity: 0;
                 transform: translateY(-120px) scale(0.8) rotateZ(0deg);
-            }
-        }
-
-        /* Match Connection Line */
-        @keyframes matchLinePulse {
-            0% {
-                opacity: 0;
-                transform: scaleX(0);
-            }
-            50% {
-                opacity: 1;
-                transform: scaleX(1);
-            }
-            100% {
-                opacity: 0;
-                transform: scaleX(1);
             }
         }
 
@@ -571,17 +520,6 @@
             margin: 0 auto;
         }
 
-        .scores-filters {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
         .scores-list {
             background: white;
             border-radius: 16px;
@@ -680,6 +618,19 @@
             margin-top: 2rem;
         }
 
+        /* PWA Install Banner */
+        .install-banner {
+            background: var(--primary-color);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            display: none;
+        }
+
+        .install-banner.show {
+            display: block;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             :root {
@@ -718,25 +669,6 @@
             }
         }
 
-        @media (max-width: 480px) {
-            .header {
-                padding: 1rem;
-            }
-            
-            .header h1 {
-                font-size: 1.5rem;
-            }
-            
-            .score-item {
-                grid-template-columns: auto 1fr auto;
-                gap: 0.5rem;
-            }
-            
-            .modal-actions {
-                flex-direction: column;
-            }
-        }
-
         /* Utility Classes */
         .hidden {
             display: none !important;
@@ -745,33 +677,31 @@
         .text-center {
             text-align: center;
         }
-
-        .mt-2 {
-            margin-top: 1rem;
-        }
-
-        .mb-2 {
-            margin-bottom: 1rem;
-        }
     </style>
 </head>
 <body>
     <div id="app">
         <div class="app-container">
+            <!-- PWA Install Banner -->
+            <div class="install-banner" id="installBanner">
+                <p>📱 Install this app for the best offline experience!</p>
+                <button class="btn" @click="installApp" v-if="deferredPrompt">Install App</button>
+            </div>
+
             <!-- Header -->
             <header class="header">
                 <h1>🧠 3D Memory Game</h1>
                 <nav class="nav">
-                    <button class="nav-btn" :class="{ active: currentView === 'menu' }" @click="setView('menu')">
+                    <button class="nav-btn" :class="{active: currentView === 'menu'}" @click="setView('menu')">
                         🏠 Menu
                     </button>
-                    <button class="nav-btn" :class="{ active: currentView === 'game' }" @click="startNewGame">
+                    <button class="nav-btn" :class="{active: currentView === 'game'}" @click="setView('game')">
                         🎮 Play
                     </button>
-                    <button class="nav-btn" :class="{ active: currentView === 'settings' }" @click="setView('settings')">
+                    <button class="nav-btn" :class="{active: currentView === 'settings'}" @click="setView('settings')">
                         ⚙️ Settings
                     </button>
-                    <button class="nav-btn" :class="{ active: currentView === 'scores' }" @click="setView('scores')">
+                    <button class="nav-btn" :class="{active: currentView === 'scores'}" @click="setView('scores')">
                         🏆 High Scores
                     </button>
                 </nav>
@@ -787,40 +717,25 @@
                     <div class="quick-start">
                         <h3>Quick Start</h3>
                         <div class="quick-options">
-                            <div class="quick-option" 
-                                 :class="{ selected: quickSettings.pairs === 4 }" 
-                                 @click="quickSettings.pairs = 4">
+                            <div class="quick-option" :class="{selected: quickSettings.pairs === 4}" @click="quickSettings.pairs = 4">
                                 <div class="option-label">Easy</div>
                                 <div class="option-value">4 pairs • No timer</div>
                             </div>
-                            <div class="quick-option" 
-                                 :class="{ selected: quickSettings.pairs === 8 }" 
-                                 @click="quickSettings.pairs = 8">
+                            <div class="quick-option" :class="{selected: quickSettings.pairs === 8}" @click="quickSettings.pairs = 8">
                                 <div class="option-label">Medium</div>
                                 <div class="option-value">8 pairs • 60 seconds</div>
                             </div>
-                            <div class="quick-option" 
-                                 :class="{ selected: quickSettings.pairs === 12 }" 
-                                 @click="quickSettings.pairs = 12">
+                            <div class="quick-option" :class="{selected: quickSettings.pairs === 12}" @click="quickSettings.pairs = 12">
                                 <div class="option-label">Hard</div>
                                 <div class="option-value">12 pairs • 90 seconds</div>
                             </div>
-                            <div class="quick-option" 
-                                 :class="{ selected: quickSettings.pairs === 20 }" 
-                                 @click="quickSettings.pairs = 20">
+                            <div class="quick-option" :class="{selected: quickSettings.pairs === 20}" @click="quickSettings.pairs = 20">
                                 <div class="option-label">Expert</div>
                                 <div class="option-value">20 pairs • 120 seconds</div>
                             </div>
                         </div>
                         <button class="btn success" @click="startQuickGame" style="font-size: 1.25rem; padding: 1rem 2rem;">
                             🚀 Start Game
-                        </button>
-                    </div>
-
-                    <div class="text-center">
-                        <p style="color: #6b7280; margin-bottom: 1rem;">Or customize your experience in Settings</p>
-                        <button class="btn secondary" @click="setView('settings')">
-                            ⚙️ Custom Settings
                         </button>
                     </div>
                 </div>
@@ -835,196 +750,101 @@
                             </div>
                             <div class="score-item" v-if="settings.timer > 0">
                                 <div class="score-label">Time</div>
-                                <div class="score-value" :style="{ color: gameState.timeRemaining <= 10 ? 'var(--danger-color)' : 'var(--primary-color)' }">
-                                    {{ formatTime(gameState.timeRemaining) }}
-                                </div>
+                                <div class="score-value">{{ formatTime(gameState.timeRemaining) }}</div>
                             </div>
                             <div class="score-item">
-                                <div class="score-label">Matches</div>
+                                <div class="score-label">Pairs</div>
                                 <div class="score-value">{{ gameState.matchedPairs }}/{{ gameState.totalPairs }}</div>
                             </div>
                         </div>
+                        
                         <div class="game-controls">
-                            <button class="btn secondary" @click="pauseGame" v-if="gameState.status === 'playing'">
-                                ⏸️ Pause
-                            </button>
-                            <button class="btn success" @click="resumeGame" v-if="gameState.status === 'paused'">
-                                ▶️ Resume
-                            </button>
-                            <button class="btn danger" @click="setView('menu')">
-                                🏠 Menu
-                            </button>
+                            <button class="btn secondary" @click="setView('menu')">Menu</button>
+                            <button class="btn" @click="startNewGame">New Game</button>
                         </div>
                     </div>
 
-                    <div class="game-board" 
-                         :class="{ 'unique-layout': boardLayout.layout !== 'rectangular' }"
-                         :style="boardStyle">
-                        <div v-for="card in gameState.cards" 
-                             :key="card.id"
-                             class="card"
-                             :class="{ 
-                                 flipped: card.isFlipped, 
-                                 matched: card.isMatched,
-                                 'unmatched-end': gameState.status === 'gameOver' && !card.isMatched
-                             }"
-                             :style="getCardStyle(card)"
-                             :data-card-id="card.id"
-                             @click="handleCardClick(card.id)"
-                             @touchend.prevent="handleCardClick(card.id)">
+                    <div class="game-board" :style="boardStyle" :class="{ 'unique-layout': boardLayout.layout !== 'rectangular' }">
+                        <div 
+                            v-for="card in gameState.cards" 
+                            :key="card.id"
+                            class="card"
+                            :class="{ flipped: card.isFlipped, matched: card.isMatched }"
+                            :style="getCardStyle(card)"
+                            :data-card-id="card.id"
+                            @click="handleCardClick(card.id)"
+                        >
                             <div class="card-inner">
-                                <div class="card-face card-back">
-                                    ?
-                                </div>
-                                <div class="card-face card-front">
-                                    {{ card.emoji }}
-                                </div>
+                                <div class="card-back card-face">?</div>
+                                <div class="card-front card-face">{{ card.emoji }}</div>
                             </div>
                         </div>
-                    </div>
-
-                    <div v-if="gameState.status === 'paused'" class="text-center">
-                        <h3 style="margin-bottom: 1rem;">Game Paused</h3>
-                        <button class="btn success" @click="resumeGame">▶️ Continue Playing</button>
                     </div>
                 </div>
 
                 <!-- Settings View -->
                 <div v-if="currentView === 'settings'" class="settings-view">
                     <div class="settings-section">
-                        <h3>⏱️ Timer Settings</h3>
-                        <div class="setting-item">
-                            <label class="setting-label">Countdown Timer</label>
-                            <div class="radio-group">
-                                <div class="radio-item" 
-                                     :class="{ selected: settings.timer === 0 }" 
-                                     @click="settings.timer = 0">
-                                    <span>Disabled</span>
-                                </div>
-                                <div class="radio-item" 
-                                     :class="{ selected: settings.timer === 30 }" 
-                                     @click="settings.timer = 30">
-                                    <span>30s</span>
-                                </div>
-                                <div class="radio-item" 
-                                     :class="{ selected: settings.timer === 60 }" 
-                                     @click="settings.timer = 60">
-                                    <span>60s</span>
-                                </div>
-                                <div class="radio-item" 
-                                     :class="{ selected: settings.timer === 90 }" 
-                                     @click="settings.timer = 90">
-                                    <span>90s</span>
-                                </div>
-                                <div class="radio-item" 
-                                     :class="{ selected: settings.timer === 120 }" 
-                                     @click="settings.timer = 120">
-                                    <span>120s</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="settings-section">
-                        <h3>🎯 Difficulty</h3>
+                        <h3>Game Settings</h3>
+                        
                         <div class="setting-item">
                             <label class="setting-label">Number of Pairs</label>
                             <div class="radio-group">
-                                <div class="radio-item" 
-                                     :class="{ selected: settings.pairs === 4 }" 
-                                     @click="settings.pairs = 4">
-                                    <span>4 pairs (Easy)</span>
+                                <div class="radio-item" :class="{selected: settings.pairs === 4}" @click="settings.pairs = 4">
+                                    <span>4 pairs</span>
                                 </div>
-                                <div class="radio-item" 
-                                     :class="{ selected: settings.pairs === 8 }" 
-                                     @click="settings.pairs = 8">
-                                    <span>8 pairs (Medium)</span>
+                                <div class="radio-item" :class="{selected: settings.pairs === 8}" @click="settings.pairs = 8">
+                                    <span>8 pairs</span>
                                 </div>
-                                <div class="radio-item" 
-                                     :class="{ selected: settings.pairs === 12 }" 
-                                     @click="settings.pairs = 12">
-                                    <span>12 pairs (Hard)</span>
+                                <div class="radio-item" :class="{selected: settings.pairs === 12}" @click="settings.pairs = 12">
+                                    <span>12 pairs</span>
                                 </div>
-                                <div class="radio-item" 
-                                     :class="{ selected: settings.pairs === 20 }" 
-                                     @click="settings.pairs = 20">
-                                    <span>20 pairs (Expert)</span>
+                                <div class="radio-item" :class="{selected: settings.pairs === 20}" @click="settings.pairs = 20">
+                                    <span>20 pairs</span>
                                 </div>
                             </div>
                         </div>
-                        <div class="setting-item">
-                            <label class="setting-label">
-                                <input type="checkbox" v-model="settings.uniqueShapes" style="margin-right: 0.5rem;">
-                                Use unique board shapes (Diamond, Circle, etc.)
-                            </label>
-                        </div>
-                    </div>
 
-                    <div class="settings-section">
-                        <h3>🎨 Theme</h3>
-                        <div class="theme-grid">
-                            <div v-for="(theme, key) in themes" 
-                                 :key="key"
-                                 class="theme-option"
-                                 :class="{ selected: settings.theme === key }"
-                                 @click="settings.theme = key">
-                                <div class="theme-preview">{{ theme.emojis.slice(0, 3).join('') }}</div>
-                                <div>{{ theme.name }}</div>
+                        <div class="setting-item">
+                            <label class="setting-label">Timer (seconds, 0 = no timer)</label>
+                            <input type="number" v-model.number="settings.timer" class="setting-input" min="0" max="300">
+                        </div>
+
+                        <div class="setting-item">
+                            <label class="setting-label">Theme</label>
+                            <div class="theme-grid">
+                                <div v-for="(theme, key) in themes" :key="key" class="theme-option" :class="{selected: settings.theme === key}" @click="settings.theme = key">
+                                    <div class="theme-preview">{{ theme.emojis[0] }}</div>
+                                    <div>{{ theme.name }}</div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="settings-section">
-                        <h3>🖼️ Background</h3>
-                        <div class="setting-item">
-                            <label class="setting-label">Background Image URL (optional)</label>
-                            <input type="url" 
-                                   class="setting-input" 
-                                   v-model="settings.backgroundImage"
-                                   placeholder="https://example.com/image.jpg">
                         </div>
                     </div>
 
                     <div class="text-center">
                         <button class="btn success" @click="saveSettings">💾 Save Settings</button>
+                        <button class="btn" @click="startGame" style="margin-left: 1rem;">🎮 Start Game</button>
                     </div>
                 </div>
 
                 <!-- High Scores View -->
                 <div v-if="currentView === 'scores'" class="scores-view">
-                    <div class="scores-filters">
-                        <select v-model="scoreFilters.theme" class="setting-input" style="max-width: 150px;">
-                            <option value="">All Themes</option>
-                            <option v-for="(theme, key) in themes" :key="key" :value="key">{{ theme.name }}</option>
-                        </select>
-                        <select v-model="scoreFilters.pairs" class="setting-input" style="max-width: 150px;">
-                            <option value="">All Difficulties</option>
-                            <option value="4">4 pairs (Easy)</option>
-                            <option value="8">8 pairs (Medium)</option>
-                            <option value="12">12 pairs (Hard)</option>
-                            <option value="20">20 pairs (Expert)</option>
-                        </select>
-                        <button class="btn danger" @click="clearHighScores">🗑️ Clear Scores</button>
-                    </div>
-
-                    <div class="scores-list" v-if="filteredScores.length > 0">
-                        <div v-for="score in filteredScores" :key="score.id" class="score-item">
+                    <div class="scores-list">
+                        <div v-if="filteredScores.length === 0" style="padding: 2rem; text-align: center; color: #6b7280;">
+                            No high scores yet. Play a game to set your first score!
+                        </div>
+                        <div v-for="score in filteredScores.slice(0, 10)" :key="score.id" class="score-item">
                             <div class="score-rank">#{{ score.rank }}</div>
                             <div class="score-details">
                                 <div class="score-points">{{ score.score }} points</div>
-                                <div class="score-meta">
-                                    {{ score.totalPairs }} pairs • {{ themes[score.theme]?.name || score.theme }} • 
-                                    {{ formatTime(Math.round(score.completionTime / 1000)) }}
-                                </div>
+                                <div class="score-meta">{{ score.totalPairs }} pairs • {{ themes[score.theme]?.name || score.theme }}</div>
                             </div>
-                            <div class="score-date">{{ formatDate(score.date) }}</div>
+                            <div class="score-meta">{{ formatDate(score.date) }}</div>
                         </div>
                     </div>
-
-                    <div v-else class="text-center" style="padding: 3rem;">
-                        <h3 style="color: #6b7280; margin-bottom: 1rem;">No high scores yet!</h3>
-                        <p style="color: #9ca3af; margin-bottom: 2rem;">Play some games to see your best scores here.</p>
-                        <button class="btn success" @click="startNewGame">🎮 Play Now</button>
+                    
+                    <div class="text-center mt-2" v-if="filteredScores.length > 0">
+                        <button class="btn danger" @click="clearHighScores">🗑️ Clear Scores</button>
                     </div>
                 </div>
             </main>
@@ -1032,21 +852,14 @@
             <!-- Game Over Modal -->
             <div v-if="showGameOverModal" class="modal-overlay" @click="closeGameOverModal">
                 <div class="modal" @click.stop>
-                    <h2>{{ gameState.matchedPairs === gameState.totalPairs ? '🎉 Congratulations!' : '⏰ Time\'s Up!' }}</h2>
+                    <h2>{{ gameState.matchedPairs === gameState.totalPairs ? '🎉 Victory!' : '⏰ Time\'s Up!' }}</h2>
                     <div class="final-score">{{ gameState.score }}</div>
-                    <p v-if="gameState.matchedPairs === gameState.totalPairs">
-                        You matched all {{ gameState.totalPairs }} pairs!
-                    </p>
-                    <p v-else>
-                        You matched {{ gameState.matchedPairs }} out of {{ gameState.totalPairs }} pairs.
-                    </p>
-                    <p v-if="isNewHighScore" style="color: var(--success-color); font-weight: bold; margin-top: 1rem;">
-                        🏆 New High Score!
-                    </p>
+                    <p v-if="isNewHighScore" style="color: var(--success-color); font-weight: 600;">🏆 New High Score!</p>
+                    <p>Matched {{ gameState.matchedPairs }} out of {{ gameState.totalPairs }} pairs</p>
+                    
                     <div class="modal-actions">
-                        <button class="btn success" @click="startNewGame">🔄 Play Again</button>
-                        <button class="btn secondary" @click="setView('menu')">🏠 Menu</button>
-                        <button class="btn" @click="setView('scores')">🏆 High Scores</button>
+                        <button class="btn success" @click="startNewGame; closeGameOverModal()">🔄 Play Again</button>
+                        <button class="btn secondary" @click="closeGameOverModal; setView('menu')">📋 Menu</button>
                     </div>
                 </div>
             </div>
@@ -1058,7 +871,10 @@
 
         createApp({
             setup() {
-                // Themes data with fixed flag emojis
+                // PWA variables
+                const deferredPrompt = ref(null);
+
+                // Themes data
                 const themes = {
                     animals: {
                         name: 'Animals',
@@ -1072,59 +888,9 @@
                         name: 'Professions',
                         emojis: ['👮‍♂️', '👷‍♂️', '💂‍♂️', '🕵️‍♂️', '👨‍⚕️', '👨‍🌾', '👨‍🍳', '👨‍🎓', '👨‍🎤', '👨‍🏫', '👨‍🏭', '👨‍💻', '👨‍💼', '👨‍🔧', '👨‍🔬', '👨‍🎨', '👨‍🚒', '👨‍✈️', '👨‍🚀', '👨‍⚖️']
                     },
-                    flags: {
-                        name: 'Countries',
-                        emojis: [
-                            '\u{1F1FA}\u{1F1F8}', // US
-                            '\u{1F1EC}\u{1F1E7}', // GB
-                            '\u{1F1EB}\u{1F1F7}', // FR
-                            '\u{1F1E9}\u{1F1EA}', // DE
-                            '\u{1F1EE}\u{1F1F9}', // IT
-                            '\u{1F1EA}\u{1F1F8}', // ES
-                            '\u{1F1EF}\u{1F1F5}', // JP
-                            '\u{1F1F0}\u{1F1F7}', // KR
-                            '\u{1F1E8}\u{1F1F3}', // CN
-                            '\u{1F1EE}\u{1F1F3}', // IN
-                            '\u{1F1E7}\u{1F1F7}', // BR
-                            '\u{1F1E8}\u{1F1E6}', // CA
-                            '\u{1F1E6}\u{1F1FA}', // AU
-                            '\u{1F1F7}\u{1F1FA}', // RU
-                            '\u{1F1F2}\u{1F1FD}', // MX
-                            '\u{1F1FF}\u{1F1E6}', // ZA
-                            '\u{1F1F3}\u{1F1F1}', // NL
-                            '\u{1F1F8}\u{1F1EA}', // SE
-                            '\u{1F1F3}\u{1F1F4}', // NO
-                            '\u{1F1E9}\u{1F1F0}'  // DK
-                        ]
-                    },
-                    "flags2": {
-                        "name": "Country Items",
-                        "emojis": [
-                            "", // US
-                            "", // GB
-                            "", // FR
-                            "", // DE
-                            "", // IT
-                            "", // ES
-                            "", // JP
-                            "", // KR
-                            "", // CN
-                            "", // IN
-                            "", // BR
-                            "", // CA
-                            "", // AU
-                            "", // RU
-                            "", // MX
-                            "", // ZA
-                            "", // NL
-                            "", // SE
-                            "", // NO
-                            ""  // DK
-                        ]
-                    },
-                    adult: {
-                        name: 'Adult Theme',
-                        emojis: ['🍆', '🍑', '🥒', '🌽', '🥕', '🍌', '🥖', '🌭', '🍭', '🍯', '🥛', '🍼', '🍾', '🥂', '🍷', '🍸', '🍹', '🍺', '🍻', '🥃']
+                    food: {
+                        name: 'Food',
+                        emojis: ['🍎', '🍌', '🍇', '🍓', '🍒', '🥝', '🍑', '🥭', '🍍', '🥥', '🍅', '🥕', '🌽', '🥒', '🥬', '🥦', '🧄', '🧅', '🍞', '🥐']
                     }
                 };
 
@@ -1136,9 +902,7 @@
                 const settings = reactive({
                     timer: 60,
                     pairs: 8,
-                    uniqueShapes: false,
-                    theme: 'animals',
-                    backgroundImage: ''
+                    theme: 'animals'
                 });
 
                 const quickSettings = reactive({
@@ -1146,7 +910,7 @@
                 });
 
                 const gameState = reactive({
-                    status: 'menu', // menu, playing, paused, gameOver
+                    status: 'menu',
                     score: 0,
                     timeRemaining: 0,
                     gameStartTime: 0,
@@ -1161,46 +925,18 @@
                 const boardLayout = reactive({
                     layout: 'rectangular',
                     rows: 4,
-                    cols: 4,
-                    positions: []
-                });
-
-                const scoreFilters = reactive({
-                    theme: '',
-                    pairs: ''
+                    cols: 4
                 });
 
                 let timerInterval = null;
-                let animationQueue = [];
 
                 // Computed properties
-                const boardStyle = computed(() => {
-                    const style = {
-                        '--grid-cols': boardLayout.cols,
-                        '--grid-rows': boardLayout.rows,
-                        '--grid-size': Math.max(boardLayout.rows, boardLayout.cols)
-                    };
+                const boardStyle = computed(() => ({
+                    '--grid-cols': boardLayout.cols,
+                    '--grid-rows': boardLayout.rows
+                }));
 
-                    if (settings.backgroundImage) {
-                        style['--bg-image'] = `url(${settings.backgroundImage})`;
-                    }
-
-                    return style;
-                });
-
-                const filteredScores = computed(() => {
-                    let scores = getHighScores();
-                    
-                    if (scoreFilters.theme) {
-                        scores = scores.filter(s => s.theme === scoreFilters.theme);
-                    }
-                    
-                    if (scoreFilters.pairs) {
-                        scores = scores.filter(s => s.totalPairs === parseInt(scoreFilters.pairs));
-                    }
-                    
-                    return scores;
-                });
+                const filteredScores = computed(() => getHighScores());
 
                 // Utility functions
                 const formatTime = (seconds) => {
@@ -1222,173 +958,23 @@
                     return shuffled;
                 };
 
-                // Grid calculation functions
-                const calculateGridDimensions = (cardCount, useUniqueShapes) => {
-                    if (!useUniqueShapes) {
-                        const sqrt = Math.sqrt(cardCount);
-                        let bestDiff = cardCount;
-                        let bestRows = 1, bestCols = cardCount;
-                        
-                        for (let rows = 1; rows <= sqrt; rows++) {
-                            if (cardCount % rows === 0) {
-                                const cols = cardCount / rows;
-                                const diff = Math.abs(cols - rows);
-                                if (diff < bestDiff) {
-                                    bestDiff = diff;
-                                    bestRows = rows;
-                                    bestCols = cols;
-                                }
-                            }
-                        }
-                        return { layout: 'rectangular', rows: bestRows, cols: bestCols };
-                    } else {
-                        return getUniqueShapeLayout(cardCount);
-                    }
-                };
-
-                const getUniqueShapeLayout = (cardCount) => {
-                    const shapes = ['diamond', 'circle', 'heart'];
-                    const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
+                const calculateGridDimensions = (cardCount) => {
+                    const sqrt = Math.sqrt(cardCount);
+                    let bestDiff = cardCount;
+                    let bestRows = 1, bestCols = cardCount;
                     
-                    const size = Math.ceil(Math.sqrt(cardCount * 1.5));
-                    const center = Math.floor(size / 2);
-                    
-                    let positions = [];
-                    
-                    if (randomShape === 'diamond') {
-                        positions = getDiamondPositions(cardCount, center, size);
-                    } else if (randomShape === 'circle') {
-                        positions = getCirclePositions(cardCount, center, size);
-                    } else {
-                        positions = getHeartPositions(cardCount, center, size);
-                    }
-                    
-                    return {
-                        layout: randomShape,
-                        rows: size,
-                        cols: size,
-                        positions
-                    };
-                };
-
-                const getDiamondPositions = (cardCount, center, size) => {
-                    const positions = [];
-                    let cardIndex = 0;
-                    
-                    for (let layer = 0; layer < center && cardIndex < cardCount; layer++) {
-                        if (layer === 0) {
-                            positions.push({ row: center, col: center, cardIndex: cardIndex++ });
-                        } else {
-                            for (let i = 0; i < layer * 4 && cardIndex < cardCount; i++) {
-                                const side = Math.floor(i / layer);
-                                const pos = i % layer;
-                                
-                                let row, col;
-                                if (side === 0) { // top
-                                    row = center - layer + pos;
-                                    col = center + pos;
-                                } else if (side === 1) { // right
-                                    row = center + pos;
-                                    col = center + layer - pos;
-                                } else if (side === 2) { // bottom
-                                    row = center + layer - pos;
-                                    col = center - pos;
-                                } else { // left
-                                    row = center - pos;
-                                    col = center - layer + pos;
-                                }
-                                
-                                if (row >= 0 && row < size && col >= 0 && col < size) {
-                                    positions.push({ row, col, cardIndex: cardIndex++ });
-                                }
+                    for (let rows = 1; rows <= sqrt; rows++) {
+                        if (cardCount % rows === 0) {
+                            const cols = cardCount / rows;
+                            const diff = Math.abs(cols - rows);
+                            if (diff < bestDiff) {
+                                bestDiff = diff;
+                                bestRows = rows;
+                                bestCols = cols;
                             }
                         }
                     }
-                    
-                    return positions;
-                };
-
-                const getCirclePositions = (cardCount, center, size) => {
-                    const positions = [];
-                    const layers = Math.ceil(cardCount / 8);
-                    let cardIndex = 0;
-                    
-                    // Center card
-                    if (cardIndex < cardCount) {
-                        positions.push({ row: center, col: center, cardIndex: cardIndex++ });
-                    }
-                    
-                    for (let layer = 1; layer <= layers && cardIndex < cardCount; layer++) {
-                        const radius = layer * 1.5;
-                        const circumference = 2 * Math.PI * radius;
-                        const cardsInLayer = Math.min(Math.floor(circumference / 2), cardCount - cardIndex);
-                        
-                        for (let i = 0; i < cardsInLayer && cardIndex < cardCount; i++) {
-                            const angle = (i / cardsInLayer) * 2 * Math.PI;
-                            const row = center + Math.round(radius * Math.sin(angle));
-                            const col = center + Math.round(radius * Math.cos(angle));
-                            
-                            if (row >= 0 && row < size && col >= 0 && col < size) {
-                                positions.push({ row, col, cardIndex: cardIndex++ });
-                            }
-                        }
-                    }
-                    
-                    return positions;
-                };
-
-                const getHeartPositions = (cardCount, center, size) => {
-                    const positions = [];
-                    let cardIndex = 0;
-                    
-                    // Simple heart approximation using two circles and a triangle
-                    const leftCenter = { row: center - 1, col: center - 1 };
-                    const rightCenter = { row: center - 1, col: center + 1 };
-                    
-                    // Left circle
-                    for (let layer = 0; layer < 2 && cardIndex < cardCount; layer++) {
-                        if (layer === 0) {
-                            positions.push({ ...leftCenter, cardIndex: cardIndex++ });
-                        } else {
-                            for (let i = 0; i < 6 && cardIndex < cardCount; i++) {
-                                const angle = (i / 6) * 2 * Math.PI;
-                                const row = leftCenter.row + Math.round(layer * Math.sin(angle));
-                                const col = leftCenter.col + Math.round(layer * Math.cos(angle));
-                                if (row >= 0 && row < size && col >= 0 && col < size) {
-                                    positions.push({ row, col, cardIndex: cardIndex++ });
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Right circle
-                    for (let layer = 0; layer < 2 && cardIndex < cardCount; layer++) {
-                        if (layer === 0) {
-                            positions.push({ ...rightCenter, cardIndex: cardIndex++ });
-                        } else {
-                            for (let i = 0; i < 6 && cardIndex < cardCount; i++) {
-                                const angle = (i / 6) * 2 * Math.PI;
-                                const row = rightCenter.row + Math.round(layer * Math.sin(angle));
-                                const col = rightCenter.col + Math.round(layer * Math.cos(angle));
-                                if (row >= 0 && row < size && col >= 0 && col < size) {
-                                    positions.push({ row, col, cardIndex: cardIndex++ });
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Bottom triangle
-                    for (let i = 1; i < 4 && cardIndex < cardCount; i++) {
-                        for (let j = 0; j <= i && cardIndex < cardCount; j++) {
-                            const row = center + i;
-                            const col = center - j + (j * 2 / i);
-                            if (row >= 0 && row < size && col >= 0 && col < size) {
-                                positions.push({ row: Math.round(row), col: Math.round(col), cardIndex: cardIndex++ });
-                            }
-                        }
-                    }
-                    
-                    return positions;
+                    return { rows: bestRows, cols: bestCols };
                 };
 
                 // Game logic functions
@@ -1418,28 +1004,7 @@
                 };
 
                 const getCardStyle = (card) => {
-                    if (boardLayout.layout === 'rectangular') {
-                        return {};
-                    }
-                    
-                    const cardIndex = gameState.cards.indexOf(card);
-                    const position = boardLayout.positions.find(p => p.cardIndex === cardIndex);
-                    if (!position) return {};
-                    
-                    // Use percentages for responsive positioning
-                    const gridSize = Math.max(boardLayout.rows, boardLayout.cols);
-                    const cellPercentage = 100 / gridSize;
-                    
-                    return {
-                        position: 'absolute',
-                        left: `${position.col * cellPercentage}%`,
-                        top: `${position.row * cellPercentage}%`,
-                        width: `${cellPercentage * 0.85}%`,
-                        height: `${cellPercentage * 0.85}%`,
-                        transform: `translate(-50%, -50%)`,
-                        marginLeft: '50%',
-                        marginTop: '50%'
-                    };
+                    return {};
                 };
 
                 // Animation functions
@@ -1483,46 +1048,10 @@
                     }
                 };
 
-                const playMatchConnection = (card1Element, card2Element) => {
-                    const rect1 = card1Element.getBoundingClientRect();
-                    const rect2 = card2Element.getBoundingClientRect();
-                    
-                    const x1 = rect1.left + rect1.width / 2;
-                    const y1 = rect1.top + rect1.height / 2;
-                    const x2 = rect2.left + rect2.width / 2;
-                    const y2 = rect2.top + rect2.height / 2;
-                    
-                    const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-                    const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
-                    
-                    const line = document.createElement('div');
-                    line.className = 'match-line';
-                    line.style.cssText = `
-                        position: fixed;
-                        left: ${x1}px;
-                        top: ${y1}px;
-                        width: ${distance}px;
-                        height: 3px;
-                        background: linear-gradient(90deg, 
-                            transparent, 
-                            var(--success-color) 20%, 
-                            var(--success-color) 80%, 
-                            transparent);
-                        transform-origin: 0 50%;
-                        transform: rotate(${angle}deg);
-                        animation: matchLinePulse 0.8s ease-out forwards;
-                        z-index: 999;
-                    `;
-                    
-                    document.body.appendChild(line);
-                    setTimeout(() => line.remove(), 800);
-                };
-
                 // Game control functions
                 const startGame = (customSettings = null) => {
                     const gameSettings = customSettings || settings;
                     
-                    // Reset game state
                     Object.assign(gameState, {
                         status: 'playing',
                         score: 0,
@@ -1535,29 +1064,12 @@
                         allowInteraction: true
                     });
 
-                    // Calculate board layout
-                    const layout = calculateGridDimensions(gameSettings.pairs * 2, gameSettings.uniqueShapes);
-                    Object.assign(boardLayout, layout);
+                    const layout = calculateGridDimensions(gameSettings.pairs * 2);
+                    Object.assign(boardLayout, { ...layout, layout: 'rectangular' });
 
-                    // Generate cards
                     const themeEmojis = themes[gameSettings.theme].emojis;
                     gameState.cards = generateCards(gameSettings.pairs, themeEmojis);
 
-                    // Set CSS variables
-                    nextTick(() => {
-                        const root = document.documentElement;
-                        root.style.setProperty('--grid-cols', boardLayout.cols);
-                        root.style.setProperty('--grid-rows', boardLayout.rows);
-                        root.style.setProperty('--grid-size', Math.max(boardLayout.rows, boardLayout.cols));
-                        
-                        if (gameSettings.backgroundImage) {
-                            root.style.setProperty('--bg-image', `url(${gameSettings.backgroundImage})`);
-                        } else {
-                            root.style.removeProperty('--bg-image');
-                        }
-                    });
-
-                    // Start timer if enabled
                     if (gameSettings.timer > 0) {
                         startTimer();
                     }
@@ -1579,16 +1091,6 @@
                     }, 1000);
                 };
 
-                const pauseGame = () => {
-                    gameState.status = 'paused';
-                    gameState.allowInteraction = false;
-                };
-
-                const resumeGame = () => {
-                    gameState.status = 'playing';
-                    gameState.allowInteraction = true;
-                };
-
                 const endGame = () => {
                     gameState.status = 'gameOver';
                     gameState.allowInteraction = false;
@@ -1598,7 +1100,6 @@
                         timerInterval = null;
                     }
 
-                    // Check if it's a new high score
                     const completionTime = Date.now() - gameState.gameStartTime;
                     const scoreData = {
                         score: gameState.score,
@@ -1612,7 +1113,6 @@
                     const rank = addHighScore(scoreData);
                     isNewHighScore.value = rank <= 10;
 
-                    // Play victory confetti if all pairs matched
                     if (gameState.matchedPairs === gameState.totalPairs) {
                         playVictoryConfetti();
                     }
@@ -1627,7 +1127,6 @@
                     if (!card || card.isMatched || card.isFlipped) return;
                     if (gameState.selectedCards.length >= 2) return;
 
-                    // Flip card
                     card.isFlipped = true;
                     gameState.selectedCards.push(card);
 
@@ -1640,7 +1139,6 @@
                         const isMatch = card1.pairId === card2.pairId;
 
                         if (isMatch) {
-                            // Handle match
                             const scoreIncrease = calculateMatchScore(
                                 gameState.timeRemaining,
                                 settings.timer,
@@ -1657,19 +1155,10 @@
 
                             playScorePopup(scoreIncrease);
 
-                            // Play match connection animation
-                            const card1Element = document.querySelector(`[data-card-id="${card1.id}"]`);
-                            const card2Element = document.querySelector(`[data-card-id="${card2.id}"]`);
-                            if (card1Element && card2Element) {
-                                playMatchConnection(card1Element, card2Element);
-                            }
-
-                            // Check win condition
                             if (gameState.matchedPairs === gameState.totalPairs) {
                                 setTimeout(() => endGame(), 500);
                             }
                         } else {
-                            // Handle mismatch
                             gameState.comboStreak = 0;
                             
                             await new Promise(resolve => setTimeout(resolve, 500));
@@ -1725,10 +1214,6 @@
                 // View functions
                 const setView = (view) => {
                     currentView.value = view;
-                    
-                    if (view !== 'game' && gameState.status === 'playing') {
-                        pauseGame();
-                    }
                 };
 
                 const startNewGame = () => {
@@ -1739,9 +1224,7 @@
                     const quickGameSettings = {
                         timer: quickSettings.pairs === 4 ? 0 : quickSettings.pairs === 8 ? 60 : quickSettings.pairs === 12 ? 90 : 120,
                         pairs: quickSettings.pairs,
-                        uniqueShapes: false,
-                        theme: settings.theme,
-                        backgroundImage: settings.backgroundImage
+                        theme: settings.theme
                     };
                     startGame(quickGameSettings);
                 };
@@ -1766,18 +1249,35 @@
                     }
                 };
 
+                // PWA functions
+                const installApp = () => {
+                    if (deferredPrompt.value) {
+                        deferredPrompt.value.prompt();
+                        deferredPrompt.value.userChoice.then((choiceResult) => {
+                            if (choiceResult.outcome === 'accepted') {
+                                document.getElementById('installBanner').style.display = 'none';
+                            }
+                            deferredPrompt.value = null;
+                        });
+                    }
+                };
+
                 // Lifecycle
                 onMounted(() => {
                     loadSettings();
-                });
 
-                // Watch for theme changes to update background
-                watch(() => settings.backgroundImage, (newBg) => {
-                    const root = document.documentElement;
-                    if (newBg) {
-                        root.style.setProperty('--bg-image', `url(${newBg})`);
-                    } else {
-                        root.style.removeProperty('--bg-image');
+                    // PWA install prompt
+                    window.addEventListener('beforeinstallprompt', (e) => {
+                        e.preventDefault();
+                        deferredPrompt.value = e;
+                        document.getElementById('installBanner').classList.add('show');
+                    });
+
+                    // Register service worker
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.register('sw.js')
+                            .then(() => console.log('Service Worker registered'))
+                            .catch(err => console.log('Service Worker registration failed'));
                     }
                 });
 
@@ -1791,7 +1291,7 @@
                     quickSettings,
                     gameState,
                     boardLayout,
-                    scoreFilters,
+                    deferredPrompt,
 
                     // Computed
                     boardStyle,
@@ -1805,12 +1305,11 @@
                     startGame,
                     startNewGame,
                     startQuickGame,
-                    pauseGame,
-                    resumeGame,
                     setView,
                     closeGameOverModal,
                     saveSettings,
-                    clearHighScores
+                    clearHighScores,
+                    installApp
                 };
             }
         }).mount('#app');
