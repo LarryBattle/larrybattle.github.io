@@ -1,7 +1,5 @@
 const CACHE_NAME = 'memory-game-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
   '/manifest.json',
   '/p/memory/',
   '/p/memory/index.html',
