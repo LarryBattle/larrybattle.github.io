@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Chinese Lessons</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            background-color: #f0f2f5;
+            color: #1c1e21;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            text-align: center;
+            padding: 1.5rem 1rem;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        header h1 {
+            margin: 0;
+            font-size: 1.8em;
+        }
+        nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        nav button {
+            background-color: #fff;
+            color: #0d6efd;
+            border: 1px solid #0d6efd;
+            padding: 10px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        nav button:hover {
+            background-color: #0d6efd;
+            color: white;
+        }
+        nav button.active {
+            background-color: #0d6efd;
+            color: white;
+            box-shadow: 0 0 10px rgba(13, 110, 253, 0.4);
+            transform: scale(1.05);
+        }
+        .lesson {
+            background-color: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #667eea;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+            font-size: 1.5em;
+        }
+        .explanation, .vocabulary, .sentence-generator, .quiz {
+            margin-bottom: 25px;
+        }
+        .vocab-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .vocab-table th, .vocab-table td {
+            border-bottom: 1px solid #e9ecef;
+            padding: 12px 8px;
+            text-align: left;
+        }
+        .vocab-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        .pinyin {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+        .sentence-output {
+            background-color: #e9f5ff;
+            padding: 15px;
+            border-left: 5px solid #0d6efd;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-weight: 500;
+            font-size: 1.1em;
+        }
+        .quiz-question {
+            margin-bottom: 15px;
+        }
+        .quiz-options label {
+            display: block;
+            margin-bottom: 8px;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .quiz-options label:hover {
+            background-color: #f8f9fa;
+        }
+        .quiz-results {
+            margin-top: 15px;
+            font-weight: bold;
+            padding: 12px;
+            border-radius: 8px;
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+        button {
+            background-color: #198754;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #157347;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Advanced Chinese Mastery</h1>
+        </header>
+
+        <nav id="lesson-nav"></nav>
+
+        <main id="lesson-content"></main>
+    </div>
+
+    <script>
+        const lessonsData = [
+            // LESSON 1
+            {
+                id: 1,
+                title: "Lesson 1: Conjunctions '不但...而且...'",
+                explanation: "The structure '不但...而且...' (búdàn... érqiě...) means 'not only... but also...'. It connects two clauses, where the second clause adds to and often intensifies the first. The subject can appear before '不但' or after it, depending on whether the subjects of both clauses are the same.",
+                vocabulary: [
+                    { pinyin: "búdàn", character: "不但", translation: "not only" },
+                    { pinyin: "érqiě", character: "而且", translation: "but also, furthermore" },
+                    { pinyin: "jǐnjǐn", character: "仅仅", translation: "only, merely (synonym for 但)" },
+                    { pinyin: "liúlì", character: "流利", translation: "fluent" },
+                    { pinyin: "shànyú", character: "善于", translation: "to be good at" }
+                ],
+                sentenceGenerator: {
+                    parts: [
+                        { type: "Subject", items: ["他 (tā)", "这家餐厅 (zhè jiā cāntīng)"] },
+                        { type: "Clause 1", items: ["不但中文说得很流利 (búdàn Zhōngwén shuō de hěn liúlì)", "不但菜做得好吃 (búdàn cài zuò de hǎochī)"] },
+                        { type: "Clause 2", items: ["而且还善于书法 (érqiě hái shànyú shūfǎ)", "而且服务也很周到 (érqiě fúwù yě hěn zhōudào)"] }
+                    ]
+                },
+                quiz: [
+                    { question: "Which sentence correctly uses 不但...而且...?", options: ["他不但会说英语，而且他会说法语 (Tā búdàn huì shuō Yīngyǔ, érqiě tā huì shuō Fǎyǔ)", "他不但是老师，而且医生 (Tā búdàn shì lǎoshī, érqiě yīshēng)", "不但他聪明，而且也努力 (Búdàn tā cōngmíng, érqiě yě nǔlì)"], answer: "他不但会说英语，而且他会说法语 (Tā búdàn huì shuō Yīngyǔ, érqiě tā huì shuō Fǎyǔ)" },
+                    { question: "This movie is not only interesting, but also very moving.", options: ["这部电影不但很有意思，而且很感动人 (Zhè bù diànyǐng búdàn hěn yǒuyìsi, érqiě hěn gǎndòng rén)", "这部电影很有意思，不但很感动人 (Zhè bù diànyǐng hěn yǒuyìsi, búdàn hěn gǎndòng rén)"], answer: "这部电影不但很有意思，而且很感动人 (Zhè bù diànyǐng búdàn hěn yǒuyìsi, érqiě hěn gǎndòng rén)" },
+                    { question: "'流利 (liúlì)' describes someone's...", options: ["handwriting", "speed", "fluency in a language"], answer: "fluency in a language" }
+                ]
+            },
+            // LESSON 2
+            {
+                id: 2,
+                title: "Lesson 2: Expressing 'Even' with '甚至'",
+                explanation: "'甚至' (shènzhì) means 'even' or 'so much so that'. It's used to introduce an extreme or unexpected example to emphasize a point. It can be used as '甚至连...都/也...' (shènzhì lián... dōu/yě...).",
+                vocabulary: [
+                    { pinyin: "shènzhì", character: "甚至", translation: "even, so much so that" },
+                    { pinyin: "lián", character: "连", translation: "even (used with 都/也)" },
+                    { pinyin: "jiǎndān", character: "简单", translation: "simple" },
+                    { pinyin: "wàngjì", character: "忘记", translation: "to forget" },
+                    { pinyin: "jīngyà", character: "惊讶", translation: "surprised, amazed" }
+                ],
+                sentenceGenerator: {
+                    parts: [
+                        { type: "Context", items: ["他太忙了 (tā tài máng le),", "这个问题太简单了 (zhège wèntí tài jiǎndān le),"] },
+                        { type: "Emphasis", items: ["甚至忘了吃饭 (shènzhì wàng le chīfàn)", "甚至连小孩子都知道 (shènzhì lián xiǎoháizi dōu zhīdào)"] }
+                    ]
+                },
+                quiz: [
+                    { question: "He was so tired, he even fell asleep while standing.", options: ["他太累了，甚至站着也睡着了 (tā tài lèi le, shènzhì zhànzhe yě shuìzháo le)", "他太累了，所以甚至站着也睡着了 (tā tài lèi le, suǒyǐ shènzhì zhànzhe yě shuìzháo le)"], answer: "他太累了，甚至站着也睡着了 (tā tài lèi le, shènzhì zhànzhe yě shuìzháo le)" },
+                    { question: "Fill in the blank: 他很喜欢动物，___连蛇都敢摸。(He likes animals a lot, he even dares to touch snakes.)", options: ["而且 (érqiě)", "甚至 (shènzhì)", "但是 (dànshì)"], answer: "甚至 (shènzhì)" },
+                    { question: "'惊讶 (jīngyà)' is a feeling of...", options: ["sadness", "surprise", "anger"], answer: "surprise" }
+                ]
+            },
+            // LESSON 3
+            {
+                id: 3,
+                title: "Lesson 3: Advanced Potential Complements",
+                explanation: "Beyond 'V-得/不-了', other potential complements express specific abilities. 'V-得/不-起' (qǐ) often relates to affordability or social standing (e.g., '买不起' - can't afford). 'V-得/不-动' (dòng) relates to physical ability to move something (e.g., '拿不动' - can't carry/move it).",
+                vocabulary: [
+                    { pinyin: "qǐ", character: "起", translation: "potential marker (affordability/status)" },
+                    { pinyin: "dòng", character: "动", translation: "potential marker (physical movement)" },
+                    { pinyin: "liǎo", character: "了", translation: "potential marker (completion - V-de-liǎo/V-bu-liǎo)" },
+                    { pinyin: "kànbùqǐ", character: "看不起", translation: "to look down on" },
+                    { pinyin: "bānbudòng", character: "搬不动", translation: "unable to move (by carrying)" }
+                ],
+                sentenceGenerator: {
+                    parts: [
+                        { type: "Context", items: ["这件衣服太贵了 (zhè jiàn yīfu tài guì le),", "这个箱子太重了 (zhège xiāngzi tài zhòng le),"] },
+                        { type: "Statement", items: ["我买不起 (wǒ mǎi bu qǐ)", "我一个人搬不动 (wǒ yí ge rén bān bu dòng)"] }
+                    ]
+                },
+                quiz: [
+                    { question: "'I have too much homework, I can't finish it.' Which is most natural?", options: ["我的作业太多了，我做不完 (wǒ de zuòyè tài duō le, wǒ zuò bu wán)", "我的作业太多了，我做不了 (wǒ de zuòyè tài duō le, wǒ zuò bu liǎo)", "Both are correct, with B being slightly more emphatic about the inability"], answer: "Both are correct, with B being slightly more emphatic about the inability" },
+                    { question: "'看不起 (kàn bu qǐ)' literally means 'can't look up', but its idiomatic meaning is:", options: ["cannot see clearly", "to look down upon someone", "to admire someone"], answer: "to look down upon someone" },
+                    { question: "If a table is too heavy to lift, you would say:", options: ["我拿不了 (wǒ ná bu liǎo)", "我拿不起 (wǒ ná bu qǐ)", "我拿不动 (wǒ ná bu dòng)"], answer: "我拿不动 (wǒ ná bu dòng)" }
+                ]
+            },
+             // LESSON 4
+            {
+                id: 4,
+                title: "Lesson 4: 'V-过' vs. 'V-了'",
+                explanation: "'V-了' (le) indicates the completion of an action or a change of state. 'V-过' (guò) indicates a past experience, meaning 'have done something before'. Compare: '我去了中国' (Wǒ qù le Zhōngguó - I went to China) vs. '我去过中国' (Wǒ qù guo Zhōngguó - I have been to China). '了' implies the action may be relevant now, while '过' refers to an experience in the past.",
+                vocabulary: [
+                    { pinyin: "guò", character: "过", translation: "past experience particle" },
+                    { pinyin: "jīnglì", character: "经历", translation: "an experience; to experience" },
+                    { pinyin: "cónglái méi", character: "从来没", translation: "have never (before)" },
+                    { pinyin: "Kǎoyā", character: "烤鸭", translation: "roast duck" }
+                ],
+                sentenceGenerator: {
+                    parts: [
+                        { type: "Subject", items: ["你 (nǐ)", "我 (wǒ)"] },
+                        { type: "Verb+Particle", items: ["吃过 (chī guo)", "从来没看过 (cónglái méi kàn guo)"] },
+                        { type: "Object", items: ["北京烤鸭吗 (Běijīng kǎoyā ma)?", "那部电影 (nà bù diànyǐng)"] }
+                    ]
+                },
+                quiz: [
+                    { question: "To ask 'Have you ever eaten Japanese food?', you should say:", options: ["你吃了日本菜吗 (nǐ chī le Rìběn cài ma)?", "你吃过日本菜吗 (nǐ chī guo Rìběn cài ma)?", "你吃饭日本菜吗 (nǐ chī fàn Rìběn cài ma)?"], answer: "你吃过日本菜吗 (nǐ chī guo Rìběn cài ma)?" },
+                    { question: "What is the key difference in meaning between '他学了三年中文' and '他学过三年中文'?", options: ["The first implies he might still be studying, the second implies it's a completed past experience.", "The first is grammatically incorrect.", "There is no difference in meaning."], answer: "The first implies he might still be studying, the second implies it's a completed past experience." },
+                    { question: "How to say 'I have never been to Africa'?", options: ["我没去非洲 (wǒ méi qù Fēizhōu)", "我没去了非洲 (wǒ méi qù le Fēizhōu)", "我没去过非洲 (wǒ méi qù guo Fēizhōu)"], answer: "我没去过非洲 (wǒ méi qù guo Fēizhōu)" }
+                ]
+            },
+            // LESSON 5
+            {
+                id: 5,
+                title: "Lesson 5: Formal Structures with '以'",
+                explanation: "'以' (yǐ) is a formal, literary preposition with several meanings, often found in written language and idioms. Common structures include '以 A 为 B' (yǐ A wéi B), meaning 'to regard A as B', and '以便' (yǐbiàn), meaning 'so that; in order to'.",
+                vocabulary: [
+                    { pinyin: "yǐ", character: "以", translation: "with, by means of, in order to" },
+                    { pinyin: "wéi", character: "为", translation: "as, to act as" },
+                    { pinyin: "yǐbiàn", character: "以便", translation: "in order to, so that" },
+                    { pinyin: "biāozhǔn", character: "标准", translation: "standard, criterion" },
+                    { pinyin: "jìlù", character: "记录", translation: "to record" }
+                ],
+                sentenceGenerator: {
+                    parts: [
+                        { type: "Subject", items: ["我们应该 (wǒmen yīnggāi)", "请大家 (qǐng dàjiā)"] },
+                        { type: "Structure", items: ["以事实为依据 (yǐ shìshí wéi yījù)", "把重点记录下来 (bǎ zhòngdiǎn jìlù xiàlái)"] },
+                        { type: "Purpose", items: ["", ", 以便讨论 (yǐbiàn tǎolùn)"] }
+                    ]
+                },
+                quiz: [
+                    { question: "'The company regards quality as its life.'", options: ["公司以质量为生命 (Gōngsī yǐ zhìliàng wéi shēngmìng)", "公司为质量以生命 (Gōngsī wéi zhìliàng yǐ shēngmìng)"], answer: "公司以质量为生命 (Gōngsī yǐ zhìliàng wéi shēngmìng)" },
+                    { question: "'以便 (yǐbiàn)' is used to introduce a...", options: ["reason", "purpose", "contradiction"], answer: "purpose" },
+                    { question: "'He works hard in order to realize his dream.'", options: ["他努力工作，以便实现他的梦想 (tā nǔlì gōngzuò, yǐbiàn shíxiàn tā de mèngxiǎng)", "他以便努力工作，实现他的梦想 (tā yǐbiàn nǔlì gōngzuò, shíxiàn tā de mèngxiǎng)"], answer: "他努力工作，以便实现他的梦想 (tā nǔlì gōngzuò, yǐbiàn shíxiàn tā de mèngxiǎng)" }
+                ]
+            },
+            // LESSON 6
+            {
+                id: 6,
+                title: "Lesson 6: Literary Passive with '为...所...'",
+                explanation: "While '被' (bèi) is the common passive marker, '为...所...' (wéi... suǒ...) is a more formal and literary equivalent. The structure is: Receiver + 为 + Agent + 所 + Verb. It's often found in written texts and conveys a sense of formality.",
+                vocabulary: [
+                    { pinyin: "wéi", character: "为", translation: "by (formal passive)" },
+                    { pinyin: "suǒ", character: "所", translation: "particle used in formal passive" },
+                    { pinyin: "gǎndòng", character: "感动", translation: "to move, to touch (emotionally)" },
+                    { pinyin: "xīyǐn", character: "吸引", translation: "to attract" },
+                    { pinyin: "jīngshén", character: "精神", translation: "spirit, essence" }
+                ],
+                sentenceGenerator: {
+                    parts: [
+                        { type: "Receiver", items: ["他 (tā)", "我 (wǒ)"] },
+                        { type: "Structure", items: ["为她的精神所感动 (wéi tā de jīngshén suǒ gǎndòng)", "为美丽的风景所吸引 (wéi měilì de fēngjǐng suǒ xīyǐn)"] }
+                    ]
+                },
+                quiz: [
+                    { question: "How to rewrite '他的行为被大家理解了' (His actions were understood by everyone) in the formal passive?", options: ["他的行为为大家所理解 (Tā de xíngwéi wéi dàjiā suǒ lǐjiě)", "大家为他的行为所理解 (Dàjiā wéi tā de xíngwéi suǒ lǐjiě)"], answer: "他的行为为大家所理解 (Tā de xíngwéi wéi dàjiā suǒ lǐjiě)" },
+                    { question: "The '为...所...' structure is most commonly found in:", options: ["daily conversation", "text messages", "written articles and literature"], answer: "written articles and literature" },
+                    { question: "'被...吸引' (bèi...xīyǐn) is the more common equivalent of:", options: ["为...所感动 (wéi...suǒ gǎndòng)", "为...所吸引 (wéi...suǒ xīyǐn)", "为...所理解 (wéi...suǒ lǐjiě)"], answer: "为...所吸引 (wéi...suǒ xīyǐn)" }
+                ]
+            },
+            // LESSON 7
+            {
+                id: 7,
+                title: "Lesson 7: Idioms (成语) - Effort & Success",
+                explanation: "Chengyu (成语) are four-character idioms that are essential for advanced fluency. They often have classical origins. Today's theme is effort and success.",
+                vocabulary: [
+                    { pinyin: "mǎ dào chéng gōng", character: "马到成功", translation: "to achieve instant success" },
+                    { pinyin: "jīng wèi fēn míng", character: "泾渭分明", translation: "to be entirely different" },
+                    { pinyin: "yī jǔ liǎng dé", character: "一举两得", translation: "to kill two birds with one stone" },
+                    { pinyin: "shì bàn gōng bèi", character: "事半功倍", translation: "to get twice the result with half the effort" }
+                ],
+                sentenceGenerator: {
+                    parts: [
+                        { type: "Context", items: ["有了这个新方法 (yǒule zhège xīn fāngfǎ),", "祝你这次考试 (zhù nǐ zhè cì kǎoshì)"] },
+                        { type: "Statement", items: ["我们做事真是事半功倍 (wǒmen zuòshì zhēnshi shìbàn-gōngbèi)", "马到成功 (mǎdào-chénggōng)!"] }
+                    ]
+                },
+                quiz: [
+                    { question: "If a new software helps you finish your work much faster, you could say it helps you achieve...", options: ["一举两得 (yī jǔ liǎng dé)", "事半功倍 (shì bàn gōng bèi)", "马到成功 (mǎ dào chéng gōng)"], answer: "事半功倍 (shì bàn gōng bèi)" },
+                    { question: "'一举两得' is equivalent to the English idiom:", options: ["'The early bird gets the worm'", "'Kill two birds with one stone'", "'Let the cat out of the bag'"], answer: "'Kill two birds with one stone'" },
+                    { question: "'马到成功' is often used to...", options: ["describe a past failure", "wish someone quick success", "complain about too much work"], answer: "wish someone quick success" }
+                ]
+            },
+             // LESSON 8
+            {
+                id: 8,
+                title: "Lesson 8: Idioms (成语) - Situations & People",
+                explanation: "Let's learn more Chengyu, this time focusing on describing situations and people's characteristics.",
+                vocabulary: [
+                    { pinyin: "luò yè guī gēn", character: "落叶归根", translation: "a fallen leaf returns to its roots (reverting to one's origin)" },
+                    { pinyin: "huà shé tiān zú", character: "画蛇添足", translation: "to draw a snake and add feet (to ruin something by adding something superfluous)" },
+                    { pinyin: "shǒu zhū dài tù", character: "守株待兔", translation: "to stand by a stump waiting for a hare (to wait idly for opportunities)" },
+                    { pinyin: "zì xiāng máo dùn", character: "自相矛盾", translation: "to contradict oneself" }
+                ],
+                sentenceGenerator: {
+                    parts: [
+                        { type: "Statement", items: ["他说的这两句话 (tā shuō de zhè liǎng jù huà),", "你这样做简直是 (nǐ zhèyàng zuò jiǎnzhí shì)"] },
+                        { type: "Idiom", items: ["完全是自相矛盾 (wánquán shì zìxiāng-máodùn)!", "画蛇添足 (huàshé-tiānzú)!"] }
+                    ]
+                },
+                quiz: [
+                    { question: "If someone makes a good report but then adds unnecessary, confusing data, their action could be described as...", options: ["守株待兔 (shǒu zhū dài tù)", "画蛇添足 (huà shé tiān zú)", "落叶归根 (luò yè guī gēn)"], answer: "画蛇添足 (huà shé tiān zú)" },
+                    { question: "'自相矛盾' describes a situation that is...", options: ["self-contradictory", "very dangerous", "extremely lucky"], answer: "self-contradictory" },
+                    { question: "A person who doesn't actively seek success but just waits for good luck is like the person in the idiom...", options: ["画蛇添足 (huà shé tiān zú)", "落叶归根 (luò yè guī gēn)", "守株待兔 (shǒu zhū dài tù)"], answer: "守株待兔 (shǒu zhū dài tù)" }
+                ]
+            },
+            // LESSON 9
+            {
+                id: 9,
+                title: "Lesson 9: The Classical Particle '之'",
+                explanation: "'之' (zhī) is a literary particle, largely replaced by '的' (de) in modern Chinese for possession. However, it survives in many idioms, names, and formal contexts. It can link nouns (N1 之 N2 means N2 of N1) or connect a verb phrase to a noun.",
+                vocabulary: [
+                    { pinyin: "zhī", character: "之", translation: "of (literary possessive particle)" },
+                    { pinyin: "fēn zhī yī", character: "分之一", translation: "fraction (e.g., 三分之一 - one third)" },
+                    { pinyin: "zǒng ér yán zhī", character: "总而言之", translation: "in short; to make a long story short" },
+                    { pinyin: "chí zhī yǐ héng", character: "持之以恒", translation: "to persevere" }
+                ],
+                sentenceGenerator: {
+                    parts: [
+                        { type: "Idiom/Structure", items: ["总而言之 (zǒng'éryánzhī),", "学习外语最重要的是 (xuéxí wàiyǔ zuì zhòngyào de shì)"] },
+                        { type: "Conclusion", items: ["我们必须改变策略 (wǒmen bìxū gǎibiàn cèlüè).", "持之以恒 (chízhīyǐhéng)."] }
+                    ]
+                },
+                quiz: [
+                    { question: "How do you say 'one-fourth' using '之'?", options: ["一之四分 (yī zhī sì fēn)", "四分之一 (sì fēn zhī yī)", "分之四一 (fēn zhī sì yī)"], answer: "四分之一 (sì fēn zhī yī)" },
+                    { question: "'总而言之 (zǒng ér yán zhī)' is used to...", options: ["start a new topic", "ask a question", "summarize and conclude"], answer: "summarize and conclude" },
+                    { question: "In the phrase '成功之路' (chénggōng zhī lù), '之' acts like...", options: ["的 (de) - 'road of success'", "和 (hé) - 'success and road'", "在 (zài) - 'success on the road'"], answer: "的 (de) - 'road of success'" }
+                ]
+            },
+             // LESSON 10
+            {
+                id: 10,
+                title: "Lesson 10: Abstract Conditionals (无论/不管)",
+                explanation: "'无论' (wúlùn) and '不管' (bùguǎn) both mean 'no matter' or 'regardless of'. They introduce a conditional clause that contains a question word (e.g., 什么, 谁, 多) or an A-not-A choice. The main clause often uses '都' or '也' to state the unchanging result.",
+                vocabulary: [
+                    { pinyin: "wúlùn", character: "无论", translation: "no matter; regardless of (formal)" },
+                    { pinyin: "bùguǎn", character: "不管", translation: "no matter; regardless of (informal)" },
+                    { pinyin: "jiānchí", character: "坚持", translation: "to insist on, to persevere" },
+                    { pinyin: "fàngqì", character: "放弃", translation: "to give up" },
+                    { pinyin: "kùnnan", character: "困难", translation: "difficulty" }
+                ],
+                sentenceGenerator: {
+                    parts: [
+                        { type: "Conditional", items: ["无论遇到什么困难 (wúlùn yùdào shénme kùnnan),", "不管别人怎么说 (bùguǎn biérén zěnme shuō),"] },
+                        { type: "Result", items: ["他都从不放弃 (tā dōu cóng bù fàngqì)", "我都会坚持我的决定 (wǒ dōu huì jiānchí wǒ de juédìng)"] }
+                    ]
+                },
+                quiz: [
+                    { question: "'No matter how difficult it is, I will keep learning.'", options: ["无论多难，我都也继续学 (Wúlùn duō nán, wǒ dōu yě jìxù xué)", "无论多难，我都会继续学下去 (Wúlùn duō nán, wǒ dōu huì jìxù xué xiàqù)"], answer: "无论多难，我都会继续学下去 (Wúlùn duō nán, wǒ dōu huì jìxù xué xiàqù)" },
+                    { question: "'无论' and '不管' are followed by a clause that states...", options: ["an unchanging result", "a variable or question", "a single fact"], answer: "a variable or question" },
+                    { question: "Which word often appears in the main clause after a '无论' clause?", options: ["把 (bǎ)", "吗 (ma)", "都 (dōu)"], answer: "都 (dōu)" }
+                ]
+            }
+        ];
+
+        const lessonNav = document.getElementById('lesson-nav');
+        const lessonContent = document.getElementById('lesson-content');
+        let currentLessonId = 1;
+
+        function renderNav() {
+            lessonNav.innerHTML = '';
+            lessonsData.forEach(lesson => {
+                const button = document.createElement('button');
+                button.textContent = `Lesson ${lesson.id}`;
+                button.dataset.id = lesson.id;
+                if (lesson.id === currentLessonId) {
+                    button.classList.add('active');
+                }
+                button.addEventListener('click', () => {
+                    currentLessonId = lesson.id;
+                    renderLesson(currentLessonId);
+                    updateNav();
+                });
+                lessonNav.appendChild(button);
+            });
+        }
+        
+        function updateNav() {
+            const buttons = lessonNav.querySelectorAll('button');
+            buttons.forEach(btn => {
+                btn.classList.remove('active');
+                if (parseInt(btn.dataset.id) === currentLessonId) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+        
+        function renderLesson(id) {
+            const lesson = lessonsData.find(l => l.id === id);
+            if (!lesson) return;
+
+            const vocabRows = lesson.vocabulary.map(word => `
+                <tr>
+                    <td>${word.character}</td>
+                    <td><span class="pinyin">${word.pinyin}</span></td>
+                    <td>${word.translation}</td>
+                </tr>
+            `).join('');
+
+            const sentenceGeneratorHTML = `
+                <div class="sentence-generator">
+                    <h3>Example Sentence Generator</h3>
+                    <p>Click to generate a random sentence using this lesson's grammar pattern.</p>
+                    <button id="generate-sentence-btn">Generate Example</button>
+                    <div id="sentence-output" class="sentence-output"></div>
+                </div>
+            `;
+
+            const quizQuestions = lesson.quiz.map((q, index) => `
+                <div class="quiz-question">
+                    <p><strong>Question ${index + 1}:</strong> ${q.question}</p>
+                    <div class="quiz-options">
+                        ${q.options.map(opt => `
+                            <label>
+                                <input type="radio" name="q${index}" value="${opt}"> ${opt}
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            const quizHTML = `
+                <div class="quiz">
+                    <h3>Test Your Understanding</h3>
+                    <form id="quiz-form">${quizQuestions}</form>
+                    <button id="submit-quiz-btn">Check Answers</button>
+                    <div id="quiz-results" class="quiz-results" style="display: none;"></div>
+                </div>
+            `;
+
+            lessonContent.innerHTML = `
+                <div class="lesson">
+                    <h2>${lesson.title}</h2>
+                    <div class="explanation"><p>${lesson.explanation}</p></div>
+                    <div class="vocabulary">
+                        <h3>Key Vocabulary</h3>
+                        <table class="vocab-table">
+                            <thead><tr><th>Character</th><th>Pinyin</th><th>Translation</th></tr></thead>
+                            <tbody>${vocabRows}</tbody>
+                        </table>
+                    </div>
+                    ${sentenceGeneratorHTML}
+                    ${quizHTML}
+                </div>
+            `;
+            
+            addEventListeners(lesson);
+        }
+
+        function addEventListeners(lesson) {
+            const generateBtn = document.getElementById('generate-sentence-btn');
+            const sentenceOutput = document.getElementById('sentence-output');
+            if (generateBtn) {
+                 generateBtn.addEventListener('click', () => {
+                    let sentence = [];
+                     lesson.sentenceGenerator.parts.forEach(part => {
+                        const randomIndex = Math.floor(Math.random() * part.items.length);
+                        sentence.push(part.items[randomIndex]);
+                    });
+                    sentenceOutput.innerHTML = sentence.join(' ');
+                });
+            }
+
+            const submitQuizBtn = document.getElementById('submit-quiz-btn');
+            const quizForm = document.getElementById('quiz-form');
+            const quizResults = document.getElementById('quiz-results');
+            if (submitQuizBtn) {
+                submitQuizBtn.addEventListener('click', () => {
+                    let score = 0;
+                    lesson.quiz.forEach((q, index) => {
+                        const formData = new FormData(quizForm);
+                        const userAnswer = formData.get(`q${index}`);
+                        if (userAnswer === q.answer) {
+                            score++;
+                        }
+                    });
+                    quizResults.textContent = `You scored ${score} out of ${lesson.quiz.length}! Keep persevering (持之以恒)!`;
+                    quizResults.style.display = 'block';
+                });
+            }
+        }
+        
+        // Initial Load
+        renderNav();
+        renderLesson(currentLessonId);
+
+    </script>
+
+</body>
+</html>
