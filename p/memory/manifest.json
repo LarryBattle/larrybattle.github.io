@@ -3,6 +3,7 @@
   "short_name": "Memory Game",
   "description": "Test your memory with this exciting 3D card matching game",
   "start_url": "/",
+  "scope": "/p/memory/"
   "display": "standalone",
   "background_color": "#f3f4f6",
   "theme_color": "#667eea",
