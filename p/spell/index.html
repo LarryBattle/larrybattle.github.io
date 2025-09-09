@@ -33,8 +33,9 @@
     aside{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;}
     aside h2{font-size:14px;margin:0 0 8px 0;color:var(--muted)}
     .mastered{display:flex;flex-direction:column;gap:6px;list-style:none;padding:0;margin:0;max-height:320px;overflow:auto}
-    .mastered li{padding:6px 8px;border:1px solid var(--border);border-radius:10px;position:relative}
+    .mastered li{padding:6px 8px;border:1px solid var(--border);border-radius:10px;position:relative;min-height:26px;}
     .mastered li.shiny{background:linear-gradient(90deg,rgba(255,255,255,.6),rgba(255,255,255,0),rgba(255,255,255,.6)); background-size:200% 100%; animation:shimmer 2.2s linear infinite}
+    .mastered li.placeholder{background:transparent;border-style:dashed;color:transparent}
     @keyframes shimmer{from{background-position:-100% 0} to{background-position:200% 0}}
     @media (prefers-reduced-motion: reduce){ .mastered li.shiny{animation:none} }
 
@@ -59,6 +60,15 @@
       <button id="addBtn" class="btn-accent">Add word</button>
       <button id="exportTxtBtn" title="Export newline text">Export .txt</button>
       <button id="exportJsonBtn" title="Export JSON">Export .json</button>
+      <button id="playToggle" aria-pressed="true" title="Toggle play-mode hotkeys">Play mode: On</button>
+      <details id="settingsPanel" style="margin-left:4px">
+        <summary><strong>Settings</strong> ⚙️</summary>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;align-items:center">
+          <label><input type="checkbox" id="autoTtsChk" /> Auto play TTS</label>
+          <label>Voice: <select id="voiceSelect" style="min-width:220px"></select></label>
+          <button id="testVoiceBtn" title="Test selected voice">Test voice</button>
+        </div>
+      </details>
     </div>
   </header>
 
@@ -76,7 +86,9 @@
 
     <details id="importPanel">
       <summary><strong>Import list</strong> (paste newline-separated words)</summary>
-      <textarea id="importArea" placeholder="one\nper\nline"></textarea>
+      <textarea id="importArea" placeholder="one
+per
+line"></textarea>
       <div style="display:flex;gap:8px;margin-top:8px">
         <button id="importReplaceBtn">Replace list</button>
         <button id="importAppendBtn">Append</button>
@@ -98,13 +110,16 @@
 <div id="live" class="sr-only" aria-live="polite"></div>
 
 <script type="module">
+// --- Compile-time style default (flip to change the shipped default) ---
+const AUTO_TTS_DEFAULT = true; // "enabled by define"
+
 // --- State & constants ---
 const DEFAULT_WORDS = [
   'accommodate','definitely','separate','necessary','rhythm',
   'weird','calendar','embarrass','occurrence','privilege'
 ];
-let state = { words: [], streaks: {}, mastered: {}, index: 0 };
-let currentWord = null; let currentCandidate = null;
+let state = { words: [], streaks: {}, mastered: {}, index: 0, settings: { autoTTS: AUTO_TTS_DEFAULT, voiceURI: null, playHotkeys: true } };
+let currentWord = null; let currentCandidate = null; let userGestured = false;
 
 // --- DOM ---
 const $ = s=>document.querySelector(s);
@@ -119,18 +134,23 @@ const metaEl = $('#meta');
 const cardEl = $('#card');
 const masteredList = $('#masteredList');
 const live = $('#live');
+const importArea = $('#importArea');
+const playToggle = $('#playToggle');
+const autoTtsChk = $('#autoTtsChk');
+const voiceSelect = $('#voiceSelect');
+const testVoiceBtn = $('#testVoiceBtn');
 
 // --- Utils ---
 const norm = w => (w||'').toLowerCase().trim();
 const unique = arr => [...new Set(arr.filter(Boolean))];
 const saveState = () => localStorage.setItem('spelling-drill', JSON.stringify(state));
-const loadState = () => { try { const s = JSON.parse(localStorage.getItem('spelling-drill')||'null'); if (s && s.words) state = {...state, ...s}; } catch{} };
+const loadState = () => { try { const s = JSON.parse(localStorage.getItem('spelling-drill')||'null'); if (s && s.words) state = {...state, ...s, settings: {...state.settings, ...(s.settings||{})}}; } catch{} };
+const isTypingTarget = (e)=>{ const t = e.target; if(!t) return false; if(t.closest('input, textarea, select, [contenteditable="true"]')) return true; return false; };
 
 // --- Word list mgmt ---
 function setWords(words){
   const cleaned = unique(words.map(norm)).filter(w=>w.length>0);
   state.words = cleaned;
-  // ensure streak/mastered maps
   const newStreaks = {}; const newMastered = {};
   for(const w of cleaned){ newStreaks[w] = state.streaks[w]||0; newMastered[w] = !!state.mastered[w]; }
   state.streaks = newStreaks; state.mastered = newMastered; state.index = 0;
@@ -204,6 +224,7 @@ function animateMastered(word){
 // --- Rendering ---
 function startRound(){
   currentWord = nextUnmasteredWord();
+  cancelSpeech();
   if(!currentWord){
     candEl.textContent = 'All words mastered! 🎉';
     streakEl.innerHTML = ''; metaEl.textContent = '';
@@ -214,6 +235,7 @@ function startRound(){
   renderStreak(currentWord);
   metaEl.textContent = `Target: ${currentWord}`; // quietly show for teachers
   yesBtn.disabled = noBtn.disabled = false;
+  if(state.settings.autoTTS && userGestured && ('speechSynthesis' in window)) speakWord(currentWord).catch(()=>{});
 }
 
 function renderStreak(word){
@@ -224,22 +246,49 @@ function renderStreak(word){
 
 function renderSide(){
   const items = state.words.filter(w=>state.mastered[w]);
-  masteredList.innerHTML = items.map(w=>`<li data-w="${w}">${w}</li>`).join('');
+  const total = state.words.length; const placeholders = Math.max(0, total - items.length);
+  masteredList.innerHTML = items.map(w=>`<li data-w="${w}">${w}</li>`).join('')
+    + Array.from({length: placeholders}).map(()=>'<li class="placeholder" aria-hidden="true">&nbsp;</li>').join('');
 }
 
 function render(){
   renderSide();
   startRound();
-  if(!('speechSynthesis' in window)) hearBtn.disabled = true;
+  const hasTTS = ('speechSynthesis' in window);
+  if(!hasTTS){ hearBtn.disabled = true; autoTtsChk.disabled = true; voiceSelect.disabled = true; testVoiceBtn.disabled = true; }
+  autoTtsChk.checked = !!state.settings.autoTTS;
+  playToggle.setAttribute('aria-pressed', state.settings.playHotkeys? 'true':'false');
+  playToggle.textContent = `Play mode: ${state.settings.playHotkeys? 'On':'Off'}`;
 }
 
 // --- Speech ---
+let voiceCache = [];
+function refreshVoices(){ if(!('speechSynthesis' in window)) return; voiceCache = window.speechSynthesis.getVoices(); populateVoiceSelect(); }
+function populateVoiceSelect(){
+  if(!('speechSynthesis' in window)) return;
+  const byLang = new Map();
+  for(const v of voiceCache){ const key = v.lang || 'unknown'; if(!byLang.has(key)) byLang.set(key, []); byLang.get(key).push(v); }
+  const langs = [...byLang.keys()].sort();
+  let html = '';
+  for(const lang of langs){
+    const vs = byLang.get(lang).sort((a,b)=>a.name.localeCompare(b.name));
+    html += `<optgroup label="${lang}">` + vs.map(v=>`<option value="${v.voiceURI}">${v.name}</option>`).join('') + '</optgroup>';
+  }
+  voiceSelect.innerHTML = html;
+  // default selection
+  let chosen = state.settings.voiceURI && voiceCache.find(v=>v.voiceURI===state.settings.voiceURI);
+  if(!chosen){ chosen = voiceCache.find(v=>/^en[-_]/i.test(v.lang)) || voiceCache[0]; if(chosen) state.settings.voiceURI = chosen.voiceURI; }
+  if(chosen) voiceSelect.value = chosen.voiceURI; saveState();
+}
+function cancelSpeech(){ if('speechSynthesis' in window) try{ window.speechSynthesis.cancel(); }catch{} }
 async function speakWord(word, times=3, delayMs=1000){
   if(!('speechSynthesis' in window)) return;
   for(let i=0;i<times;i++){
     await new Promise(res=>{
       const u = new SpeechSynthesisUtterance(word);
-      u.rate = 0.95; u.pitch = 1; u.onend = ()=> setTimeout(res, delayMs);
+      const v = voiceCache.find(v=>v.voiceURI===state.settings.voiceURI);
+      if(v) u.voice = v; u.rate = 0.95; u.pitch = 1;
+      u.onend = ()=> setTimeout(res, delayMs);
       window.speechSynthesis.speak(u);
     });
   }
@@ -255,17 +304,26 @@ function initGame(){
   loadState();
   if(!state.words.length) setWords(DEFAULT_WORDS);
   render();
+  if('speechSynthesis' in window){
+    window.speechSynthesis.onvoiceschanged = refreshVoices; refreshVoices();
+  }
 }
 
 // Controls
-addBtn.addEventListener('click', ()=>{ addWord(addInput.value); addInput.value=''; addInput.focus(); });
+addBtn.addEventListener('click', ()=>{ addWord(addInput.value); addInput.value=''; addInput.focus(); userGestured=true; });
 addInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ addBtn.click(); }});
-yesBtn.addEventListener('click', ()=>judge(true));
-noBtn.addEventListener('click', ()=>judge(false));
-hearBtn.addEventListener('click', ()=>{ if(currentWord) speakWord(currentWord).catch(()=>{}); flashButton(hearBtn); });
+yesBtn.addEventListener('click', ()=>{ userGestured=true; judge(true); });
+noBtn.addEventListener('click', ()=>{ userGestured=true; judge(false); });
+hearBtn.addEventListener('click', ()=>{ userGestured=true; if(currentWord) speakWord(currentWord).catch(()=>{}); flashButton(hearBtn); });
+playToggle.addEventListener('click', ()=>{ state.settings.playHotkeys = !state.settings.playHotkeys; saveState(); render(); });
+autoTtsChk.addEventListener('change', ()=>{ state.settings.autoTTS = autoTtsChk.checked; saveState(); });
+voiceSelect.addEventListener('change', ()=>{ state.settings.voiceURI = voiceSelect.value; saveState(); });
+testVoiceBtn.addEventListener('click', ()=>{ userGestured=true; speakWord(currentWord || 'example').catch(()=>{}); });
 
 document.addEventListener('keydown', (e)=>{
-  if(document.activeElement===addInput || e.altKey || e.ctrlKey || e.metaKey) return;
+  if(isTypingTarget(e) || e.altKey || e.ctrlKey || e.metaKey) return;
+  userGestured = true;
+  if(!state.settings.playHotkeys) return; // Only in play mode
   if(e.key==='y' || e.key==='Y') { e.preventDefault(); yesBtn.click(); }
   else if(e.key==='n' || e.key==='N') { e.preventDefault(); noBtn.click(); }
   else if(e.key==='h' || e.key==='H') { e.preventDefault(); hearBtn.click(); }
@@ -273,21 +331,21 @@ document.addEventListener('keydown', (e)=>{
 
 // Import/export
 $('#importReplaceBtn').addEventListener('click', ()=>{
-  const t = $('#importArea').value; const list = t.split(/\r?\n/).map(norm);
-  setWords(list); render(); sayLive('List replaced');
+  const t = $('#importArea').value; const list = t.split(/[\n,]?/).map(norm);
+  setWords(list); render(); sayLive('List replaced'); userGestured=true;
 });
 $('#importAppendBtn').addEventListener('click', ()=>{
-  const t = $('#importArea').value; const list = unique(t.split(/\r?\n/).map(norm));
+  const t = $('#importArea').value; const list = unique(t.split(/[\n,]?/).map(norm));
   for(const w of list) addWord(w);
-  render(); sayLive('Words appended');
+  render(); sayLive('Words appended'); userGestured=true;
 });
 
 function download(filename, text){
   const blob = new Blob([text], {type: 'text/plain'});
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
 }
-$('#exportTxtBtn').addEventListener('click', ()=> download('words.txt', state.words.join('\n')));
-$('#exportJsonBtn').addEventListener('click', ()=> download('spelling-drill.json', JSON.stringify({words: state.words, streaks: state.streaks, mastered: state.mastered}, null, 2)));
+$('#exportTxtBtn').addEventListener('click', ()=> download('words.txt', state.words.join(' ')));
+$('#exportJsonBtn').addEventListener('click', ()=> download('spelling-drill.json', JSON.stringify({words: state.words, streaks: state.streaks, mastered: state.mastered, settings: state.settings}, null, 2)));
 
 $('#resetLink').addEventListener('click', ()=>{
   if(confirm('Reset streaks/mastery? Your word list stays.')){
@@ -295,6 +353,8 @@ $('#resetLink').addEventListener('click', ()=>{
     state.index = 0; saveState(); render(); sayLive('Progress reset');
   }
 });
+
+function allMastered(){ return state.words.every(w=>state.mastered[w]); }
 
 // Expose (for debugging/teachers)
 window.spellingDrill = { initGame, addWord, nextUnmasteredWord, generateCandidate, judge, updateStreak, markMastered, render, speakWord, saveState, loadState };
