@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Spelling Drill</title>
+  <style>
+    :root { --bg:#f7f7fb; --card:#ffffff; --fg:#222; --muted:#666; --accent:#2563eb; --ok:#16a34a; --bad:#dc2626; --border:#e6e6ef; }
+    html,body{height:100%}
+    body{margin:0;font:16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji"; color:var(--fg); background:var(--bg);} 
+    .wrap{max-width:980px;margin:0 auto;padding:16px;display:grid;grid-template-columns:1fr 260px;gap:16px}
+    header{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
+    h1{font-size:18px;margin:0}
+    .controls{display:flex;flex-wrap:wrap;gap:8px}
+    input[type=text]{padding:8px 10px;border:1px solid var(--border);border-radius:8px;min-width:220px}
+    button{padding:9px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);cursor:pointer}
+    button:focus{outline:2px solid var(--accent);outline-offset:2px}
+    button[disabled]{opacity:.5;cursor:not-allowed}
+    .btn-accent{background:var(--accent);border-color:transparent;color:#fff}
+
+    main .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;min-height:220px;display:flex;flex-direction:column;gap:12px;justify-content:space-between}
+    .cand{font-size:40px;font-weight:700;text-align:center;letter-spacing:.5px}
+    .actions{display:flex;gap:10px;justify-content:center}
+    .actions button{min-width:88px;font-weight:600}
+    .yes{background:var(--ok);border-color:transparent;color:#fff}
+    .no{background:var(--bad);border-color:transparent;color:#fff}
+    .hear{background:#111;color:#fff;border-color:#111}
+    .streak{display:flex;gap:6px;justify-content:center}
+    .dot{width:10px;height:10px;border-radius:50%;background:#ddd;border:1px solid #ccc}
+    .dot.on{background:var(--accent);border-color:var(--accent)}
+    .meta{color:var(--muted);text-align:center}
+
+    aside{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;}
+    aside h2{font-size:14px;margin:0 0 8px 0;color:var(--muted)}
+    .mastered{display:flex;flex-direction:column;gap:6px;list-style:none;padding:0;margin:0;max-height:320px;overflow:auto}
+    .mastered li{padding:6px 8px;border:1px solid var(--border);border-radius:10px;position:relative}
+    .mastered li.shiny{background:linear-gradient(90deg,rgba(255,255,255,.6),rgba(255,255,255,0),rgba(255,255,255,.6)); background-size:200% 100%; animation:shimmer 2.2s linear infinite}
+    @keyframes shimmer{from{background-position:-100% 0} to{background-position:200% 0}}
+    @media (prefers-reduced-motion: reduce){ .mastered li.shiny{animation:none} }
+
+    .flash{animation:flash .28s linear}
+    @keyframes flash{0%{box-shadow:0 0 0 0 rgba(220,38,38,.0)}50%{box-shadow:0 0 0 3px rgba(220,38,38,.35)}100%{box-shadow:0 0 0 0 rgba(220,38,38,.0)}}
+
+    details{border:1px dashed var(--border);border-radius:10px;padding:8px}
+    details textarea{width:100%;min-height:80px;margin-top:8px}
+
+    footer{grid-column:1/-1;color:var(--muted);display:flex;gap:12px;align-items:center;justify-content:space-between;border-top:1px solid var(--border);padding-top:10px;margin-top:6px}
+    a.reset{color:var(--bad);text-decoration:underline;cursor:pointer}
+    .sr-only{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+    @media (max-width:820px){ .wrap{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Spelling Drill</h1>
+    <div class="controls" aria-label="Word list controls">
+      <input id="addInput" type="text" placeholder="add a word…" aria-label="Add a word" />
+      <button id="addBtn" class="btn-accent">Add word</button>
+      <button id="exportTxtBtn" title="Export newline text">Export .txt</button>
+      <button id="exportJsonBtn" title="Export JSON">Export .json</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="card" id="card" aria-live="off">
+      <div class="cand" id="candidate" role="heading" aria-level="2">—</div>
+      <div class="streak" id="streak"></div>
+      <div class="actions">
+        <button id="yesBtn" class="yes" aria-pressed="false" accesskey="y" title="Y">Yes</button>
+        <button id="noBtn" class="no" aria-pressed="false" accesskey="n" title="N">No</button>
+        <button id="hearBtn" class="hear" aria-pressed="false" accesskey="h" title="H">Hear</button>
+      </div>
+      <div class="meta" id="meta"></div>
+    </section>
+
+    <details id="importPanel">
+      <summary><strong>Import list</strong> (paste newline-separated words)</summary>
+      <textarea id="importArea" placeholder="one\nper\nline"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button id="importReplaceBtn">Replace list</button>
+        <button id="importAppendBtn">Append</button>
+      </div>
+    </details>
+  </main>
+
+  <aside>
+    <h2>Mastered</h2>
+    <ul class="mastered" id="masteredList"></ul>
+  </aside>
+
+  <footer>
+    <div>Answer <strong>Yes</strong> if the spelling is correct, <strong>No</strong> otherwise. Master a word with 3 correct in a row. Shortcuts: Y/N/H.</div>
+    <a class="reset" id="resetLink" role="button">Reset progress</a>
+  </footer>
+</div>
+
+<div id="live" class="sr-only" aria-live="polite"></div>
+
+<script type="module">
+// --- State & constants ---
+const DEFAULT_WORDS = [
+  'accommodate','definitely','separate','necessary','rhythm',
+  'weird','calendar','embarrass','occurrence','privilege'
+];
+let state = { words: [], streaks: {}, mastered: {}, index: 0 };
+let currentWord = null; let currentCandidate = null;
+
+// --- DOM ---
+const $ = s=>document.querySelector(s);
+const addInput = $('#addInput');
+const addBtn = $('#addBtn');
+const yesBtn = $('#yesBtn');
+const noBtn = $('#noBtn');
+const hearBtn = $('#hearBtn');
+const candEl = $('#candidate');
+const streakEl = $('#streak');
+const metaEl = $('#meta');
+const cardEl = $('#card');
+const masteredList = $('#masteredList');
+const live = $('#live');
+
+// --- Utils ---
+const norm = w => (w||'').toLowerCase().trim();
+const unique = arr => [...new Set(arr.filter(Boolean))];
+const saveState = () => localStorage.setItem('spelling-drill', JSON.stringify(state));
+const loadState = () => { try { const s = JSON.parse(localStorage.getItem('spelling-drill')||'null'); if (s && s.words) state = {...state, ...s}; } catch{} };
+
+// --- Word list mgmt ---
+function setWords(words){
+  const cleaned = unique(words.map(norm)).filter(w=>w.length>0);
+  state.words = cleaned;
+  // ensure streak/mastered maps
+  const newStreaks = {}; const newMastered = {};
+  for(const w of cleaned){ newStreaks[w] = state.streaks[w]||0; newMastered[w] = !!state.mastered[w]; }
+  state.streaks = newStreaks; state.mastered = newMastered; state.index = 0;
+  saveState();
+}
+function addWord(word){
+  const w = norm(word); if(!w) return;
+  if(!state.words.includes(w)) state.words.push(w);
+  if(!(w in state.streaks)) state.streaks[w]=0;
+  if(!(w in state.mastered)) state.mastered[w]=false;
+  saveState(); renderSide(); if(!allMastered()) startRound();
+}
+
+function nextUnmasteredWord(){
+  if(!state.words.length) return null;
+  for(let i=0;i<state.words.length;i++){
+    const idx = (state.index + i) % state.words.length;
+    const w = state.words[idx];
+    if(!state.mastered[w]){ state.index = (idx+1)%state.words.length; return w; }
+  }
+  return null;
+}
+
+// --- Candidate generation ---
+function generateCandidate(word){
+  const coin = Math.random() < 0.5;
+  if(coin) return { text: word, isCorrect: true };
+  let variant = word; let tries=0;
+  const ops=[swapAdjacent, dropVowel, duplicateLetter, replaceNearKey];
+  while((variant===word || variant.length<2) && tries<8){
+    const op = ops[(Math.random()*ops.length)|0];
+    variant = op(word);
+    tries++;
+  }
+  if(variant===word) variant = duplicateLetter(word);
+  return { text: variant, isCorrect: false };
+}
+
+function swapAdjacent(s){ if(s.length<2) return s; const i = (Math.random()*(s.length-1))|0; return s.slice(0,i)+s[i+1]+s[i]+s.slice(i+2); }
+function dropVowel(s){ const v=[...s].map((c,i)=>'aeiouy'.includes(c)?i:-1).filter(i=>i>=0); if(!v.length) return s.slice(0,-1); const i=v[(Math.random()*v.length)|0]; return s.slice(0,i)+s.slice(i+1); }
+function duplicateLetter(s){ const i=(Math.random()*s.length)|0; return s.slice(0,i+1)+s[i]+s.slice(i+1); }
+function replaceNearKey(s){
+  const rows=['qwertyuiop','asdfghjkl','zxcvbnm'];
+  const i=(Math.random()*s.length)|0; const ch=s[i];
+  let row = rows.find(r=>r.includes(ch)); if(!row) return duplicateLetter(s);
+  const j=row.indexOf(ch); const nb=[row[j-1], row[j+1]].filter(Boolean); if(!nb.length) return swapAdjacent(s);
+  const rep = nb[(Math.random()*nb.length)|0];
+  return s.slice(0,i)+rep+s.slice(i+1);
+}
+
+// --- Judging & progress ---
+function judge(answerYes){
+  if(!currentWord || !currentCandidate) return;
+  const correct = (answerYes === currentCandidate.isCorrect);
+  updateStreak(currentWord, correct);
+  flashButton(answerYes?yesBtn:noBtn);
+  if(correct){ sayLive('Correct'); } else { sayLive('Incorrect'); flashCard(); }
+  renderSide(); saveState();
+  setTimeout(startRound, 220);
+}
+
+function updateStreak(word, correct){
+  if(correct){ state.streaks[word] = (state.streaks[word]||0)+1; if(state.streaks[word]>=3){ markMastered(word); } }
+  else { state.streaks[word]=0; }
+}
+function markMastered(word){ state.mastered[word]=true; state.streaks[word]=3; animateMastered(word); }
+function animateMastered(word){
+  requestAnimationFrame(()=>{ const li=[...masteredList.children].find(el=>el.dataset.w===word); if(li){ li.classList.add('shiny'); setTimeout(()=>li.classList.remove('shiny'), 3000); }});
+}
+
+// --- Rendering ---
+function startRound(){
+  currentWord = nextUnmasteredWord();
+  if(!currentWord){
+    candEl.textContent = 'All words mastered! 🎉';
+    streakEl.innerHTML = ''; metaEl.textContent = '';
+    yesBtn.disabled = noBtn.disabled = true; return;
+  }
+  currentCandidate = generateCandidate(currentWord);
+  candEl.textContent = currentCandidate.text;
+  renderStreak(currentWord);
+  metaEl.textContent = `Target: ${currentWord}`; // quietly show for teachers
+  yesBtn.disabled = noBtn.disabled = false;
+}
+
+function renderStreak(word){
+  const s = state.streaks[word]||0; let html='';
+  for(let i=0;i<3;i++){ html += `<span class="dot ${i<s?'on':''}"></span>`; }
+  streakEl.innerHTML = html;
+}
+
+function renderSide(){
+  const items = state.words.filter(w=>state.mastered[w]);
+  masteredList.innerHTML = items.map(w=>`<li data-w="${w}">${w}</li>`).join('');
+}
+
+function render(){
+  renderSide();
+  startRound();
+  if(!('speechSynthesis' in window)) hearBtn.disabled = true;
+}
+
+// --- Speech ---
+async function speakWord(word, times=3, delayMs=1000){
+  if(!('speechSynthesis' in window)) return;
+  for(let i=0;i<times;i++){
+    await new Promise(res=>{
+      const u = new SpeechSynthesisUtterance(word);
+      u.rate = 0.95; u.pitch = 1; u.onend = ()=> setTimeout(res, delayMs);
+      window.speechSynthesis.speak(u);
+    });
+  }
+}
+
+// --- A11y feedback helpers ---
+function sayLive(msg){ live.textContent=''; setTimeout(()=>live.textContent=msg, 0); }
+function flashButton(btn){ btn.setAttribute('aria-pressed','true'); setTimeout(()=>btn.setAttribute('aria-pressed','false'), 160); }
+function flashCard(){ cardEl.classList.remove('flash'); void cardEl.offsetWidth; cardEl.classList.add('flash'); }
+
+// --- Init & events ---
+function initGame(){
+  loadState();
+  if(!state.words.length) setWords(DEFAULT_WORDS);
+  render();
+}
+
+// Controls
+addBtn.addEventListener('click', ()=>{ addWord(addInput.value); addInput.value=''; addInput.focus(); });
+addInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ addBtn.click(); }});
+yesBtn.addEventListener('click', ()=>judge(true));
+noBtn.addEventListener('click', ()=>judge(false));
+hearBtn.addEventListener('click', ()=>{ if(currentWord) speakWord(currentWord).catch(()=>{}); flashButton(hearBtn); });
+
+document.addEventListener('keydown', (e)=>{
+  if(document.activeElement===addInput || e.altKey || e.ctrlKey || e.metaKey) return;
+  if(e.key==='y' || e.key==='Y') { e.preventDefault(); yesBtn.click(); }
+  else if(e.key==='n' || e.key==='N') { e.preventDefault(); noBtn.click(); }
+  else if(e.key==='h' || e.key==='H') { e.preventDefault(); hearBtn.click(); }
+});
+
+// Import/export
+$('#importReplaceBtn').addEventListener('click', ()=>{
+  const t = $('#importArea').value; const list = t.split(/\r?\n/).map(norm);
+  setWords(list); render(); sayLive('List replaced');
+});
+$('#importAppendBtn').addEventListener('click', ()=>{
+  const t = $('#importArea').value; const list = unique(t.split(/\r?\n/).map(norm));
+  for(const w of list) addWord(w);
+  render(); sayLive('Words appended');
+});
+
+function download(filename, text){
+  const blob = new Blob([text], {type: 'text/plain'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
+$('#exportTxtBtn').addEventListener('click', ()=> download('words.txt', state.words.join('\n')));
+$('#exportJsonBtn').addEventListener('click', ()=> download('spelling-drill.json', JSON.stringify({words: state.words, streaks: state.streaks, mastered: state.mastered}, null, 2)));
+
+$('#resetLink').addEventListener('click', ()=>{
+  if(confirm('Reset streaks/mastery? Your word list stays.')){
+    for(const w of state.words){ state.streaks[w]=0; state.mastered[w]=false; }
+    state.index = 0; saveState(); render(); sayLive('Progress reset');
+  }
+});
+
+// Expose (for debugging/teachers)
+window.spellingDrill = { initGame, addWord, nextUnmasteredWord, generateCandidate, judge, updateStreak, markMastered, render, speakWord, saveState, loadState };
+
+// Kickoff
+initGame();
+</script>
+</body>
+</html>
