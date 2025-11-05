@@ -1,0 +1,1408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Daily Checklist ✨</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="A daily routine checklist app for kids with progress tracking and history">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Daily Checklist">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="icon-192.svg">
+    <link rel="apple-touch-icon" href="icon-192.svg">
+    
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        #app {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 12px;
+            font-size: 1.8em;
+        }
+
+        .name-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .settings-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .settings-content {
+            margin-top: 12px;
+        }
+
+        .name-input input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            font-size: 1.1em;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #38a169;
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+
+        .btn-warning {
+            background: #ed8936;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #dd6b20;
+        }
+
+        .edit-mode-badge {
+            display: inline-block;
+            background: #ed8936;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .edit-controls {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 0.85em;
+            min-width: auto;
+        }
+
+        .add-item-form {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            padding: 15px;
+            background: #edf2f7;
+            border-radius: 8px;
+        }
+
+        .add-item-form input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+
+        .add-item-form input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .progress-bar {
+            margin-top: 12px;
+            height: 35px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #48bb78, #38a169);
+            transition: width 0.5s ease;
+            position: relative;
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.95em;
+            color: #2d3748;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+            z-index: 1;
+        }
+
+        .routine-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .routine-header {
+            margin-bottom: 15px;
+        }
+
+        .routine-title {
+            font-size: 1.6em;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .routine-time {
+            color: #718096;
+            font-size: 0.95em;
+            margin-bottom: 8px;
+        }
+
+        .mnemonic {
+            background: #fef5e7;
+            border-left: 4px solid #f39c12;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: 600;
+            color: #d68910;
+            font-size: 0.95em;
+        }
+
+        .section-group {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 1.2em;
+            color: #2d3748;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-subtitle {
+            color: #718096;
+            font-size: 0.85em;
+            margin-left: 32px;
+            margin-top: -8px;
+            margin-bottom: 8px;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 6px;
+            background: #f7fafc;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .checklist-item:hover {
+            background: #edf2f7;
+        }
+
+        .checklist-item.completed {
+            background: #e6ffed;
+        }
+
+        .checklist-item input[type="checkbox"] {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            margin-right: 12px;
+        }
+
+        .item-text {
+            flex: 1;
+            font-size: 1.05em;
+            color: #2d3748;
+        }
+
+        .item-text.completed {
+            text-decoration: line-through;
+            color: #718096;
+        }
+
+        .timestamp {
+            font-size: 0.85em;
+            color: #48bb78;
+            font-weight: 600;
+        }
+
+        .history-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+
+        .history-header h2 {
+            color: #2d3748;
+            font-size: 1.4em;
+        }
+
+        .history-toggle {
+            font-size: 1.3em;
+            color: #667eea;
+        }
+
+        .history-list {
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            padding: 12px;
+            background: #f7fafc;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .history-date {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .history-stats {
+            color: #718096;
+            font-size: 0.95em;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .install-banner {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
+        }
+
+        .install-banner-text {
+            flex: 1;
+            margin-right: 15px;
+        }
+
+        .install-banner-text h3 {
+            margin: 0 0 5px 0;
+            font-size: 1.1em;
+        }
+
+        .install-banner-text p {
+            margin: 0;
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .btn-install {
+            background: white;
+            color: #38a169;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .btn-install:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            .routine-title {
+                font-size: 1.5em;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+
+        /* Print Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            padding: 20px 25px;
+            border-bottom: 2px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            color: #2d3748;
+            margin: 0;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 2em;
+            color: #718096;
+            cursor: pointer;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .close-btn:hover {
+            background: #edf2f7;
+            color: #2d3748;
+        }
+
+        .modal-body {
+            padding: 25px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .markdown-preview {
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 20px 25px;
+            border-top: 2px solid #e2e8f0;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        /* Print-specific styles */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            
+            #printContent, #printContent * {
+                visibility: visible;
+            }
+            
+            #printContent {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                padding: 20px;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            #printContent h1 {
+                color: #2d3748;
+                border-bottom: 3px solid #667eea;
+                padding-bottom: 10px;
+                margin-bottom: 20px;
+            }
+
+            #printContent h2 {
+                color: #2d3748;
+                margin-top: 30px;
+                margin-bottom: 15px;
+                border-bottom: 2px solid #e2e8f0;
+                padding-bottom: 8px;
+            }
+
+            #printContent h3 {
+                color: #4a5568;
+                margin-top: 20px;
+                margin-bottom: 10px;
+            }
+
+            #printContent ul {
+                list-style: none;
+                padding-left: 0;
+            }
+
+            #printContent li {
+                margin: 8px 0;
+                line-height: 1.6;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Install Banner -->
+        <div v-if="showInstallBanner" class="install-banner">
+            <div class="install-banner-text">
+                <h3>📱 Install App</h3>
+                <p>Add to your home screen for quick access!</p>
+            </div>
+            <button class="btn-install" @click="installApp">Install</button>
+        </div>
+
+        <div class="header">
+            <h1>
+                ✨ My Daily Checklist
+                <span v-if="editMode" class="edit-mode-badge">✏️ EDIT MODE</span>
+            </h1>
+            
+            <div class="name-input">
+                <span style="font-size: 1.2em;">👋</span>
+                <input 
+                    type="text" 
+                    v-model="userName" 
+                    placeholder="Enter your name..."
+                    @change="saveData"
+                >
+            </div>
+
+            <div class="settings-toggle">
+                <button class="btn btn-secondary" @click="toggleSettings">
+                    {{ showSettings ? '▲ Hide Settings' : '⚙️ Settings' }}
+                </button>
+            </div>
+
+            <div v-if="showSettings" class="settings-content">
+                <div class="controls">
+                    <button 
+                        class="btn" 
+                        :class="editMode ? 'btn-warning' : 'btn-secondary'"
+                        @click="toggleEditMode"
+                    >
+                        {{ editMode ? '✓ Done Editing' : '✏️ Edit Tasks' }}
+                    </button>
+                    <button class="btn btn-primary" @click="showPrintModal">
+                        🖨️ Print/Export
+                    </button>
+                    <button class="btn btn-primary" @click="importJSON">
+                        📥 Import JSON
+                    </button>
+                    <button class="btn btn-primary" @click="exportJSON">
+                        📤 Export JSON
+                    </button>
+                    <button class="btn btn-secondary" @click="resetToday">
+                        🔄 Reset Today
+                    </button>
+                    <input 
+                        type="file" 
+                        ref="fileInput" 
+                        accept=".json"
+                        @change="handleFileUpload"
+                    >
+                </div>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" :style="{width: progressPercentage + '%'}"></div>
+                <div class="progress-text">
+                    {{ completedCount }} / {{ totalCount }} ({{ progressPercentage }}%)
+                </div>
+            </div>
+        </div>
+
+        <!-- Morning Routine -->
+        <div class="routine-section">
+            <div class="routine-header">
+                <h2 class="routine-title">
+                    {{ routineTemplate.morning.emoji }} {{ routineTemplate.morning.title }}
+                </h2>
+                <div class="routine-time">{{ routineTemplate.morning.timeRange }}</div>
+                <div class="mnemonic">{{ routineTemplate.morning.mnemonic }}</div>
+            </div>
+
+            <div v-for="section in routineTemplate.morning.sections" :key="section.id" class="section-group">
+                <h3 class="section-title">
+                    <span>{{ section.emoji }}</span>
+                    <span>{{ section.name }}</span>
+                </h3>
+                <div v-if="section.subtitle" class="section-subtitle">{{ section.subtitle }}</div>
+                
+                <div v-for="(item, index) in section.items" :key="index" 
+                     class="checklist-item"
+                     :class="{completed: isCompleted(section.id, index)}">
+                    <input 
+                        v-if="!editMode"
+                        type="checkbox" 
+                        :checked="isCompleted(section.id, index)"
+                        @change="toggleItem(section.id, index)"
+                    >
+                    <span class="item-text" :class="{completed: isCompleted(section.id, index)}">
+                        {{ item }}
+                    </span>
+                    <span v-if="!editMode && isCompleted(section.id, index)" class="timestamp">
+                        {{ getTimestamp(section.id, index) }}
+                    </span>
+                    <div v-if="editMode" class="edit-controls">
+                        <button class="btn btn-danger btn-small" @click="removeItem(section.id, index)">
+                            🗑️ Remove
+                        </button>
+                    </div>
+                </div>
+
+                <div v-if="editMode" class="add-item-form">
+                    <input 
+                        type="text" 
+                        :placeholder="'Add new task to ' + section.name"
+                        v-model="newItemText[section.id]"
+                        @keyup.enter="addItem(section.id)"
+                    >
+                    <button class="btn btn-secondary btn-small" @click="addItem(section.id)">
+                        ➕ Add Task
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Evening Routine -->
+        <div class="routine-section">
+            <div class="routine-header">
+                <h2 class="routine-title">
+                    {{ routineTemplate.evening.emoji }} {{ routineTemplate.evening.title }}
+                </h2>
+                <div class="routine-time">{{ routineTemplate.evening.timeRange }}</div>
+                <div class="mnemonic">{{ routineTemplate.evening.mnemonic }}</div>
+            </div>
+
+            <div v-for="section in routineTemplate.evening.sections" :key="section.id" class="section-group">
+                <h3 class="section-title">
+                    <span>{{ section.emoji }}</span>
+                    <span>{{ section.name }}</span>
+                </h3>
+                <div v-if="section.subtitle" class="section-subtitle">{{ section.subtitle }}</div>
+                
+                <div v-for="(item, index) in section.items" :key="index" 
+                     class="checklist-item"
+                     :class="{completed: isCompleted(section.id, index)}">
+                    <input 
+                        v-if="!editMode"
+                        type="checkbox" 
+                        :checked="isCompleted(section.id, index)"
+                        @change="toggleItem(section.id, index)"
+                    >
+                    <span class="item-text" :class="{completed: isCompleted(section.id, index)}">
+                        {{ item }}
+                    </span>
+                    <span v-if="!editMode && isCompleted(section.id, index)" class="timestamp">
+                        {{ getTimestamp(section.id, index) }}
+                    </span>
+                    <div v-if="editMode" class="edit-controls">
+                        <button class="btn btn-danger btn-small" @click="removeItem(section.id, index)">
+                            🗑️ Remove
+                        </button>
+                    </div>
+                </div>
+
+                <div v-if="editMode" class="add-item-form">
+                    <input 
+                        type="text" 
+                        :placeholder="'Add new task to ' + section.name"
+                        v-model="newItemText[section.id]"
+                        @keyup.enter="addItem(section.id)"
+                    >
+                    <button class="btn btn-secondary btn-small" @click="addItem(section.id)">
+                        ➕ Add Task
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Section -->
+        <div class="history-section">
+            <div class="history-header" @click="historyExpanded = !historyExpanded">
+                <h2>📊 History</h2>
+                <span class="history-toggle">{{ historyExpanded ? '▼' : '▶' }}</span>
+            </div>
+
+            <div v-if="historyExpanded">
+                <div v-if="history.length === 0" class="empty-state">
+                    <p>No history yet. Complete some tasks to see your progress!</p>
+                </div>
+                <div v-else class="history-list">
+                    <div v-for="entry in sortedHistory" :key="entry.date" class="history-item">
+                        <div class="history-date">📅 {{ formatDate(entry.date) }}</div>
+                        <div class="history-stats">
+                            ✅ Completed: {{ entry.totalCompleted }} tasks
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Print Modal -->
+        <div v-if="showPrint" class="modal-overlay" @click.self="closePrintModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>🖨️ Print/Export Markdown</h2>
+                    <button class="close-btn" @click="closePrintModal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="markdown-preview">{{ markdownContent }}</div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @click="copyMarkdown">
+                        📋 Copy to Clipboard
+                    </button>
+                    <button class="btn btn-primary" @click="printMarkdown">
+                        🖨️ Print
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden div for printing -->
+        <div id="printContent" style="display: none;">
+            <div v-html="markdownHTML"></div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    userName: '',
+                    routineTemplate: {
+                        morning: {
+                            emoji: '🌅',
+                            title: 'MORNING ROUTINE',
+                            timeRange: '6:30am - 7:20am',
+                            mnemonic: 'HCP = Healthy, Clean, Packed!',
+                            sections: [
+                                {
+                                    id: 'morning-healthy',
+                                    name: 'Get HEALTHY',
+                                    emoji: '💪',
+                                    items: [
+                                        'Wake up at 6:30am',
+                                        'Take medicine',
+                                        'Brush teeth',
+                                        'Brush hair and put in bun/style',
+                                        'Put on face wash and sunscreen',
+                                        'Get dressed'
+                                    ]
+                                },
+                                {
+                                    id: 'morning-clean',
+                                    name: 'Get CLEAN',
+                                    emoji: '🧹',
+                                    items: [
+                                        'Put dirty clothes in laundry basket',
+                                        'Wipe down bathroom'
+                                    ]
+                                },
+                                {
+                                    id: 'morning-packed',
+                                    name: 'Get PACKED',
+                                    emoji: '🎒',
+                                    items: [
+                                        'Check calendar for today',
+                                        'Leave for school at 7:20am'
+                                    ]
+                                }
+                            ]
+                        },
+                        evening: {
+                            emoji: '🌙',
+                            title: 'EVENING ROUTINE',
+                            timeRange: '6pm - 9pm',
+                            mnemonic: 'SCBZ = Study, Clean, Bath, Zzz\'s!',
+                            sections: [
+                                {
+                                    id: 'evening-study',
+                                    name: 'STUDY Time',
+                                    emoji: '📚',
+                                    subtitle: '1 hour 20 minutes total',
+                                    items: [
+                                        'English book (20 mins)',
+                                        'Spelling practice (20 mins)',
+                                        'Math (20 mins)',
+                                        'Writing practice (10 mins)',
+                                        'Check homework (10 mins)'
+                                    ]
+                                },
+                                {
+                                    id: 'evening-clean',
+                                    name: 'CLEAN & Get Ready for Tomorrow',
+                                    emoji: '✨',
+                                    items: [
+                                        'Pick out tomorrow\'s clothes',
+                                        'Put dirty clothes in laundry',
+                                        'Pack school bag (homework, library books, signed papers)',
+                                        'Clean my desk/study area',
+                                        'Put dirty dishes away',
+                                        'Vacuum my room (if messy)',
+                                        'Check calendar and set alarms'
+                                    ]
+                                },
+                                {
+                                    id: 'evening-bath',
+                                    name: 'BATH & Bedtime',
+                                    emoji: '🛁',
+                                    items: [
+                                        'Take a bath',
+                                        'Put on pajamas',
+                                        'Brush teeth',
+                                        'Clean nails and ears',
+                                        'Put on face wash and lotion'
+                                    ]
+                                },
+                                {
+                                    id: 'evening-sleep',
+                                    name: 'ZZZ\'s = Sleep!',
+                                    emoji: '😴',
+                                    items: [
+                                        'Get into bed and sleep well!'
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+                    dailyProgress: {},
+                    history: [],
+                    historyExpanded: false,
+                    today: '',
+                    editMode: false,
+                    newItemText: {},
+                    showPrint: false,
+                    markdownContent: '',
+                    markdownHTML: '',
+                    showSettings: false,
+                    showInstallBanner: false,
+                    deferredPrompt: null
+                };
+            },
+            computed: {
+                totalCount() {
+                    let count = 0;
+                    ['morning', 'evening'].forEach(period => {
+                        this.routineTemplate[period].sections.forEach(section => {
+                            count += section.items.length;
+                        });
+                    });
+                    return count;
+                },
+                completedCount() {
+                    return Object.keys(this.dailyProgress).length;
+                },
+                progressPercentage() {
+                    if (this.totalCount === 0) return 0;
+                    return Math.round((this.completedCount / this.totalCount) * 100);
+                },
+                sortedHistory() {
+                    return [...this.history].sort((a, b) => new Date(b.date) - new Date(a.date));
+                }
+            },
+            methods: {
+                getTodayDate() {
+                    return new Date().toISOString().split('T')[0];
+                },
+                loadData() {
+                    const saved = localStorage.getItem('dailyRoutineData');
+                    if (saved) {
+                        try {
+                            const data = JSON.parse(saved);
+                            this.userName = data.userName || '';
+                            
+                            // Load custom template if available, otherwise keep default
+                            if (data.routineTemplate) {
+                                this.routineTemplate = data.routineTemplate;
+                            }
+                            
+                            this.history = data.history || [];
+                            
+                            // Check if it's a new day
+                            const savedDate = data.currentDate;
+                            const today = this.getTodayDate();
+                            
+                            if (savedDate !== today) {
+                                // Archive yesterday's progress
+                                if (data.dailyProgress && Object.keys(data.dailyProgress).length > 0) {
+                                    this.history.unshift({
+                                        date: savedDate,
+                                        totalCompleted: Object.keys(data.dailyProgress).length,
+                                        completedItems: data.dailyProgress
+                                    });
+                                }
+                                // Start fresh for new day
+                                this.dailyProgress = {};
+                                this.today = today;
+                            } else {
+                                this.dailyProgress = data.dailyProgress || {};
+                                this.today = today;
+                            }
+                        } catch (e) {
+                            console.error('Error loading data:', e);
+                            // Keep default embedded template
+                            this.today = this.getTodayDate();
+                        }
+                    } else {
+                        // First time - use embedded template
+                        this.today = this.getTodayDate();
+                    }
+                    this.saveData();
+                },
+                saveData() {
+                    const data = {
+                        userName: this.userName,
+                        routineTemplate: this.routineTemplate,
+                        dailyProgress: this.dailyProgress,
+                        history: this.history,
+                        currentDate: this.today
+                    };
+                    localStorage.setItem('dailyRoutineData', JSON.stringify(data));
+                },
+                getItemKey(sectionId, index) {
+                    return `${sectionId}-${index}`;
+                },
+                isCompleted(sectionId, index) {
+                    const key = this.getItemKey(sectionId, index);
+                    return this.dailyProgress.hasOwnProperty(key);
+                },
+                getTimestamp(sectionId, index) {
+                    const key = this.getItemKey(sectionId, index);
+                    const timestamp = this.dailyProgress[key];
+                    if (!timestamp) return '';
+                    
+                    const date = new Date(timestamp);
+                    return date.toLocaleTimeString('en-US', { 
+                        hour: 'numeric', 
+                        minute: '2-digit',
+                        hour12: true 
+                    });
+                },
+                toggleItem(sectionId, index) {
+                    const key = this.getItemKey(sectionId, index);
+                    
+                    if (this.dailyProgress.hasOwnProperty(key)) {
+                        delete this.dailyProgress[key];
+                    } else {
+                        this.dailyProgress[key] = new Date().toISOString();
+                    }
+                    
+                    this.saveData();
+                },
+                resetToday() {
+                    if (confirm('Are you sure you want to reset today\'s progress?')) {
+                        this.dailyProgress = {};
+                        this.saveData();
+                    }
+                },
+                toggleEditMode() {
+                    this.editMode = !this.editMode;
+                    if (!this.editMode) {
+                        // Save changes when exiting edit mode
+                        this.saveData();
+                    }
+                },
+                toggleSettings() {
+                    this.showSettings = !this.showSettings;
+                },
+                addItem(sectionId) {
+                    const text = this.newItemText[sectionId];
+                    if (!text || text.trim() === '') {
+                        alert('Please enter a task name');
+                        return;
+                    }
+
+                    // Find the section in either morning or evening
+                    let section = null;
+                    let period = null;
+
+                    if (this.routineTemplate.morning.sections.find(s => s.id === sectionId)) {
+                        section = this.routineTemplate.morning.sections.find(s => s.id === sectionId);
+                        period = 'morning';
+                    } else if (this.routineTemplate.evening.sections.find(s => s.id === sectionId)) {
+                        section = this.routineTemplate.evening.sections.find(s => s.id === sectionId);
+                        period = 'evening';
+                    }
+
+                    if (section) {
+                        section.items.push(text.trim());
+                        this.newItemText[sectionId] = '';
+                        this.saveData();
+                    }
+                },
+                removeItem(sectionId, index) {
+                    if (!confirm('Are you sure you want to remove this task?')) {
+                        return;
+                    }
+
+                    // Find the section in either morning or evening
+                    let section = null;
+
+                    if (this.routineTemplate.morning.sections.find(s => s.id === sectionId)) {
+                        section = this.routineTemplate.morning.sections.find(s => s.id === sectionId);
+                    } else if (this.routineTemplate.evening.sections.find(s => s.id === sectionId)) {
+                        section = this.routineTemplate.evening.sections.find(s => s.id === sectionId);
+                    }
+
+                    if (section) {
+                        // Remove from template
+                        section.items.splice(index, 1);
+                        
+                        // Clean up any completion data for items after this one
+                        const itemKey = this.getItemKey(sectionId, index);
+                        delete this.dailyProgress[itemKey];
+                        
+                        // Rekey all items after the removed one
+                        const newProgress = {};
+                        Object.keys(this.dailyProgress).forEach(key => {
+                            const [secId, idx] = key.split('-');
+                            const itemIndex = parseInt(idx);
+                            
+                            if (secId === sectionId && itemIndex > index) {
+                                // Shift down by 1
+                                newProgress[`${secId}-${itemIndex - 1}`] = this.dailyProgress[key];
+                            } else if (secId !== sectionId || itemIndex < index) {
+                                // Keep as is
+                                newProgress[key] = this.dailyProgress[key];
+                            }
+                        });
+                        
+                        this.dailyProgress = newProgress;
+                        this.saveData();
+                    }
+                },
+                generateMarkdown() {
+                    const date = new Date(this.today);
+                    const formattedDate = date.toLocaleDateString('en-US', { 
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+
+                    let markdown = `# My Daily Checklist - ${formattedDate}\n`;
+                    
+                    if (this.userName) {
+                        markdown += `**${this.userName}** | `;
+                    }
+                    
+                    markdown += `Progress: ${this.completedCount}/${this.totalCount} tasks (${this.progressPercentage}%)\n\n`;
+                    markdown += `---\n\n`;
+
+                    // Morning Routine
+                    markdown += `## ${this.routineTemplate.morning.emoji} ${this.routineTemplate.morning.title}\n`;
+                    markdown += `**${this.routineTemplate.morning.timeRange}**\n\n`;
+                    markdown += `**${this.routineTemplate.morning.mnemonic}**\n\n`;
+
+                    this.routineTemplate.morning.sections.forEach(section => {
+                        markdown += `### ${section.emoji} ${section.name}\n`;
+                        if (section.subtitle) {
+                            markdown += `*${section.subtitle}*\n`;
+                        }
+                        markdown += '\n';
+
+                        section.items.forEach((item, index) => {
+                            const isComplete = this.isCompleted(section.id, index);
+                            const checkbox = isComplete ? '[x]' : '[ ]';
+                            markdown += `- ${checkbox} ${item}`;
+                            
+                            if (isComplete) {
+                                const timestamp = this.getTimestamp(section.id, index);
+                                markdown += ` *(${timestamp})*`;
+                            }
+                            
+                            markdown += '\n';
+                        });
+                        
+                        markdown += '\n';
+                    });
+
+                    // Evening Routine
+                    markdown += `## ${this.routineTemplate.evening.emoji} ${this.routineTemplate.evening.title}\n`;
+                    markdown += `**${this.routineTemplate.evening.timeRange}**\n\n`;
+                    markdown += `**${this.routineTemplate.evening.mnemonic}**\n\n`;
+
+                    this.routineTemplate.evening.sections.forEach(section => {
+                        markdown += `### ${section.emoji} ${section.name}\n`;
+                        if (section.subtitle) {
+                            markdown += `*${section.subtitle}*\n`;
+                        }
+                        markdown += '\n';
+
+                        section.items.forEach((item, index) => {
+                            const isComplete = this.isCompleted(section.id, index);
+                            const checkbox = isComplete ? '[x]' : '[ ]';
+                            markdown += `- ${checkbox} ${item}`;
+                            
+                            if (isComplete) {
+                                const timestamp = this.getTimestamp(section.id, index);
+                                markdown += ` *(${timestamp})*`;
+                            }
+                            
+                            markdown += '\n';
+                        });
+                        
+                        markdown += '\n';
+                    });
+
+                    return markdown;
+                },
+                generateMarkdownHTML() {
+                    // Convert markdown to HTML for printing
+                    const date = new Date(this.today);
+                    const formattedDate = date.toLocaleDateString('en-US', { 
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+
+                    let html = `<h1>My Daily Checklist - ${formattedDate}</h1>\n`;
+                    
+                    if (this.userName) {
+                        html += `<p><strong>${this.userName}</strong> | `;
+                    } else {
+                        html += `<p>`;
+                    }
+                    
+                    html += `Progress: ${this.completedCount}/${this.totalCount} tasks (${this.progressPercentage}%)</p>\n`;
+
+                    // Morning Routine
+                    html += `<h2>${this.routineTemplate.morning.emoji} ${this.routineTemplate.morning.title}</h2>\n`;
+                    html += `<p><strong>${this.routineTemplate.morning.timeRange}</strong></p>\n`;
+                    html += `<p><strong>${this.routineTemplate.morning.mnemonic}</strong></p>\n`;
+
+                    this.routineTemplate.morning.sections.forEach(section => {
+                        html += `<h3>${section.emoji} ${section.name}</h3>\n`;
+                        if (section.subtitle) {
+                            html += `<p><em>${section.subtitle}</em></p>\n`;
+                        }
+                        html += '<ul>\n';
+
+                        section.items.forEach((item, index) => {
+                            const isComplete = this.isCompleted(section.id, index);
+                            const checkbox = isComplete ? '☑' : '☐';
+                            html += `<li>${checkbox} ${item}`;
+                            
+                            if (isComplete) {
+                                const timestamp = this.getTimestamp(section.id, index);
+                                html += ` <em>(${timestamp})</em>`;
+                            }
+                            
+                            html += '</li>\n';
+                        });
+                        
+                        html += '</ul>\n';
+                    });
+
+                    // Evening Routine
+                    html += `<h2>${this.routineTemplate.evening.emoji} ${this.routineTemplate.evening.title}</h2>\n`;
+                    html += `<p><strong>${this.routineTemplate.evening.timeRange}</strong></p>\n`;
+                    html += `<p><strong>${this.routineTemplate.evening.mnemonic}</strong></p>\n`;
+
+                    this.routineTemplate.evening.sections.forEach(section => {
+                        html += `<h3>${section.emoji} ${section.name}</h3>\n`;
+                        if (section.subtitle) {
+                            html += `<p><em>${section.subtitle}</em></p>\n`;
+                        }
+                        html += '<ul>\n';
+
+                        section.items.forEach((item, index) => {
+                            const isComplete = this.isCompleted(section.id, index);
+                            const checkbox = isComplete ? '☑' : '☐';
+                            html += `<li>${checkbox} ${item}`;
+                            
+                            if (isComplete) {
+                                const timestamp = this.getTimestamp(section.id, index);
+                                html += ` <em>(${timestamp})</em>`;
+                            }
+                            
+                            html += '</li>\n';
+                        });
+                        
+                        html += '</ul>\n';
+                    });
+
+                    return html;
+                },
+                showPrintModal() {
+                    this.markdownContent = this.generateMarkdown();
+                    this.markdownHTML = this.generateMarkdownHTML();
+                    this.showPrint = true;
+                },
+                closePrintModal() {
+                    this.showPrint = false;
+                },
+                async copyMarkdown() {
+                    try {
+                        await navigator.clipboard.writeText(this.markdownContent);
+                        alert('Markdown copied to clipboard! 📋');
+                    } catch (err) {
+                        // Fallback for older browsers
+                        const textArea = document.createElement('textarea');
+                        textArea.value = this.markdownContent;
+                        textArea.style.position = 'fixed';
+                        textArea.style.left = '-999999px';
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        try {
+                            document.execCommand('copy');
+                            alert('Markdown copied to clipboard! 📋');
+                        } catch (err) {
+                            alert('Failed to copy. Please select and copy manually.');
+                        }
+                        document.body.removeChild(textArea);
+                    }
+                },
+                printMarkdown() {
+                    // Show the print content
+                    const printDiv = document.getElementById('printContent');
+                    printDiv.style.display = 'block';
+                    
+                    // Trigger print dialog
+                    window.print();
+                    
+                    // Hide the print content again after a delay
+                    setTimeout(() => {
+                        printDiv.style.display = 'none';
+                    }, 100);
+                },
+                importJSON() {
+                    this.$refs.fileInput.click();
+                },
+                handleFileUpload(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            
+                            // Validate structure
+                            if (data.routineTemplate) {
+                                this.routineTemplate = data.routineTemplate;
+                                if (data.userName) this.userName = data.userName;
+                                if (data.history) this.history = data.history;
+                                
+                                this.saveData();
+                                alert('JSON imported successfully!');
+                            } else {
+                                alert('Invalid JSON structure. Please check your file.');
+                            }
+                        } catch (error) {
+                            alert('Error reading JSON file: ' + error.message);
+                        }
+                    };
+                    reader.readAsText(file);
+                    
+                    // Reset file input
+                    event.target.value = '';
+                },
+                exportJSON() {
+                    const data = {
+                        userName: this.userName,
+                        routineTemplate: this.routineTemplate,
+                        dailyProgress: this.dailyProgress,
+                        history: this.history,
+                        currentDate: this.today
+                    };
+                    
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { 
+                        type: 'application/json' 
+                    });
+                    
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `daily-routine-${this.today}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                },
+                formatDate(dateString) {
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('en-US', { 
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                }
+            },
+            mounted() {
+                this.today = this.getTodayDate();
+                this.loadData();
+                
+                // Register service worker
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.register('./service-worker.js')
+                        .then((registration) => {
+                            console.log('Service Worker registered:', registration);
+                        })
+                        .catch((error) => {
+                            console.log('Service Worker registration failed:', error);
+                        });
+                }
+                
+                // Handle install prompt
+                window.addEventListener('beforeinstallprompt', (e) => {
+                    // Prevent the mini-infobar from appearing
+                    e.preventDefault();
+                    // Save the event for later use
+                    this.deferredPrompt = e;
+                    // Show install banner
+                    this.showInstallBanner = true;
+                });
+                
+                // Handle successful installation
+                window.addEventListener('appinstalled', () => {
+                    console.log('PWA was installed');
+                    this.showInstallBanner = false;
+                    this.deferredPrompt = null;
+                });
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
