@@ -1,6 +1,6 @@
 const CACHE_NAME = 'daily-checklist-v1';
 const urlsToCache = [
-  './daily-routine-app.html',
+  './index.html',
   './manifest.json'
 ];
 
