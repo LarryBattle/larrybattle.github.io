@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perry's Perimeter Path</title>
+    <!-- Tailwind CSS for Styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.5s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
+        
+        .wiggle { animation: wiggle 2s linear infinite; }
+        @keyframes wiggle { 0%, 7% { transform: rotateZ(0); } 15% { transform: rotateZ(-15deg); } 20% { transform: rotateZ(10deg); } 25% { transform: rotateZ(-10deg); } 30% { transform: rotateZ(6deg); } 35%, 100% { transform: rotateZ(0); } }
+
+        .ant-walk { transition: all 1s ease-in-out; }
+        
+        /* Special class for the lesson card to make it distinct */
+        .lesson-card { background: linear-gradient(to bottom right, #ecfdf5, #ffffff); }
+    </style>
+</head>
+<body class="bg-green-50 text-gray-800 font-sans min-h-screen flex flex-col items-center justify-center">
+
+<div id="app" class="w-full max-w-2xl px-4">
+
+    <!-- HEADER & PROGRESS -->
+    <header class="mb-6 text-center">
+        <h1 class="text-3xl font-bold text-green-700 mb-2">🐜 Perry's Perimeter Path</h1>
+        <div class="w-full bg-gray-200 rounded-full h-4 mb-2">
+            <div class="bg-green-500 h-4 rounded-full transition-all duration-500" :style="{ width: progressPercentage + '%' }"></div>
+        </div>
+        <p class="text-sm text-gray-500" v-if="currentStage >= 0">
+            Stage {{ currentStage + 1 }}: {{ stages[currentStage].title }}
+        </p>
+    </header>
+
+    <!-- MAIN CARD -->
+    <div class="bg-white rounded-2xl shadow-xl border-4 border-green-200 overflow-hidden relative min-h-[500px] flex flex-col transition-colors duration-500"
+         :class="{ 'lesson-card': mode === 'lesson' }">
+        
+        <!-- BACK BUTTON -->
+        <div class="absolute top-4 left-4 z-10">
+            <button 
+                v-if="canGoBack" 
+                @click="goBack" 
+                class="bg-gray-100/80 hover:bg-gray-200 text-gray-600 px-3 py-1 rounded-lg text-sm font-bold flex items-center gap-1 transition backdrop-blur-sm">
+                ← Back
+            </button>
+        </div>
+
+        <!-- CONTENT AREA -->
+        <transition name="fade" mode="out-in">
+            
+            <!-- 0. INTRO SCREEN -->
+            <div v-if="mode === 'intro'" key="intro" class="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                <div class="text-8xl wiggle mb-6">🐜</div>
+                <h2 class="text-3xl font-bold mb-4 text-green-800">Hi, I'm Perry!</h2>
+                <p class="text-lg mb-8 text-gray-600 max-w-md">I work as a Security Guard. My job is to walk around the <b>Perimeter</b> of shapes. Will you help me?</p>
+                <button @click="startStage" class="bg-green-500 hover:bg-green-600 text-white text-xl font-bold py-4 px-10 rounded-xl shadow-lg transform hover:scale-105 transition">
+                    Let's Go!
+                </button>
+            </div>
+
+            <!-- 1. LESSON MODE -->
+            <div v-else-if="mode === 'lesson'" key="lesson" class="flex-1 flex flex-col p-8 text-center items-center">
+                <div class="bg-blue-100 text-blue-800 font-bold px-4 py-1 rounded-full text-sm mb-6">LESSON TIME 🧠</div>
+                
+                <h2 class="text-2xl font-bold mb-6">{{ stages[currentStage].lesson.title }}</h2>
+                
+                <!-- Lesson Visual -->
+                <div class="mb-6 p-6 bg-white rounded-xl border-2 border-blue-100 shadow-sm w-full flex justify-center items-center min-h-[160px]">
+                     <div v-html="stages[currentStage].lesson.visualHtml"></div>
+                </div>
+
+                <p class="text-lg text-gray-700 mb-8 leading-relaxed whitespace-pre-line">
+                    {{ stages[currentStage].lesson.text }}
+                </p>
+
+                <button @click="startQuiz" class="mt-auto bg-blue-500 hover:bg-blue-600 text-white text-lg font-bold py-3 px-8 rounded-xl shadow-md transform hover:scale-105 transition animate-bounce">
+                    I'm Ready to Try! ➜
+                </button>
+            </div>
+
+            <!-- 2. QUIZ MODE -->
+            <div v-else-if="mode === 'quiz'" key="quiz" class="flex-1 flex flex-col p-6 pt-12">
+                
+                <!-- Question Text -->
+                <h2 class="text-xl font-bold mb-6 text-center">{{ currentQ.text }}</h2>
+
+                <!-- VISUAL AREA -->
+                <div class="flex-1 flex items-center justify-center mb-6 bg-gray-50 rounded-xl p-4 relative">
+                    
+                    <!-- Shape Visual -->
+                    <div v-if="currentQ.visualType === 'shape'" class="relative border-4 border-gray-800 bg-yellow-50 flex items-center justify-center font-bold text-xl shadow-sm transition-all duration-500"
+                         :class="currentQ.shapeClass">
+                         
+                         <span class="absolute -top-8 w-full text-center">{{ currentQ.labels.top }}</span>
+                         
+                         <!-- Ghost Interaction -->
+                         <span v-if="currentQ.hasGhost" 
+                               @click="revealGhost"
+                               class="absolute -bottom-8 w-full text-center cursor-pointer select-none hover:text-blue-500 transition-colors">
+                             <span v-if="!ghostRevealed" class="bg-blue-100 text-blue-600 px-2 py-1 rounded text-sm font-bold border border-blue-200 shadow-sm">Click Me?</span>
+                             <span v-else>{{ currentQ.labels.bottom }}</span>
+                         </span>
+                         <span v-else class="absolute -bottom-8 w-full text-center">{{ currentQ.labels.bottom }}</span>
+
+                         <span class="absolute -left-8 h-full flex items-center">{{ currentQ.labels.left }}</span>
+                         
+                         <span v-if="currentQ.hasGhost" 
+                               @click="revealGhost"
+                               class="absolute -right-8 h-full flex items-center cursor-pointer select-none hover:text-blue-500">
+                             <span v-if="!ghostRevealed" class="bg-blue-100 text-blue-600 px-1 py-4 rounded text-xs font-bold border border-blue-200 shadow-sm">?</span>
+                             <span v-else>{{ currentQ.labels.right }}</span>
+                         </span>
+                         <span v-else class="absolute -right-8 h-full flex items-center">{{ currentQ.labels.right }}</span>
+
+                         <div class="absolute -top-3 -left-3 text-2xl ant-walk">🐜</div>
+                    </div>
+
+                    <!-- Fence vs Rug Visual -->
+                    <div v-if="currentQ.visualType === 'fence-rug'" class="flex gap-8">
+                        <div class="text-center group cursor-pointer" @click="checkAnswer(0)"> <!-- Shortcut for click -->
+                            <div class="w-24 h-24 border-4 border-dashed border-gray-800 bg-transparent mb-2 mx-auto"></div>
+                            <span class="font-bold text-gray-600">A (Fence)</span>
+                        </div>
+                        <div class="text-center group cursor-pointer" @click="checkAnswer(1)">
+                            <div class="w-24 h-24 bg-red-300 mb-2 mx-auto"></div>
+                            <span class="font-bold text-gray-600">B (Rug)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FEEDBACK -->
+                <div v-if="feedback.show" 
+                     :class="feedback.isCorrect ? 'bg-green-100 text-green-800 border-green-300' : 'bg-red-100 text-red-800 border-red-300'"
+                     class="mb-4 p-4 rounded-lg border-l-4 text-center">
+                    <p class="font-bold text-lg">{{ feedback.message }}</p>
+                    <p class="text-sm mt-1">{{ feedback.explanation }}</p>
+                </div>
+
+                <!-- OPTIONS -->
+                <div class="grid grid-cols-1 gap-3">
+                    <button 
+                        v-for="(option, index) in currentQ.options" 
+                        :ke for="index"
+                        @click="checkAnswer(index)"
+                        :disabled="feedback.show && feedback.isCorrect"
+                        class="w-full text-left px-6 py-4 rounded-xl border-2 transition-all duration-200 flex justify-between items-center group"
+                        :class="getButtonClass(index)">
+                        
+                        <span class="font-bold text-lg">{{ option.text }}</span>
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400">👈</span>
+                    </button>
+                </div>
+
+                <!-- NEXT BUTTON -->
+                <button v-if="feedback.show && feedback.isCorrect" 
+                        @click="advance"
+                        class="mt-4 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl shadow-md transition transform active:scale-95">
+                    Next Step ➜
+                </button>
+            </div>
+
+            <!-- 3. VICTORY SCREEN -->
+            <div v-else-if="mode === 'victory'" key="victory" class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-yellow-50">
+                <div class="text-8xl mb-4 animate-bounce">🏆</div>
+                <h2 class="text-4xl font-bold text-green-600 mb-4">You Did It!</h2>
+                <p class="text-xl text-gray-600 mb-8">You are officially a Perimeter Pro. Perry is safe!</p>
+                
+                <div class="grid grid-cols-3 gap-4 text-center mb-8">
+                    <div class="p-4 bg-white rounded shadow">
+                        <div class="text-2xl">➕</div>
+                        <div class="text-xs font-bold text-gray-500 mt-1">P = Plus</div>
+                    </div>
+                    <div class="p-4 bg-white rounded shadow">
+                        <div class="text-2xl">👻</div>
+                        <div class="text-xs font-bold text-gray-500 mt-1">Ghosts Found</div>
+                    </div>
+                    <div class="p-4 bg-white rounded shadow">
+                        <div class="text-2xl">🐜</div>
+                        <div class="text-xs font-bold text-gray-500 mt-1">Perry Happy</div>
+                    </div>
+                </div>
+
+                <button @click="resetGame" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-full shadow-lg">
+                    Play Again
+                </button>
+            </div>
+
+        </transition>
+    </div>
+</div>
+
+<script>
+const { createApp } = Vue;
+
+createApp({
+    data() {
+        return {
+            // Modes: 'intro', 'lesson', 'quiz', 'victory'
+            mode: 'intro',
+            currentStage: 0,
+            currentStep: 0,   // Question index
+            
+            // Interactive State
+            ghostRevealed: false,
+            selectedOptionIndex: null,
+            feedback: {
+                show: false,
+                isCorrect: false,
+                message: "",
+                explanation: ""
+            },
+            
+            // DATA: LESSONS AND QUESTIONS
+            stages: [
+                // STAGE 1: CONCEPTS
+                {
+                    title: "The Concept",
+                    lesson: {
+                        title: "What is Perimeter?",
+                        visualHtml: `<div class="text-6xl font-black text-green-600 tracking-widest border-4 border-dashed border-green-400 p-4 rounded-xl">P = ➕</div>`,
+                        text: "Meet Perry the Ant 🐜. \n\nPerry walks on the **OUTSIDE** lines of a shape to guard it. He never goes inside.\n\nTo find the Perimeter, we use the **Plus (+)** rule. We just ADD all the sides together!"
+                    },
+                    questions: [
+                        {
+                            text: "Where does Perry walk?",
+                            visualType: "shape",
+                            shapeClass: "w-32 h-32",
+                            labels: { top: '', bottom: '', left: '', right: '' },
+                            options: [
+                                { text: "Inside the shape", correct: false, explain: "No! Inside is the Area. Perry stays on the edge." },
+                                { text: "On the outside edge", correct: true, explain: "Yes! He walks the rim!" },
+                                { text: "He flies over it", correct: false, explain: "Perry can't fly! He has to walk." }
+                            ]
+                        },
+                        {
+                            text: "Which picture shows Perimeter?",
+                            visualType: "fence-rug",
+                            options: [
+                                { text: "Picture A (The Fence)", correct: true, explain: "Correct! A fence goes AROUND the yard." },
+                                { text: "Picture B (The Rug)", correct: false, explain: "No, a rug covers the floor area." }
+                            ]
+                        },
+                        {
+                            text: "What is the Magic Letter rule?",
+                            visualType: "shape",
+                            shapeClass: "w-32 h-32 border-dashed",
+                            labels: { top: '?', bottom: '?', left: '?', right: '?' },
+                            options: [
+                                { text: "P = Popcorn", correct: false, explain: "Yummy, but not math!" },
+                                { text: "P = Plus (+)", correct: true, explain: "Yes! Perimeter = Plus All Sides!" },
+                                { text: "P = Product (x)", correct: false, explain: "No multiplying! Just adding." }
+                            ]
+                        }
+                    ]
+                },
+                // STAGE 2: GHOST NUMBERS
+                {
+                    title: "The Hidden Numbers",
+                    lesson: {
+                        title: "Watch out for Ghosts! 👻",
+                        visualHtml: `
+                        <div class="flex gap-8 items-center">
+                             <div class="w-24 h-12 border-2 border-gray-400 flex items-center justify-center relative">
+                                <span class="absolute -top-6 text-blue-600 font-bold">10</span>
+                                <span class="absolute -bottom-6 text-gray-300 font-bold">?</span>
+                             </div>
+                             <div class="text-2xl">➡️</div>
+                             <div class="w-24 h-12 border-2 border-blue-400 flex items-center justify-center relative">
+                                <span class="absolute -top-6 text-blue-600 font-bold">10</span>
+                                <span class="absolute -bottom-6 text-blue-600 font-bold animate-bounce">10</span>
+                             </div>
+                        </div>
+                        `,
+                        text: "Sometimes a map only shows numbers on one side.\n\nBut Perry has to walk the WHOLE way! \n\nIn a Rectangle, **Opposite Sides are Twins**. If the top is 10, the bottom MUST be 10!"
+                    },
+                    questions: [
+                        {
+                            text: "This pool is missing numbers! Click the blue buttons to find them.",
+                            visualType: "shape",
+                            hasGhost: true,
+                            shapeClass: "w-48 h-24 bg-blue-100", 
+                            labels: { top: '10', bottom: '10', left: '3', right: '3' },
+                            options: [
+                                { text: "I found the ghosts! (Click blue buttons)", checkGhost: true, correct: true, explain: "Good job! Now we can see all the sides." },
+                                { text: "There are no numbers.", correct: false, explain: "There ARE numbers, they are just hiding!" }
+                            ]
+                        },
+                        {
+                            text: "If the top is 10, what is the bottom?",
+                            visualType: "shape",
+                            shapeClass: "w-48 h-24 bg-blue-100",
+                            labels: { top: '10', bottom: '?', left: '3', right: '3' },
+                            options: [
+                                { text: "5", correct: false, explain: "No, the bottom isn't smaller." },
+                                { text: "10 (Twin Rule)", correct: true, explain: "Correct! Top and Bottom are twins." },
+                                { text: "0", correct: false, explain: "The water would fall out!" }
+                            ]
+                        }
+                    ]
+                },
+                // STAGE 3: CALCULATION
+                {
+                    title: "Let's Calculate",
+                    lesson: {
+                        title: "Putting it Together",
+                        visualHtml: `<div class="text-3xl font-mono font-bold text-gray-700">4 + 4 + 4 + 4 = <span class="text-green-600">16</span></div>`,
+                        text: "Now we just do the math!\n\n1. Write down **ALL 4** numbers (even the ghosts).\n2. Add them all up.\n\nDon't stop halfway! Walk Perry all the way home."
+                    },
+                    questions: [
+                        {
+                            text: "Add up this square. What is the total?",
+                            visualType: "shape",
+                            shapeClass: "w-32 h-32 bg-red-50",
+                            labels: { top: '5', bottom: '5', left: '5', right: '5' },
+                            options: [
+                                { text: "10", correct: false, explain: "That's only two sides! Add all 4." },
+                                { text: "20", correct: true, explain: "5 + 5 + 5 + 5 = 20. Perfect!" },
+                                { text: "25", correct: false, explain: "Check your math again." }
+                            ]
+                        },
+                        {
+                            text: "Which number sentence is correct?",
+                            visualType: "shape",
+                            shapeClass: "w-40 h-20 bg-yellow-50",
+                            labels: { top: '6', bottom: '6', left: '2', right: '2' },
+                            options: [
+                                { text: "6 + 2", correct: false, explain: "Wait! You only walked half way!" },
+                                { text: "6 x 2", correct: false, explain: "No multiplying. P = Plus!" },
+                                { text: "6 + 2 + 6 + 2", correct: true, explain: "Yes. Top + Left + Bottom + Right." }
+                            ]
+                        },
+                        {
+                            text: "Final Challenge! Solve the Perimeter.",
+                            visualType: "shape",
+                            shapeClass: "w-32 h-32 bg-purple-50",
+                            labels: { top: '4', bottom: '4', left: '4', right: '4' },
+                            options: [
+                                { text: "16", correct: true, explain: "4 + 4 + 4 + 4 = 16. You are a Master!" },
+                                { text: "8", correct: false, explain: "You missed some sides!" },
+                                { text: "12", correct: false, explain: "So close! Don't forget the last side." }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    computed: {
+        currentQ() {
+            if (this.mode !== 'quiz') return {};
+            return this.stages[this.currentStage].questions[this.currentStep];
+        },
+        progressPercentage() {
+            if (this.mode === 'intro') return 0;
+            if (this.mode === 'victory') return 100;
+            
+            const totalStages = this.stages.length;
+            const progressPerStage = 100 / totalStages;
+            const currentBase = this.currentStage * progressPerStage;
+            
+            // Add mini progress for steps within quiz
+            if (this.mode === 'quiz') {
+                const totalSteps = this.stages[this.currentStage].questions.length;
+                const stepProgress = (this.currentStep / totalSteps) * progressPerStage;
+                return currentBase + stepProgress;
+            }
+            return currentBase;
+        },
+        canGoBack() {
+            return this.mode !== 'intro' && this.mode !== 'victory';
+        }
+    },
+    methods: {
+        startStage() {
+            this.mode = 'lesson';
+        },
+        startQuiz() {
+            this.mode = 'quiz';
+            this.currentStep = 0;
+            this.resetInteract();
+        },
+        revealGhost() {
+            this.ghostRevealed = true;
+        },
+        checkAnswer(index) {
+            if (this.feedback.show && this.feedback.isCorrect) return; 
+
+            const option = this.currentQ.options[index];
+            this.selectedOptionIndex = index;
+
+            if (option.checkGhost && !this.ghostRevealed) {
+                this.feedback = {
+                    show: true,
+                    isCorrect: false,
+                    message: "Wait!",
+                    explanation: "You have to find the numbers first! Click the blue buttons on the shape."
+                };
+                return;
+            }
+
+            if (option.correct) {
+                this.feedback = {
+                    show: true,
+                    isCorrect: true,
+                    message: "Correct!",
+                    explanation: option.explain
+                };
+            } else {
+                this.feedback = {
+                    show: true,
+                    isCorrect: false,
+                    message: "Oops!",
+                    explanation: option.explain
+                };
+            }
+        },
+        advance() {
+            this.resetInteract();
+
+            const stageQs = this.stages[this.currentStage].questions;
+            
+            // Are there more questions in this stage?
+            if (this.currentStep < stageQs.length - 1) {
+                this.currentStep++;
+            } 
+            // No more questions, are there more stages?
+            else if (this.currentStage < this.stages.length - 1) {
+                this.currentStage++;
+                this.mode = 'lesson'; // Go to next lesson
+            } 
+            // Game Over
+            else {
+                this.mode = 'victory';
+            }
+        },
+        goBack() {
+            this.resetInteract();
+
+            // If in Quiz
+            if (this.mode === 'quiz') {
+                if (this.currentStep > 0) {
+                    this.currentStep--;
+                } else {
+                    this.mode = 'lesson'; // Back to lesson
+                }
+            }
+            // If in Lesson
+            else if (this.mode === 'lesson') {
+                if (this.currentStage > 0) {
+                    this.currentStage--;
+                    this.mode = 'quiz'; // Back to previous stage's last question
+                    this.currentStep = this.stages[this.currentStage].questions.length - 1;
+                } else {
+                    this.mode = 'intro';
+                }
+            }
+        },
+        resetInteract() {
+            this.feedback.show = false;
+            this.selectedOptionIndex = null;
+            this.ghostRevealed = false;
+        },
+        resetGame() {
+            this.currentStage = 0;
+            this.currentStep = 0;
+            this.mode = 'intro';
+            this.resetInteract();
+        },
+        getButtonClass(index) {
+            if (!this.feedback.show) {
+                return this.selectedOptionIndex === index 
+                    ? 'border-blue-500 bg-blue-50' 
+                    : 'border-gray-200 hover:bg-gray-50';
+            }
+            const option = this.currentQ.options[index];
+            if (option.correct) return 'border-green-500 bg-green-100';
+            if (this.selectedOptionIndex === index && !option.correct) return 'border-red-500 bg-red-100';
+            return 'border-gray-200 opacity-50';
+        }
+    }
+}).mount('#app');
+</script>
+</body>
+</html>
