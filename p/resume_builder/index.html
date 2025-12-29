@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resume Builder</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Space+Mono:wght@400;700&family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Roboto+Condensed:wght@300;400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --app-bg: #1a1a1e;
+      --app-surface: #252529;
+      --app-border: #3a3a42;
+      --app-text: #e8e8ec;
+      --app-text-muted: #8a8a94;
+      --app-accent: #6366f1;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--app-bg);
+      color: var(--app-text);
+      min-height: 100vh;
+    }
+
+    /* ===== APP SHELL ===== */
+    .app-container { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+    .app-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px; background: var(--app-surface);
+      border-bottom: 1px solid var(--app-border); flex-shrink: 0;
+    }
+
+    .app-title { font-family: 'Instrument Serif', serif; font-size: 1.5rem; font-weight: 400; }
+
+    .app-controls { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+    .control-group { display: flex; align-items: center; gap: 8px; }
+    .control-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--app-text-muted); }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 2px; background: var(--app-bg); padding: 2px; border-radius: 8px; }
+    .tab-btn {
+      padding: 8px 20px; border: none; background: transparent; color: var(--app-text-muted);
+      font-family: inherit; font-size: 0.875rem; font-weight: 500; cursor: pointer;
+      border-radius: 6px; transition: all 0.2s;
+    }
+    .tab-btn:hover { color: var(--app-text); }
+    .tab-btn.active { background: var(--app-accent); color: white; }
+
+    /* Select */
+    select {
+      appearance: none; background: var(--app-bg); border: 1px solid var(--app-border);
+      color: var(--app-text); padding: 8px 32px 8px 12px; border-radius: 6px;
+      font-family: inherit; font-size: 0.875rem; cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a8a94' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center;
+    }
+    select:focus { outline: none; border-color: var(--app-accent); }
+
+    /* Toggle */
+    .toggle-container { display: flex; align-items: center; gap: 8px; }
+    .toggle {
+      position: relative; width: 44px; height: 24px; background: var(--app-bg);
+      border: 1px solid var(--app-border); border-radius: 12px; cursor: pointer; transition: all 0.2s;
+    }
+    .toggle.active { background: var(--app-accent); border-color: var(--app-accent); }
+    .toggle::after {
+      content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px;
+      background: var(--app-text); border-radius: 50%; transition: transform 0.2s;
+    }
+    .toggle.active::after { transform: translateX(20px); }
+    .toggle-label { font-size: 0.8rem; color: var(--app-text-muted); }
+
+    /* Font Size */
+    .font-size-control { display: flex; align-items: center; gap: 8px; }
+    .font-btn {
+      width: 28px; height: 28px; border: 1px solid var(--app-border); background: var(--app-bg);
+      color: var(--app-text); border-radius: 4px; cursor: pointer; font-size: 1rem;
+      display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+    }
+    .font-btn:hover { border-color: var(--app-accent); color: var(--app-accent); }
+    .font-size-display { font-size: 0.75rem; color: var(--app-text-muted); min-width: 36px; text-align: center; }
+
+    /* Print Button */
+    .print-btn {
+      padding: 8px 16px; background: transparent; border: 1px solid var(--app-border);
+      color: var(--app-text); font-family: inherit; font-size: 0.875rem;
+      border-radius: 6px; cursor: pointer; transition: all 0.15s;
+    }
+    .print-btn:hover { border-color: var(--app-accent); color: var(--app-accent); }
+
+    /* ===== MAIN CONTENT ===== */
+    .main-content { flex: 1; overflow: hidden; }
+    .tab-content { height: 100%; display: none; }
+    .tab-content.active { display: flex; }
+
+    /* Editor */
+    .editor-container { flex: 1; display: flex; flex-direction: column; padding: 20px; overflow: hidden; }
+    .editor-split { display: flex; gap: 20px; flex: 1; overflow: hidden; }
+    .editor-pane { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    .pane-header { 
+      font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; 
+      color: var(--app-text-muted); margin-bottom: 10px; display: flex; 
+      justify-content: space-between; align-items: center;
+    }
+    .error-banner {
+      background: #7f1d1d; border: 1px solid #dc2626; color: #fecaca;
+      padding: 12px 16px; border-radius: 6px; margin-bottom: 16px;
+      font-family: 'Space Mono', monospace; font-size: 0.8rem; white-space: pre-wrap;
+    }
+    .json-editor {
+      flex: 1; width: 100%; background: var(--app-surface); border: 1px solid var(--app-border);
+      border-radius: 8px; color: var(--app-text); font-family: 'Space Mono', monospace;
+      font-size: 0.8rem; line-height: 1.6; padding: 20px; resize: none; overflow: auto;
+    }
+    .json-editor:focus { outline: none; border-color: var(--app-accent); }
+    .json-editor:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .schema-pane { 
+      flex: 0 0 380px; display: flex; flex-direction: column; overflow: hidden;
+    }
+    .schema-content {
+      flex: 1; background: var(--app-surface); border: 1px solid var(--app-border);
+      border-radius: 8px; padding: 16px; overflow: auto; font-size: 0.8rem; line-height: 1.5;
+    }
+    .schema-content h3 { color: var(--app-accent); margin: 12px 0 6px; font-size: 0.85rem; }
+    .schema-content h3:first-child { margin-top: 0; }
+    .schema-content code { 
+      background: var(--app-bg); padding: 2px 6px; border-radius: 4px; 
+      font-family: 'Space Mono', monospace; font-size: 0.75rem;
+    }
+    .schema-content pre {
+      background: var(--app-bg); padding: 12px; border-radius: 6px; overflow-x: auto;
+      font-family: 'Space Mono', monospace; font-size: 0.7rem; line-height: 1.4;
+      margin: 8px 0;
+    }
+    .schema-content ul { padding-left: 16px; margin: 4px 0; }
+    .schema-content li { margin: 2px 0; color: var(--app-text-muted); }
+    .template-btn {
+      display: block; width: 100%; padding: 8px 12px; margin: 4px 0;
+      background: var(--app-bg); border: 1px solid var(--app-border);
+      color: var(--app-text); font-family: inherit; font-size: 0.8rem;
+      border-radius: 6px; cursor: pointer; text-align: left; transition: all 0.15s;
+    }
+    .template-btn:hover { border-color: var(--app-accent); color: var(--app-accent); }
+    .template-btn small { display: block; color: var(--app-text-muted); font-size: 0.7rem; margin-top: 2px; }
+
+    /* Preview */
+    .preview-container {
+      flex: 1; display: flex; justify-content: center; align-items: flex-start;
+      padding: 30px; overflow: auto; background: #2a2a30;
+    }
+
+    .paper {
+      width: 8.5in; min-height: 11in; background: white;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); flex-shrink: 0;
+    }
+
+    /* ===== SHARED RESUME STYLES ===== */
+    .resume-content { min-height: 100%; display: flex; flex-direction: column; }
+    .resume-main { flex: 1; }
+
+    /* Two-column bottom section */
+    .resume-bottom {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 24px;
+    }
+    .bottom-col { display: flex; flex-direction: column; gap: 8px; }
+
+    /* ===== TEMPLATE: MINIMALIST ===== */
+    .template-minimalist {
+      --t-primary: #111; --t-secondary: #555; --t-border: #ddd;
+      font-family: 'DM Sans', sans-serif; padding: 0.4in 0.5in; color: var(--t-primary);
+    }
+
+    .template-minimalist .resume-header {
+      text-align: center; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--t-border);
+    }
+    .template-minimalist .resume-name {
+      font-size: 1.6em; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px;
+    }
+    .template-minimalist .resume-contact {
+      font-size: 0.65em; color: var(--t-secondary); display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 14px;
+    }
+
+    .template-minimalist .section { margin-bottom: 10px; }
+    .template-minimalist .section:last-child { margin-bottom: 0; }
+    .template-minimalist .section-title {
+      font-size: 0.6em; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
+      color: var(--t-primary); margin-bottom: 6px; padding-bottom: 3px; border-bottom: 1px solid var(--t-border);
+    }
+
+    .template-minimalist .summary-text { font-size: 0.7em; line-height: 1.5; color: var(--t-secondary); }
+
+    .template-minimalist .entry { margin-bottom: 8px; }
+    .template-minimalist .entry:last-child { margin-bottom: 0; }
+    .template-minimalist .entry-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1px; }
+    .template-minimalist .entry-title { font-size: 0.75em; font-weight: 600; }
+    .template-minimalist .entry-date { font-size: 0.6em; color: var(--t-secondary); }
+    .template-minimalist .entry-subtitle { font-size: 0.65em; color: var(--t-secondary); margin-bottom: 3px; }
+    .template-minimalist .entry-description { font-size: 0.65em; line-height: 1.4; color: var(--t-secondary); }
+    .template-minimalist .entry-description ul { margin: 0; padding-left: 14px; }
+    .template-minimalist .entry-description li { margin-bottom: 1px; }
+
+    .template-minimalist .skills-list { display: flex; flex-wrap: wrap; gap: 3px 10px; font-size: 0.65em; }
+    .template-minimalist .skill-item { color: var(--t-secondary); }
+
+    .template-minimalist .compact-entry { margin-bottom: 4px; }
+    .template-minimalist .compact-entry .entry-title { font-size: 0.68em; }
+    .template-minimalist .compact-entry .entry-subtitle { font-size: 0.6em; margin-bottom: 0; }
+
+    /* ===== TEMPLATE: MODERN ===== */
+    .template-modern {
+      --t-primary: #1e293b; --t-secondary: #64748b; --t-accent: #0ea5e9; --t-accent-light: #e0f2fe;
+      font-family: 'DM Sans', sans-serif; color: var(--t-primary);
+    }
+
+    .template-modern .resume-header {
+      background: linear-gradient(135deg, #0c4a6e 0%, #0369a1 100%);
+      color: white; padding: 0.35in 0.5in;
+    }
+    .template-modern .resume-name { font-size: 1.7em; font-weight: 700; margin-bottom: 2px; }
+    .template-modern .resume-title { font-size: 0.85em; opacity: 0.9; margin-bottom: 8px; }
+    .template-modern .resume-contact { font-size: 0.6em; display: flex; flex-wrap: wrap; gap: 3px 14px; opacity: 0.85; }
+
+    .template-modern .resume-body { padding: 0.3in 0.5in 0.35in; }
+
+    .template-modern .section { margin-bottom: 10px; }
+    .template-modern .section:last-child { margin-bottom: 0; }
+    .template-modern .section-title {
+      font-size: 0.7em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--t-accent); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;
+    }
+    .template-modern .section-title::after { content: ''; flex: 1; height: 2px; background: var(--t-accent-light); }
+
+    .template-modern .summary-text { font-size: 0.7em; line-height: 1.5; color: var(--t-secondary); }
+
+    .template-modern .entry { margin-bottom: 8px; padding-left: 10px; border-left: 2px solid var(--t-accent-light); }
+    .template-modern .entry:last-child { margin-bottom: 0; }
+    .template-modern .entry-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1px; }
+    .template-modern .entry-title { font-size: 0.78em; font-weight: 600; }
+    .template-modern .entry-date { font-size: 0.6em; color: var(--t-accent); font-weight: 500; }
+    .template-modern .entry-subtitle { font-size: 0.65em; color: var(--t-secondary); margin-bottom: 3px; }
+    .template-modern .entry-description { font-size: 0.65em; line-height: 1.4; color: var(--t-secondary); }
+    .template-modern .entry-description ul { margin: 0; padding-left: 14px; }
+    .template-modern .entry-description li { margin-bottom: 1px; }
+
+    .template-modern .skills-list { display: flex; flex-wrap: wrap; gap: 4px; }
+    .template-modern .skill-item {
+      background: var(--t-accent-light); color: #0369a1; padding: 2px 8px;
+      border-radius: 10px; font-size: 0.58em; font-weight: 500;
+    }
+
+    .template-modern .compact-entry { margin-bottom: 4px; padding-left: 8px; }
+    .template-modern .compact-entry .entry-title { font-size: 0.68em; }
+    .template-modern .compact-entry .entry-subtitle { font-size: 0.58em; margin-bottom: 0; }
+
+    /* ===== TEMPLATE: CLASSIC ===== */
+    .template-classic {
+      --t-primary: #1a1a1a; --t-secondary: #444; --t-accent: #2c3e50;
+      font-family: 'Cormorant Garamond', serif; padding: 0.4in 0.5in; color: var(--t-primary);
+    }
+
+    .template-classic .resume-header {
+      text-align: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 2px solid var(--t-accent);
+    }
+    .template-classic .resume-name { font-size: 1.9em; font-weight: 700; margin-bottom: 6px; }
+    .template-classic .resume-contact {
+      font-size: 0.8em; color: var(--t-secondary); display: flex; justify-content: center; flex-wrap: wrap; gap: 2px 6px;
+    }
+    .template-classic .resume-contact span:not(:last-child)::after { content: '•'; margin-left: 6px; color: var(--t-accent); }
+
+    .template-classic .section { margin-bottom: 10px; }
+    .template-classic .section:last-child { margin-bottom: 0; }
+    .template-classic .section-title {
+      font-size: 0.95em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--t-accent); margin-bottom: 6px; border-bottom: 1px solid #ccc; padding-bottom: 2px;
+    }
+
+    .template-classic .summary-text { font-size: 0.85em; line-height: 1.5; color: var(--t-secondary); font-style: italic; }
+
+    .template-classic .entry { margin-bottom: 8px; }
+    .template-classic .entry:last-child { margin-bottom: 0; }
+    .template-classic .entry-header { display: flex; justify-content: space-between; align-items: baseline; }
+    .template-classic .entry-title { font-size: 0.95em; font-weight: 700; }
+    .template-classic .entry-date { font-size: 0.8em; color: var(--t-secondary); font-style: italic; }
+    .template-classic .entry-subtitle { font-size: 0.8em; color: var(--t-secondary); font-style: italic; margin-bottom: 2px; }
+    .template-classic .entry-description { font-size: 0.8em; line-height: 1.4; color: var(--t-secondary); }
+    .template-classic .entry-description ul { margin: 0; padding-left: 16px; }
+    .template-classic .entry-description li { margin-bottom: 1px; }
+
+    .template-classic .skills-list { font-size: 0.8em; line-height: 1.5; color: var(--t-secondary); }
+
+    .template-classic .compact-entry { margin-bottom: 3px; }
+    .template-classic .compact-entry .entry-title { font-size: 0.85em; }
+    .template-classic .compact-entry .entry-subtitle { font-size: 0.75em; margin-bottom: 0; }
+
+    /* ===== TEMPLATE: EXECUTIVE (No columns, single flow) ===== */
+    .template-executive {
+      --t-primary: #1a1a1a; --t-secondary: #4a4a4a; --t-accent: #8b7355;
+      font-family: 'Playfair Display', serif; padding: 0.5in; color: var(--t-primary);
+    }
+
+    .template-executive .resume-header {
+      border-bottom: 3px double var(--t-accent); padding-bottom: 16px; margin-bottom: 16px;
+    }
+    .template-executive .resume-name { 
+      font-size: 2em; font-weight: 600; letter-spacing: 0.02em; margin-bottom: 4px;
+    }
+    .template-executive .resume-title { 
+      font-size: 1em; font-style: italic; color: var(--t-accent); margin-bottom: 10px;
+    }
+    .template-executive .resume-contact {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.65em; color: var(--t-secondary); display: flex; flex-wrap: wrap; gap: 4px 20px;
+    }
+
+    .template-executive .section { margin-bottom: 14px; }
+    .template-executive .section:last-child { margin-bottom: 0; }
+    .template-executive .section-title {
+      font-size: 0.85em; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--t-accent); margin-bottom: 8px; 
+    }
+
+    .template-executive .summary-text { 
+      font-family: 'Inter', sans-serif;
+      font-size: 0.75em; line-height: 1.6; color: var(--t-secondary); 
+    }
+
+    .template-executive .entry { margin-bottom: 10px; }
+    .template-executive .entry:last-child { margin-bottom: 0; }
+    .template-executive .entry-header { 
+      display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px;
+    }
+    .template-executive .entry-title { font-size: 0.9em; font-weight: 600; }
+    .template-executive .entry-date { 
+      font-family: 'Inter', sans-serif;
+      font-size: 0.65em; color: var(--t-accent); 
+    }
+    .template-executive .entry-subtitle { 
+      font-family: 'Inter', sans-serif;
+      font-size: 0.7em; color: var(--t-secondary); margin-bottom: 4px; 
+    }
+    .template-executive .entry-description { 
+      font-family: 'Inter', sans-serif;
+      font-size: 0.7em; line-height: 1.5; color: var(--t-secondary); 
+    }
+    .template-executive .entry-description ul { margin: 0; padding-left: 16px; }
+    .template-executive .entry-description li { margin-bottom: 2px; }
+
+    .template-executive .skills-list { 
+      font-family: 'Inter', sans-serif;
+      font-size: 0.7em; color: var(--t-secondary); 
+    }
+
+    .template-executive .compact-entry { margin-bottom: 6px; }
+    .template-executive .compact-entry .entry-title { font-size: 0.8em; }
+    .template-executive .compact-entry .entry-subtitle { font-size: 0.65em; margin-bottom: 0; }
+    .template-executive .compact-entry .entry-description { font-size: 0.65em; }
+
+    /* ===== TEMPLATE: COMPACT (Dense, no columns) ===== */
+    .template-compact {
+      --t-primary: #222; --t-secondary: #555; --t-accent: #333;
+      font-family: 'Roboto Condensed', sans-serif; padding: 0.35in 0.4in; color: var(--t-primary);
+    }
+
+    .template-compact .resume-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      border-bottom: 2px solid var(--t-accent); padding-bottom: 8px; margin-bottom: 10px;
+    }
+    .template-compact .header-left { }
+    .template-compact .resume-name { font-size: 1.5em; font-weight: 700; }
+    .template-compact .resume-title { font-size: 0.8em; color: var(--t-secondary); }
+    .template-compact .resume-contact {
+      font-size: 0.6em; color: var(--t-secondary); text-align: right;
+      display: flex; flex-direction: column; gap: 1px;
+    }
+
+    .template-compact .section { margin-bottom: 8px; }
+    .template-compact .section:last-child { margin-bottom: 0; }
+    .template-compact .section-title {
+      font-size: 0.65em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+      background: var(--t-accent); color: white; padding: 2px 6px; margin-bottom: 4px;
+      display: inline-block;
+    }
+
+    .template-compact .summary-text { font-size: 0.68em; line-height: 1.4; color: var(--t-secondary); }
+
+    .template-compact .entry { margin-bottom: 6px; }
+    .template-compact .entry:last-child { margin-bottom: 0; }
+    .template-compact .entry-row { display: flex; gap: 8px; align-items: baseline; }
+    .template-compact .entry-header { display: flex; justify-content: space-between; align-items: baseline; flex: 1; }
+    .template-compact .entry-title { font-size: 0.72em; font-weight: 700; }
+    .template-compact .entry-date { font-size: 0.6em; color: var(--t-secondary); }
+    .template-compact .entry-subtitle { font-size: 0.62em; color: var(--t-secondary); }
+    .template-compact .entry-description { font-size: 0.62em; line-height: 1.3; color: var(--t-secondary); margin-top: 2px; }
+    .template-compact .entry-description ul { margin: 0; padding-left: 12px; }
+    .template-compact .entry-description li { margin-bottom: 0; }
+
+    .template-compact .skills-list { font-size: 0.62em; color: var(--t-secondary); }
+
+    .template-compact .compact-entry { margin-bottom: 2px; }
+    .template-compact .compact-entry .entry-title { font-size: 0.65em; }
+    .template-compact .compact-entry .entry-subtitle { font-size: 0.58em; margin-bottom: 0; }
+
+    /* ===== TEMPLATE: SIDEBAR (Two-column layout) ===== */
+    .template-sidebar {
+      --t-primary: #1a1a1a; --t-secondary: #555; --t-accent: #2563eb; --t-sidebar-bg: #f1f5f9;
+      font-family: 'Inter', sans-serif; color: var(--t-primary);
+      display: grid; grid-template-columns: 200px 1fr; min-height: 100%;
+    }
+
+    .template-sidebar .sidebar {
+      background: var(--t-sidebar-bg); padding: 0.4in 0.25in;
+    }
+    .template-sidebar .resume-name { font-size: 1.1em; font-weight: 700; margin-bottom: 4px; }
+    .template-sidebar .resume-title { font-size: 0.7em; color: var(--t-accent); margin-bottom: 12px; }
+    .template-sidebar .resume-contact {
+      font-size: 0.58em; color: var(--t-secondary); display: flex; flex-direction: column; gap: 4px;
+      margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #cbd5e1;
+    }
+
+    .template-sidebar .sidebar-section { margin-bottom: 12px; }
+    .template-sidebar .sidebar-section:last-child { margin-bottom: 0; }
+    .template-sidebar .sidebar-title {
+      font-size: 0.6em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--t-accent); margin-bottom: 6px;
+    }
+    .template-sidebar .skills-list { font-size: 0.58em; color: var(--t-secondary); line-height: 1.6; }
+    .template-sidebar .skill-item { display: block; margin-bottom: 2px; }
+    .template-sidebar .compact-entry { margin-bottom: 6px; }
+    .template-sidebar .compact-entry .entry-title { font-size: 0.6em; font-weight: 600; }
+    .template-sidebar .compact-entry .entry-subtitle { font-size: 0.52em; color: var(--t-secondary); }
+
+    .template-sidebar .main-content { padding: 0.4in 0.35in; }
+    .template-sidebar .section { margin-bottom: 12px; }
+    .template-sidebar .section:last-child { margin-bottom: 0; }
+    .template-sidebar .section-title {
+      font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+      color: var(--t-accent); margin-bottom: 8px; padding-bottom: 4px;
+      border-bottom: 2px solid var(--t-accent);
+    }
+    .template-sidebar .summary-text { font-size: 0.68em; line-height: 1.5; color: var(--t-secondary); }
+
+    .template-sidebar .entry { margin-bottom: 10px; }
+    .template-sidebar .entry:last-child { margin-bottom: 0; }
+    .template-sidebar .entry-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1px; }
+    .template-sidebar .entry-title { font-size: 0.75em; font-weight: 600; }
+    .template-sidebar .entry-date { font-size: 0.58em; color: var(--t-accent); }
+    .template-sidebar .entry-subtitle { font-size: 0.62em; color: var(--t-secondary); margin-bottom: 3px; }
+    .template-sidebar .entry-description { font-size: 0.62em; line-height: 1.4; color: var(--t-secondary); }
+    .template-sidebar .entry-description ul { margin: 0; padding-left: 14px; }
+    .template-sidebar .entry-description li { margin-bottom: 1px; }
+
+    /* ===== TEMPLATE: CREATIVE (Asymmetric, bold) ===== */
+    .template-creative {
+      --t-primary: #0f172a; --t-secondary: #475569; --t-accent: #7c3aed;
+      font-family: 'DM Sans', sans-serif; color: var(--t-primary);
+    }
+
+    .template-creative .resume-header {
+      background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+      color: white; padding: 0.4in 0.5in; position: relative; overflow: hidden;
+    }
+    .template-creative .resume-header::before {
+      content: ''; position: absolute; top: -50%; right: -20%; width: 300px; height: 300px;
+      background: rgba(255,255,255,0.1); border-radius: 50%;
+    }
+    .template-creative .resume-name { font-size: 1.8em; font-weight: 700; position: relative; }
+    .template-creative .resume-title { font-size: 0.9em; opacity: 0.9; margin: 4px 0 10px; position: relative; }
+    .template-creative .resume-contact { 
+      font-size: 0.6em; display: flex; flex-wrap: wrap; gap: 4px 16px; opacity: 0.85; position: relative;
+    }
+
+    .template-creative .resume-body { 
+      padding: 0.35in 0.5in; 
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px;
+    }
+    .template-creative .main-col { }
+    .template-creative .side-col { }
+
+    .template-creative .section { margin-bottom: 12px; }
+    .template-creative .section:last-child { margin-bottom: 0; }
+    .template-creative .section-title {
+      font-size: 0.7em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--t-accent); margin-bottom: 8px; 
+      display: flex; align-items: center; gap: 8px;
+    }
+    .template-creative .section-title::before {
+      content: ''; width: 4px; height: 4px; background: var(--t-accent); border-radius: 50%;
+    }
+
+    .template-creative .summary-text { font-size: 0.68em; line-height: 1.5; color: var(--t-secondary); }
+
+    .template-creative .entry { margin-bottom: 8px; }
+    .template-creative .entry:last-child { margin-bottom: 0; }
+    .template-creative .entry-header { margin-bottom: 2px; }
+    .template-creative .entry-title { font-size: 0.75em; font-weight: 600; }
+    .template-creative .entry-date { font-size: 0.58em; color: var(--t-accent); display: block; }
+    .template-creative .entry-subtitle { font-size: 0.62em; color: var(--t-secondary); margin-bottom: 3px; }
+    .template-creative .entry-description { font-size: 0.62em; line-height: 1.4; color: var(--t-secondary); }
+    .template-creative .entry-description ul { margin: 0; padding-left: 14px; }
+    .template-creative .entry-description li { margin-bottom: 1px; }
+
+    .template-creative .skills-list { display: flex; flex-wrap: wrap; gap: 4px; }
+    .template-creative .skill-item {
+      background: #ede9fe; color: var(--t-accent); padding: 3px 10px;
+      border-radius: 12px; font-size: 0.58em; font-weight: 500;
+    }
+
+    .template-creative .compact-entry { margin-bottom: 6px; }
+    .template-creative .compact-entry .entry-title { font-size: 0.68em; }
+    .template-creative .compact-entry .entry-subtitle { font-size: 0.58em; margin-bottom: 0; }
+    .template-creative .compact-entry .entry-description { font-size: 0.58em; }
+
+    /* ===== PRINT ===== */
+    @media print {
+      @page { size: 8.5in 11in; margin: 0; }
+      body { background: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .app-header, .tabs, .no-print { display: none !important; }
+      .app-container { height: auto; overflow: visible; }
+      .main-content { overflow: visible; }
+      .preview-container { padding: 0 !important; background: white !important; overflow: visible !important; }
+      .paper { box-shadow: none !important; width: 8.5in !important; min-height: 11in !important; }
+      .tab-content:not(.preview-tab) { display: none !important; }
+      .preview-tab { display: flex !important; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="app-container">
+      <header class="app-header">
+        <h1 class="app-title">Resume Builder</h1>
+        <div class="app-controls">
+          <div class="tabs">
+            <button class="tab-btn" :class="{ active: activeTab === 'edit' }" @click="activeTab = 'edit'">Edit JSON</button>
+            <button class="tab-btn" :class="{ active: activeTab === 'preview' }" @click="activeTab = 'preview'">Preview</button>
+          </div>
+          <div class="control-group">
+            <span class="control-label">Template</span>
+            <select v-model="selectedTemplate">
+              <option value="minimalist">Minimalist (2-col footer)</option>
+              <option value="modern">Modern (2-col footer)</option>
+              <option value="classic">Classic (2-col footer)</option>
+              <option value="executive">Executive (Single column)</option>
+              <option value="compact">Compact (Single column)</option>
+              <option value="sidebar">Sidebar (2-col layout)</option>
+              <option value="creative">Creative (2-col body)</option>
+            </select>
+          </div>
+          <div class="toggle-container">
+            <div class="toggle" :class="{ active: useDemo }" @click="useDemo = !useDemo"></div>
+            <span class="toggle-label">{{ useDemo ? 'Demo Mode' : 'Edit Mode' }}</span>
+          </div>
+          <div class="font-size-control">
+            <span class="control-label">Size</span>
+            <button class="font-btn" @click="fontSizePercent = Math.max(50, fontSizePercent - 5)">−</button>
+            <span class="font-size-display">{{ fontSizePercent }}%</span>
+            <button class="font-btn" @click="fontSizePercent = Math.min(150, fontSizePercent + 5)">+</button>
+          </div>
+          <button class="print-btn" @click="activeTab = 'preview'; setTimeout(() => window.print(), 100)">⎙ Print</button>
+        </div>
+      </header>
+
+      <main class="main-content">
+        <!-- Edit Tab -->
+        <div class="tab-content" :class="{ active: activeTab === 'edit' }">
+          <div class="editor-container">
+            <div v-if="jsonError" class="error-banner">{{ jsonError }}</div>
+            <div class="editor-split">
+              <div class="editor-pane">
+                <div class="pane-header">
+                  <span>Your Resume JSON</span>
+                  <span v-if="useDemo" style="color: #f59e0b;">⚠ Turn off Demo Mode to edit</span>
+                </div>
+                <textarea 
+                  class="json-editor" 
+                  v-model="jsonInput" 
+                  :disabled="useDemo" 
+                  spellcheck="false" 
+                  :placeholder="useDemo ? 'Turn off Demo Mode (toggle above) to edit your own resume...' : 'Paste your resume JSON here...'"
+                ></textarea>
+              </div>
+              <div class="schema-pane">
+                <div class="pane-header">Schema Reference & Templates</div>
+                <div class="schema-content">
+                  <h3>Quick Start Templates</h3>
+                  <button class="template-btn" @click="loadTemplate('full')">
+                    Full Example <small>All supported fields</small>
+                  </button>
+                  <button class="template-btn" @click="loadTemplate('minimal')">
+                    Minimal <small>Just the basics</small>
+                  </button>
+                  <button class="template-btn" @click="loadTemplate('tech')">
+                    Tech Resume <small>Developer focused</small>
+                  </button>
+                  <button class="template-btn" @click="loadTemplate('academic')">
+                    Academic <small>Education & publications</small>
+                  </button>
+                  <button class="template-btn" @click="loadTemplate('executive')">
+                    Executive <small>Senior leadership</small>
+                  </button>
+
+                  <h3>Supported Fields</h3>
+                  <ul>
+                    <li><code>name</code> - Full name (required)</li>
+                    <li><code>title</code> - Job title/headline</li>
+                    <li><code>email</code> - Email address</li>
+                    <li><code>phone</code> - Phone number</li>
+                    <li><code>location</code> - City, State</li>
+                    <li><code>linkedin</code> - LinkedIn URL</li>
+                    <li><code>website</code> - Personal website</li>
+                    <li><code>summary</code> - Professional summary</li>
+                  </ul>
+
+                  <h3>Experience Array</h3>
+<pre>[{
+  "title": "Job Title",
+  "company": "Company Name",
+  "location": "City, ST",
+  "date": "2020 – Present",
+  "description": [
+    "Bullet point 1",
+    "Bullet point 2"
+  ]
+}]</pre>
+
+                  <h3>Education Array</h3>
+<pre>[{
+  "degree": "B.S. Computer Science",
+  "institution": "University",
+  "date": "2016 – 2020",
+  "details": "GPA: 3.8"
+}]</pre>
+
+                  <h3>Skills Array</h3>
+<pre>["JavaScript", "Python", "AWS"]</pre>
+
+                  <h3>Other Supported Sections</h3>
+                  <ul>
+                    <li><code>projects</code> - name, date, description</li>
+                    <li><code>certifications</code> - name, issuer, date</li>
+                    <li><code>languages</code> - language, proficiency</li>
+                    <li><code>publications</code> - title, publisher, date</li>
+                    <li><code>references</code> - name, title, company</li>
+                    <li><code>custom</code> - title, content</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview Tab -->
+        <div class="tab-content preview-tab" :class="{ active: activeTab === 'preview' }">
+          <div class="preview-container">
+            <div class="paper" :style="{ fontSize: fontSizePercent + '%' }">
+              <component :is="currentTemplate" :resume="resume" :format-desc="formatDescription"></component>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, computed, watch, defineComponent } = Vue;
+
+    // ===== DEMO DATA =====
+    const demoResume = {
+  "name": "Larry Battle",
+  "title": "Lead Infrastructure Engineer",
+  "email": "jobs.d@larrybattle.me",
+  "phone": "",
+  "location": "Plano, TX",
+  "linkedin": "linkedin.com/in/larry-battle",
+  "website": "github.com/LarryBattle",
+
+  "summary": "Lead Software Engineer with 12+ years of experience in full-stack development, cloud architecture, and infrastructure modernization. Proven track record of reducing system latency by 60%, achieving 99.9% uptime, and leading teams to hackathon victories. Passionate about automation, mentorship, and AI innovation.",
+  "experience": [
+    {
+      "title": "Lead Software Engineer",
+      "company": "J.P. Morgan",
+      "location": "Dallas, TX",
+      "date": "Aug 2020 – Present",
+      "description": [
+        "Reduced service response times by 60% (5s to <2s) through caching, parallel processing, and architectural redesign",
+        "Architected AWS infrastructure including load balancers, failover systems, and CI/CD migration to cloud-native buildpacks",
+        "Led Quick Drop feature end-to-end: API design, UI integration, and production deployment for rapid asset queries",
+        "Automated PDF generation eliminating 5+ hours/week of manual reporting; achieved 99.9% uptime on critical services",
+        "Mentored engineers with daily code reviews; ranked top 100 of 30K+ users on internal StackOverflow",
+        "Won 1st place (2022) and 4th place (2023) in firm-wide hackathons; finalist in AWS DeepRacer AI/ML event"
+      ]
+    },
+    {
+      "title": "Senior Full Stack Developer",
+      "company": "Spireon",
+      "location": "Dallas, TX",
+      "date": "Apr 2017 – Aug 2020",
+      "description": [
+        "Rewrote geo-location Grails plugin to Java Spring Boot microservice with 70%+ test coverage, scaled via Redis/Docker",
+        "Built Angular 4 SPA for sales data imports, increasing revenue 10%+ by unblocking order fulfillment",
+        "Created Vue.js Webhook editor reducing config updates from 4-person process to 1; repaired IoT devices via AWS Serverless"
+      ]
+    },
+    {
+      "title": "Full Stack Developer",
+      "company": "Spireon",
+      "location": "Dallas, TX",
+      "date": "Jul 2014 – Apr 2017",
+      "description": [
+        "Delivered features and bug fixes across multiple SPAs on agile teams; increased test coverage from 0% to 30%+",
+        "Developed internal tools and APIs to interface with telecom providers and troubleshoot IoT devices"
+      ]
+    },
+    {
+      "title": "Web Application Developer",
+      "company": "Blue Cross Blue Shield",
+      "location": "Texas",
+      "date": "Apr 2012 – Jun 2014",
+      "description": [
+        "Maintained enterprise enrollment system for thousands of employees; built multi-file upload manager",
+        "Rewrote frontend for cross-browser support and improved UX; streamlined multi-page registration flow"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "B.S. Computer Science & Engineering",
+      "institution": "University of Texas at Arlington",
+      "date": "2011",
+      "details": ""
+    }
+  ],
+  "skills": [
+    "Java",
+    "Spring Boot",
+    "Python",
+    "Angular",
+    "Vue.js",
+    "AWS",
+    "Kubernetes",
+    "Docker",
+    "MySQL",
+    "Cassandra",
+    "Redis",
+    "CI/CD",
+    "Splunk",
+    "Datadog"
+  ],
+  "certifications": [
+    {
+      "name": "AWS Cloud Practitioner",
+      "issuer": "Amazon",
+      "date": "2023"
+    },
+    {
+      "name": "Machine Learning",
+      "issuer": "Coursera",
+      "date": "2016"
+    }
+  ],
+  "projects": [
+    {
+      "name": "AI LLM User Group",
+      "date": "2023",
+      "description": "Founding member; delivered presentations on ChatGPT, DALL-E 3, GitHub Copilot"
+    },
+    {
+      "name": "Developer Tooling",
+      "date": "2022",
+      "description": "Created Python CLI for project templates and bookmark generator adopted firm-wide"
+    }
+  ]
+};
+
+    const defaultUserResume = {
+      name: "Your Name",
+      title: "Your Title",
+      email: "your.email@example.com",
+      phone: "(555) 000-0000",
+      location: "City, State",
+      summary: "Your professional summary goes here. Describe your experience, skills, and career objectives.",
+      experience: [
+        {
+          title: "Job Title",
+          company: "Company Name",
+          location: "City, State",
+          date: "Start – End",
+          description: ["Achievement or responsibility 1", "Achievement or responsibility 2"]
+        }
+      ],
+      education: [
+        { degree: "Degree Name", institution: "Institution Name", date: "Year", details: "" }
+      ],
+      skills: ["Skill 1", "Skill 2", "Skill 3"]
+    };
+
+    // ===== TEMPLATE DATA =====
+    const templateData = {
+      full: {
+        name: "Alex Johnson",
+        title: "Full-Stack Developer",
+        email: "alex@example.com",
+        phone: "(555) 123-4567",
+        location: "Austin, TX",
+        linkedin: "linkedin.com/in/alexj",
+        website: "alexjohnson.dev",
+        summary: "Versatile full-stack developer with 6 years of experience building scalable web applications.",
+        experience: [
+          { title: "Senior Developer", company: "Tech Solutions", location: "Austin, TX", date: "2021 – Present", description: ["Led development of customer portal", "Improved load times by 60%"] },
+          { title: "Developer", company: "StartupCo", location: "Remote", date: "2018 – 2021", description: ["Built REST APIs serving 1M requests/day", "Implemented CI/CD pipelines"] }
+        ],
+        education: [{ degree: "B.S. Computer Science", institution: "UT Austin", date: "2018", details: "Summa Cum Laude" }],
+        skills: ["JavaScript", "TypeScript", "React", "Node.js", "Python", "PostgreSQL", "AWS", "Docker"],
+        projects: [{ name: "OpenTracker", date: "2023", description: "Open-source time tracking app" }],
+        certifications: [{ name: "AWS Certified Developer", issuer: "AWS", date: "2022" }],
+        languages: [{ language: "English", proficiency: "Native" }, { language: "Spanish", proficiency: "Professional" }],
+        publications: [{ title: "Modern Web Architecture", publisher: "Dev.to", date: "2023" }],
+        references: [{ name: "Sarah Miller", title: "CTO", company: "Tech Solutions" }],
+        custom: [{ title: "Interests", content: "Open source, rock climbing, game development" }]
+      },
+      minimal: {
+        name: "Sam Smith",
+        email: "sam@email.com",
+        phone: "(555) 987-6543",
+        location: "New York, NY",
+        summary: "Marketing professional with 5 years of experience in digital campaigns and brand strategy.",
+        experience: [
+          { title: "Marketing Manager", company: "BrandCo", date: "2020 – Present", description: ["Managed $2M annual ad budget", "Increased engagement 45%"] }
+        ],
+        education: [{ degree: "B.A. Marketing", institution: "NYU", date: "2018" }],
+        skills: ["Digital Marketing", "SEO", "Google Analytics", "Social Media", "Content Strategy"]
+      },
+      tech: {
+        name: "Jordan Lee",
+        title: "DevOps Engineer",
+        email: "jordan.lee@email.com",
+        phone: "(555) 456-7890",
+        location: "Seattle, WA",
+        linkedin: "linkedin.com/in/jordanlee",
+        website: "github.com/jordanlee",
+        summary: "DevOps engineer specializing in cloud infrastructure, automation, and site reliability. Passionate about building resilient systems.",
+        experience: [
+          { title: "Senior DevOps Engineer", company: "CloudScale Inc.", location: "Seattle, WA", date: "2022 – Present", description: ["Architected Kubernetes clusters handling 10K+ pods", "Reduced deployment time from 2 hours to 15 minutes", "Implemented GitOps workflows with ArgoCD"] },
+          { title: "DevOps Engineer", company: "DataFlow Systems", location: "Portland, OR", date: "2019 – 2022", description: ["Built Terraform modules for multi-cloud deployments", "Designed monitoring stack with Prometheus/Grafana", "Achieved 99.99% uptime for production services"] }
+        ],
+        education: [{ degree: "B.S. Computer Engineering", institution: "University of Washington", date: "2019" }],
+        skills: ["Kubernetes", "Docker", "Terraform", "AWS", "GCP", "Python", "Go", "Jenkins", "ArgoCD", "Prometheus", "Grafana", "Linux"],
+        certifications: [
+          { name: "CKA - Certified Kubernetes Administrator", issuer: "CNCF", date: "2023" },
+          { name: "AWS Solutions Architect Professional", issuer: "AWS", date: "2022" },
+          { name: "HashiCorp Terraform Associate", issuer: "HashiCorp", date: "2021" }
+        ],
+        projects: [
+          { name: "K8s-AutoScale", date: "2023", description: "Custom Kubernetes autoscaler based on business metrics" },
+          { name: "InfraBot", date: "2022", description: "Slack bot for infrastructure provisioning and monitoring" }
+        ]
+      },
+      academic: {
+        name: "Dr. Emily Chen",
+        title: "Assistant Professor of Computer Science",
+        email: "echen@university.edu",
+        phone: "(555) 234-5678",
+        location: "Cambridge, MA",
+        website: "emilychen.research.edu",
+        summary: "Researcher in machine learning and natural language processing with focus on ethical AI systems. Published 15+ papers in top-tier venues.",
+        experience: [
+          { title: "Assistant Professor", company: "MIT", location: "Cambridge, MA", date: "2021 – Present", description: ["Leading AI Ethics research lab with 6 PhD students", "Teaching graduate courses in ML and NLP", "Secured $1.2M in NSF funding"] },
+          { title: "Postdoctoral Researcher", company: "Stanford AI Lab", location: "Stanford, CA", date: "2019 – 2021", description: ["Developed novel fairness metrics for NLP models", "Collaborated on 8 peer-reviewed publications"] }
+        ],
+        education: [
+          { degree: "Ph.D. Computer Science", institution: "Carnegie Mellon University", date: "2019", details: "Thesis: Fairness in Neural Language Models" },
+          { degree: "M.S. Computer Science", institution: "Carnegie Mellon University", date: "2016" },
+          { degree: "B.S. Mathematics & CS", institution: "UC Berkeley", date: "2014", details: "Valedictorian" }
+        ],
+        skills: ["Machine Learning", "NLP", "Python", "PyTorch", "TensorFlow", "Research", "Grant Writing", "Teaching"],
+        publications: [
+          { title: "Mitigating Bias in Large Language Models", publisher: "NeurIPS", date: "2023" },
+          { title: "Fairness Metrics for Text Generation", publisher: "ACL", date: "2022" },
+          { title: "Ethical Considerations in AI Development", publisher: "Nature Machine Intelligence", date: "2021" }
+        ],
+        certifications: [{ name: "NSF CAREER Award", issuer: "National Science Foundation", date: "2023" }]
+      },
+      executive: {
+        name: "Michael Roberts",
+        title: "Chief Technology Officer",
+        email: "mroberts@executive.com",
+        phone: "(555) 789-0123",
+        location: "Chicago, IL",
+        linkedin: "linkedin.com/in/michaelroberts",
+        summary: "Strategic technology leader with 15+ years driving digital transformation at Fortune 500 companies. Proven track record of building high-performance teams and delivering $100M+ in value.",
+        experience: [
+          { title: "Chief Technology Officer", company: "Global Finance Corp", location: "Chicago, IL", date: "2020 – Present", description: ["Led 300-person engineering organization across 5 countries", "Delivered $150M cost savings through cloud migration", "Established AI/ML center of excellence"] },
+          { title: "VP of Engineering", company: "TechGiant Inc.", location: "San Francisco, CA", date: "2015 – 2020", description: ["Scaled engineering team from 50 to 200 engineers", "Launched 3 products generating $80M ARR", "Implemented agile transformation company-wide"] },
+          { title: "Director of Engineering", company: "Innovation Labs", location: "Boston, MA", date: "2010 – 2015", description: ["Built and led platform engineering team", "Reduced infrastructure costs by 40%"] }
+        ],
+        education: [
+          { degree: "MBA", institution: "Harvard Business School", date: "2010" },
+          { degree: "M.S. Computer Science", institution: "MIT", date: "2005" },
+          { degree: "B.S. Computer Science", institution: "Stanford University", date: "2003" }
+        ],
+        skills: ["Strategic Planning", "Digital Transformation", "Team Leadership", "P&L Management", "Cloud Architecture", "M&A Integration", "Board Presentations"],
+        certifications: [{ name: "Board Member", issuer: "TechStartup Inc.", date: "2022" }]
+      }
+    };
+
+    // ===== HELPER =====
+    const formatDescription = (desc) => {
+      if (Array.isArray(desc)) return '<ul>' + desc.map(i => `<li>${i}</li>`).join('') + '</ul>';
+      return desc || '';
+    };
+
+    // ===== TEMPLATE: MINIMALIST =====
+    const TemplateMinimalist = defineComponent({
+      props: ['resume', 'formatDesc'],
+      template: `
+        <div class="template-minimalist resume-content">
+          <header class="resume-header">
+            <h1 class="resume-name">{{ resume.name }}</h1>
+            <div class="resume-contact">
+              <span v-if="resume.email">{{ resume.email }}</span>
+              <span v-if="resume.phone">{{ resume.phone }}</span>
+              <span v-if="resume.location">{{ resume.location }}</span>
+              <span v-if="resume.linkedin">{{ resume.linkedin }}</span>
+              <span v-if="resume.website">{{ resume.website }}</span>
+            </div>
+          </header>
+
+          <div class="resume-main">
+            <section v-if="resume.summary" class="section">
+              <h2 class="section-title">Summary</h2>
+              <p class="summary-text">{{ resume.summary }}</p>
+            </section>
+
+            <section v-if="resume.experience?.length" class="section">
+              <h2 class="section-title">Experience</h2>
+              <div v-for="exp in resume.experience" :key="exp.company + exp.title" class="entry">
+                <div class="entry-header">
+                  <span class="entry-title">{{ exp.title }}</span>
+                  <span class="entry-date">{{ exp.date }}</span>
+                </div>
+                <div class="entry-subtitle">{{ exp.company }}<span v-if="exp.location"> · {{ exp.location }}</span></div>
+                <div class="entry-description" v-html="formatDesc(exp.description)"></div>
+              </div>
+            </section>
+
+            <section v-if="resume.education?.length" class="section">
+              <h2 class="section-title">Education</h2>
+              <div v-for="edu in resume.education" :key="edu.institution + edu.degree" class="entry">
+                <div class="entry-header">
+                  <span class="entry-title">{{ edu.degree }}</span>
+                  <span class="entry-date">{{ edu.date }}</span>
+                </div>
+                <div class="entry-subtitle">{{ edu.institution }}</div>
+                <div v-if="edu.details" class="entry-description">{{ edu.details }}</div>
+              </div>
+            </section>
+
+            <div class="resume-bottom">
+              <div class="bottom-col">
+                <section v-if="resume.skills?.length" class="section">
+                  <h2 class="section-title">Skills</h2>
+                  <div class="skills-list">
+                    <span v-for="skill in resume.skills" :key="skill" class="skill-item">{{ skill }}</span>
+                  </div>
+                </section>
+
+                <section v-if="resume.certifications?.length" class="section">
+                  <h2 class="section-title">Certifications</h2>
+                  <div v-for="cert in resume.certifications" :key="cert.name" class="compact-entry">
+                    <div class="entry-title">{{ cert.name }}</div>
+                    <div class="entry-subtitle">{{ cert.issuer }} · {{ cert.date }}</div>
+                  </div>
+                </section>
+
+                <section v-if="resume.languages?.length" class="section">
+                  <h2 class="section-title">Languages</h2>
+                  <div class="skills-list">
+                    <span v-for="lang in resume.languages" :key="lang.language" class="skill-item">{{ lang.language }} ({{ lang.proficiency }})</span>
+                  </div>
+                </section>
+              </div>
+
+              <div class="bottom-col">
+                <section v-if="resume.projects?.length" class="section">
+                  <h2 class="section-title">Projects</h2>
+                  <div v-for="proj in resume.projects" :key="proj.name" class="compact-entry">
+                    <div class="entry-title">{{ proj.name }} <span v-if="proj.date" style="font-weight:400;opacity:0.7">({{ proj.date }})</span></div>
+                    <div class="entry-description">{{ typeof proj.description === 'string' ? proj.description : '' }}</div>
+                  </div>
+                </section>
+
+                <section v-if="resume.publications?.length" class="section">
+                  <h2 class="section-title">Publications</h2>
+                  <div v-for="pub in resume.publications" :key="pub.title" class="compact-entry">
+                    <div class="entry-title">{{ pub.title }}</div>
+                    <div class="entry-subtitle">{{ pub.publisher }} · {{ pub.date }}</div>
+                  </div>
+                </section>
+
+                <section v-if="resume.references?.length" class="section">
+                  <h2 class="section-title">References</h2>
+                  <div v-for="ref in resume.references" :key="ref.name" class="compact-entry">
+                    <div class="entry-title">{{ ref.name }}</div>
+                    <div class="entry-subtitle">{{ ref.title }}, {{ ref.company }}</div>
+                  </div>
+                </section>
+
+                <section v-for="custom in resume.custom" :key="custom.title" class="section">
+                  <h2 class="section-title">{{ custom.title }}</h2>
+                  <div class="entry-description">{{ custom.content }}</div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </div>
+      `
+    });
+
+    // ===== TEMPLATE: MODERN =====
+    const TemplateModern = defineComponent({
+      props: ['resume', 'formatDesc'],
+      template: `
+        <div class="template-modern resume-content">
+          <header class="resume-header">
+            <h1 class="resume-name">{{ resume.name }}</h1>
+            <div v-if="resume.title" class="resume-title">{{ resume.title }}</div>
+            <div class="resume-contact">
+              <span v-if="resume.email">{{ resume.email }}</span>
+              <span v-if="resume.phone">{{ resume.phone }}</span>
+              <span v-if="resume.location">{{ resume.location }}</span>
+              <span v-if="resume.linkedin">{{ resume.linkedin }}</span>
+              <span v-if="resume.website">{{ resume.website }}</span>
+            </div>
+          </header>
+
+          <div class="resume-body resume-main">
+            <section v-if="resume.summary" class="section">
+              <h2 class="section-title">Profile</h2>
+              <p class="summary-text">{{ resume.summary }}</p>
+            </section>
+
+            <section v-if="resume.experience?.length" class="section">
+              <h2 class="section-title">Experience</h2>
+              <div v-for="exp in resume.experience" :key="exp.company + exp.title" class="entry">
+                <div class="entry-header">
+                  <span class="entry-title">{{ exp.title }}</span>
+                  <span class="entry-date">{{ exp.date }}</span>
+                </div>
+                <div class="entry-subtitle">{{ exp.company }}<span v-if="exp.location"> · {{ exp.location }}</span></div>
+                <div class="entry-description" v-html="formatDesc(exp.description)"></div>
+              </div>
+            </section>
+
+            <section v-if="resume.education?.length" class="section">
+              <h2 class="section-title">Education</h2>
+              <div v-for="edu in resume.education" :key="edu.institution + edu.degree" class="entry">
+                <div class="entry-header">
+                  <span class="entry-title">{{ edu.degree }}</span>
+                  <span class="entry-date">{{ edu.date }}</span>
+                </div>
+                <div class="entry-subtitle">{{ edu.institution }}</div>
+                <div v-if="edu.details" class="entry-description">{{ edu.details }}</div>
+              </div>
+            </section>
+
+            <div class="resume-bottom">
+              <div class="bottom-col">
+                <section v-if="resume.skills?.length" class="section">
+                  <h2 class="section-title">Skills</h2>
+                  <div class="skills-list">
+                    <span v-for="skill in resume.skills" :key="skill" class="skill-item">{{ skill }}</span>
+                  </div>
+                </section>
+
+                <section v-if="resume.certifications?.length" class="section">
+                  <h2 class="section-title">Certifications</h2>
+                  <div v-for="cert in resume.certifications" :key="cert.name" class="compact-entry">
+                    <div class="entry-title">{{ cert.name }}</div>
+                    <div class="entry-subtitle">{{ cert.issuer }} · {{ cert.date }}</div>
+                  </div>
+                </section>
+
+                <section v-if="resume.languages?.length" class="section">
+                  <h2 class="section-title">Languages</h2>
+                  <div class="skills-list">
+                    <span v-for="lang in resume.languages" :key="lang.language" class="skill-item">{{ lang.language }} ({{ lang.proficiency }})</span>
+                  </div>
+                </section>
+              </div>
+
+              <div class="bottom-col">
+                <section v-if="resume.projects?.length" class="section">
+                  <h2 class="section-title">Projects</h2>
+                  <div v-for="proj in resume.projects" :key="proj.name" class="compact-entry">
+                    <div class="entry-title">{{ proj.name }} <span v-if="proj.date" style="font-weight:400;opacity:0.7">({{ proj.date }})</span></div>
+                    <div class="entry-description">{{ typeof proj.description === 'string' ? proj.description : '' }}</div>
+                  </div>
+                </section>
+
+                <section v-if="resume.publications?.length" class="section">
+                  <h2 class="section-title">Publications</h2>
+                  <div v-for="pub in resume.publications" :key="pub.title" class="compact-entry">
+                    <div class="entry-title">{{ pub.title }}</div>
+                    <div class="entry-subtitle">{{ pub.publisher }} · {{ pub.date }}</div>
+                  </div>
+                </section>
+
+                <section v-if="resume.references?.length" class="section">
+                  <h2 class="section-title">References</h2>
+                  <div v-for="ref in resume.references" :key="ref.name" class="compact-entry">
+                    <div class="entry-title">{{ ref.name }}</div>
+                    <div class="entry-subtitle">{{ ref.title }}, {{ ref.company }}</div>
+                  </div>
+                </section>
+
+                <section v-for="custom in resume.custom" :key="custom.title" class="section">
+                  <h2 class="section-title">{{ custom.title }}</h2>
+                  <div class="entry-description">{{ custom.content }}</div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </div>
+      `
+    });
+
+    // ===== TEMPLATE: CLASSIC =====
+    const TemplateClassic = defineComponent({
+      props: ['resume', 'formatDesc'],
+      template: `
+        <div class="template-classic resume-content">
+          <header class="resume-header">
+            <h1 class="resume-name">{{ resume.name }}</h1>
+            <div class="resume-contact">
+              <span v-if="resume.email">{{ resume.email }}</span>
+              <span v-if="resume.phone">{{ resume.phone }}</span>
+              <span v-if="resume.location">{{ resume.location }}</span>
+              <span v-if="resume.linkedin">{{ resume.linkedin }}</span>
+              <span v-if="resume.website">{{ resume.website }}</span>
+            </div>
+          </header>
+
+          <div class="resume-main">
+            <section v-if="resume.summary" class="section">
+              <h2 class="section-title">Professional Summary</h2>
+              <p class="summary-text">{{ resume.summary }}</p>
+            </section>
+
+            <section v-if="resume.experience?.length" class="section">
+              <h2 class="section-title">Professional Experience</h2>
+              <div v-for="exp in resume.experience" :key="exp.company + exp.title" class="entry">
+                <div class="entry-header">
+                  <span class="entry-title">{{ exp.title }}</span>
+                  <span class="entry-date">{{ exp.date }}</span>
+                </div>
+                <div class="entry-subtitle">{{ exp.company }}<span v-if="exp.location">, {{ exp.location }}</span></div>
+                <div class="entry-description" v-html="formatDesc(exp.description)"></div>
+              </div>
+            </section>
+
+            <section v-if="resume.education?.length" class="section">
+              <h2 class="section-title">Education</h2>
+              <div v-for="edu in resume.education" :key="edu.institution + edu.degree" class="entry">
+                <div class="entry-header">
+                  <span class="entry-title">{{ edu.degree }}</span>
+                  <span class="entry-date">{{ edu.date }}</span>
+                </div>
+                <div class="entry-subtitle">{{ edu.institution }}</div>
+                <div v-if="edu.details" class="entry-description">{{ edu.details }}</div>
+              </div>
+            </section>
+
+            <div class="resume-bottom">
+              <div class="bottom-col">
+                <section v-if="resume.skills?.length" class="section">
+                  <h2 class="section-title">Skills</h2>
+                  <div class="skills-list">{{ resume.skills.join(' • ') }}</div>
+                </section>
+
+                <section v-if="resume.certifications?.length" class="section">
+                  <h2 class="section-title">Certifications</h2>
+                  <div v-for="cert in resume.certifications" :key="cert.name" class="compact-entry">
+                    <div class="entry-title">{{ cert.name }}</div>
+                    <div class="entry-subtitle">{{ cert.issuer }}, {{ cert.date }}</div>
+                  </div>
+                </section>
+
+                <section v-if="resume.languages?.length" class="section">
+                  <h2 class="section-title">Languages</h2>
+                  <div class="skills-list">
+                    <span v-for="(lang, i) in resume.languages" :key="lang.language">{{ lang.language }} ({{ lang.proficiency }})<span v-if="i < resume.languages.length - 1"> • </span></span>
+                  </div>
+                </section>
+              </div>
+
+              <div class="bottom-col">
+                <section v-if="resume.projects?.length" class="section">
+                  <h2 class="section-title">Projects</h2>
+                  <div v-for="proj in resume.projects" :key="proj.name" class="compact-entry">
+                    <div class="entry-title">{{ proj.name }} <span v-if="proj.date" style="font-weight:400">({{ proj.date }})</span></div>
+                    <div class="entry-description">{{ typeof proj.description === 'string' ? proj.description : '' }}</div>
+                  </div>
+                </section>
+
+                <section v-if="resume.publications?.length" class="section">
+                  <h2 class="section-title">Publications</h2>
+                  <div v-for="pub in resume.publications" :key="pub.title" class="compact-entry">
+                    <div class="entry-title">{{ pub.title }}</div>
+                    <div class="entry-subtitle">{{ pub.publisher }}, {{ pub.date }}</div>
+                  </div>
+                </section>
+
+                <section v-if="resume.references?.length" class="section">
+                  <h2 class="section-title">References</h2>
+                  <div v-for="ref in resume.references" :key="ref.name" class="compact-entry">
+                    <div class="entry-title">{{ ref.name }}</div>
+                    <div class="entry-subtitle">{{ ref.title }}, {{ ref.company }}</div>
+                  </div>
+                </section>
+
+                <section v-for="custom in resume.custom" :key="custom.title" class="section">
+                  <h2 class="section-title">{{ custom.title }}</h2>
+                  <div class="entry-description">{{ custom.content }}</div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </div>
+      `
+    });
+
+    // ===== TEMPLATE: EXECUTIVE (Single column, no grid) =====
+    const TemplateExecutive = defineComponent({
+      props: ['resume', 'formatDesc'],
+      template: `
+        <div class="template-executive resume-content">
+          <header class="resume-header">
+            <h1 class="resume-name">{{ resume.name }}</h1>
+            <div v-if="resume.title" class="resume-title">{{ resume.title }}</div>
+            <div class="resume-contact">
+              <span v-if="resume.email">{{ resume.email }}</span>
+              <span v-if="resume.phone">{{ resume.phone }}</span>
+              <span v-if="resume.location">{{ resume.location }}</span>
+              <span v-if="resume.linkedin">{{ resume.linkedin }}</span>
+              <span v-if="resume.website">{{ resume.website }}</span>
+            </div>
+          </header>
+
+          <div class="resume-main">
+            <section v-if="resume.summary" class="section">
+              <h2 class="section-title">Executive Summary</h2>
+              <p class="summary-text">{{ resume.summary }}</p>
+            </section>
+
+            <section v-if="resume.experience?.length" class="section">
+              <h2 class="section-title">Professional Experience</h2>
+              <div v-for="exp in resume.experience" :key="exp.company + exp.title" class="entry">
+                <div class="entry-header">
+                  <span class="entry-title">{{ exp.title }}</span>
+                  <span class="entry-date">{{ exp.date }}</span>
+                </div>
+                <div class="entry-subtitle">{{ exp.company }}<span v-if="exp.location"> | {{ exp.location }}</span></div>
+                <div class="entry-description" v-html="formatDesc(exp.description)"></div>
+              </div>
+            </section>
+
+            <section v-if="resume.education?.length" class="section">
+              <h2 class="section-title">Education</h2>
+              <div v-for="edu in resume.education" :key="edu.institution + edu.degree" class="entry">
+                <div class="entry-header">
+                  <span class="entry-title">{{ edu.degree }}</span>
+                  <span class="entry-date">{{ edu.date }}</span>
+                </div>
+                <div class="entry-subtitle">{{ edu.institution }}</div>
+                <div v-if="edu.details" class="entry-description">{{ edu.details }}</div>
+              </div>
+            </section>
+
+            <section v-if="resume.skills?.length" class="section">
+              <h2 class="section-title">Core Competencies</h2>
+              <div class="skills-list">{{ resume.skills.join(' • ') }}</div>
+            </section>
+
+            <section v-if="resume.certifications?.length" class="section">
+              <h2 class="section-title">Certifications & Board Positions</h2>
+              <div v-for="cert in resume.certifications" :key="cert.name" class="compact-entry">
+                <div class="entry-title">{{ cert.name }}</div>
+                <div class="entry-subtitle">{{ cert.issuer }}, {{ cert.date }}</div>
+              </div>
+            </section>
+
+            <section v-if="resume.publications?.length" class="section">
+              <h2 class="section-title">Publications</h2>
+              <div v-for="pub in resume.publications" :key="pub.title" class="compact-entry">
+                <div class="entry-title">{{ pub.title }}</div>
+                <div class="entry-subtitle">{{ pub.publisher }}, {{ pub.date }}</div>
+              </div>
+            </section>
+
+            <section v-for="custom in resume.custom" :key="custom.title" class="section">
+              <h2 class="section-title">{{ custom.title }}</h2>
+              <div class="entry-description">{{ custom.content }}</div>
+            </section>
+          </div>
+        </div>
+      `
+    });
+
+    // ===== TEMPLATE: COMPACT (Dense single column) =====
+    const TemplateCompact = defineComponent({
+      props: ['resume', 'formatDesc'],
+      template: `
+        <div class="template-compact resume-content">
+          <header class="resume-header">
+            <div class="header-left">
+              <h1 class="resume-name">{{ resume.name }}</h1>
+              <div v-if="resume.title" class="resume-title">{{ resume.title }}</div>
+            </div>
+            <div class="resume-contact">
+              <span v-if="resume.email">{{ resume.email }}</span>
+              <span v-if="resume.phone">{{ resume.phone }}</span>
+              <span v-if="resume.location">{{ resume.location }}</span>
+              <span v-if="resume.linkedin">{{ resume.linkedin }}</span>
+              <span v-if="resume.website">{{ resume.website }}</span>
+            </div>
+          </header>
+
+          <div class="resume-main">
+            <section v-if="resume.summary" class="section">
+              <h2 class="section-title">Summary</h2>
+              <p class="summary-text">{{ resume.summary }}</p>
+            </section>
+
+            <section v-if="resume.skills?.length" class="section">
+              <h2 class="section-title">Skills</h2>
+              <div class="skills-list">{{ resume.skills.join(' | ') }}</div>
+            </section>
+
+            <section v-if="resume.experience?.length" class="section">
+              <h2 class="section-title">Experience</h2>
+              <div v-for="exp in resume.experience" :key="exp.company + exp.title" class="entry">
+                <div class="entry-header">
+                  <span class="entry-title">{{ exp.title }}</span>
+                  <span class="entry-date">{{ exp.date }}</span>
+                </div>
+                <div class="entry-subtitle">{{ exp.company }}<span v-if="exp.location"> – {{ exp.location }}</span></div>
+                <div class="entry-description" v-html="formatDesc(exp.description)"></div>
+              </div>
+            </section>
+
+            <section v-if="resume.projects?.length" class="section">
+              <h2 class="section-title">Projects</h2>
+              <div v-for="proj in resume.projects" :key="proj.name" class="compact-entry">
+                <div class="entry-title">{{ proj.name }} <span v-if="proj.date" style="font-weight:400">({{ proj.date }})</span></div>
+                <div class="entry-description">{{ typeof proj.description === 'string' ? proj.description : '' }}</div>
+              </div>
+            </section>
+
+            <section v-if="resume.education?.length" class="section">
+              <h2 class="section-title">Education</h2>
+              <div v-for="edu in resume.education" :key="edu.institution + edu.degree" class="compact-entry">
+                <div class="entry-title">{{ edu.degree }} – {{ edu.institution }} ({{ edu.date }})</div>
+                <div v-if="edu.details" class="entry-subtitle">{{ edu.details }}</div>
+              </div>
+            </section>
+
+            <section v-if="resume.certifications?.length" class="section">
+              <h2 class="section-title">Certifications</h2>
+              <div v-for="cert in resume.certifications" :key="cert.name" class="compact-entry">
+                <div class="entry-title">{{ cert.name }} – {{ cert.issuer }} ({{ cert.date }})</div>
+              </div>
+            </section>
+          </div>
+        </div>
+      `
+    });
+
+    // ===== TEMPLATE: SIDEBAR (Two-column layout) =====
+    const TemplateSidebar = defineComponent({
+      props: ['resume', 'formatDesc'],
+      template: `
+        <div class="template-sidebar">
+          <aside class="sidebar">
+            <h1 class="resume-name">{{ resume.name }}</h1>
+            <div v-if="resume.title" class="resume-title">{{ resume.title }}</div>
+            <div class="resume-contact">
+              <span v-if="resume.email">{{ resume.email }}</span>
+              <span v-if="resume.phone">{{ resume.phone }}</span>
+              <span v-if="resume.location">{{ resume.location }}</span>
+              <span v-if="resume.linkedin">{{ resume.linkedin }}</span>
+              <span v-if="resume.website">{{ resume.website }}</span>
+            </div>
+
+            <div v-if="resume.skills?.length" class="sidebar-section">
+              <h2 class="sidebar-title">Skills</h2>
+              <div class="skills-list">
+                <span v-for="skill in resume.skills" :key="skill" class="skill-item">{{ skill }}</span>
+              </div>
+            </div>
+
+            <div v-if="resume.languages?.length" class="sidebar-section">
+              <h2 class="sidebar-title">Languages</h2>
+              <div v-for="lang in resume.languages" :key="lang.language" class="compact-entry">
+                <div class="entry-title">{{ lang.language }}</div>
+                <div class="entry-subtitle">{{ lang.proficiency }}</div>
+              </div>
+            </div>
+
+            <div v-if="resume.certifications?.length" class="sidebar-section">
+              <h2 class="sidebar-title">Certifications</h2>
+              <div v-for="cert in resume.certifications" :key="cert.name" class="compact-entry">
+                <div class="entry-title">{{ cert.name }}</div>
+                <div class="entry-subtitle">{{ cert.issuer }}, {{ cert.date }}</div>
+              </div>
+            </div>
+
+            <div v-if="resume.references?.length" class="sidebar-section">
+              <h2 class="sidebar-title">References</h2>
+              <div v-for="ref in resume.references" :key="ref.name" class="compact-entry">
+                <div class="entry-title">{{ ref.name }}</div>
+                <div class="entry-subtitle">{{ ref.title }}, {{ ref.company }}</div>
+              </div>
+            </div>
+          </aside>
+
+          <main class="main-content">
+            <section v-if="resume.summary" class="section">
+              <h2 class="section-title">Profile</h2>
+              <p class="summary-text">{{ resume.summary }}</p>
+            </section>
+
+            <section v-if="resume.experience?.length" class="section">
+              <h2 class="section-title">Experience</h2>
+              <div v-for="exp in resume.experience" :key="exp.company + exp.title" class="entry">
+                <div class="entry-header">
+                  <span class="entry-title">{{ exp.title }}</span>
+                  <span class="entry-date">{{ exp.date }}</span>
+                </div>
+                <div class="entry-subtitle">{{ exp.company }}<span v-if="exp.location"> · {{ exp.location }}</span></div>
+                <div class="entry-description" v-html="formatDesc(exp.description)"></div>
+              </div>
+            </section>
+
+            <section v-if="resume.education?.length" class="section">
+              <h2 class="section-title">Education</h2>
+              <div v-for="edu in resume.education" :key="edu.institution + edu.degree" class="entry">
+                <div class="entry-header">
+                  <span class="entry-title">{{ edu.degree }}</span>
+                  <span class="entry-date">{{ edu.date }}</span>
+                </div>
+                <div class="entry-subtitle">{{ edu.institution }}</div>
+                <div v-if="edu.details" class="entry-description">{{ edu.details }}</div>
+              </div>
+            </section>
+
+            <section v-if="resume.projects?.length" class="section">
+              <h2 class="section-title">Projects</h2>
+              <div v-for="proj in resume.projects" :key="proj.name" class="compact-entry">
+                <div class="entry-title">{{ proj.name }} <span v-if="proj.date" style="font-weight:400;opacity:0.7">({{ proj.date }})</span></div>
+                <div class="entry-description">{{ typeof proj.description === 'string' ? proj.description : '' }}</div>
+              </div>
+            </section>
+
+            <section v-if="resume.publications?.length" class="section">
+              <h2 class="section-title">Publications</h2>
+              <div v-for="pub in resume.publications" :key="pub.title" class="compact-entry">
+                <div class="entry-title">{{ pub.title }}</div>
+                <div class="entry-subtitle">{{ pub.publisher }}, {{ pub.date }}</div>
+              </div>
+            </section>
+
+            <section v-for="custom in resume.custom" :key="custom.title" class="section">
+              <h2 class="section-title">{{ custom.title }}</h2>
+              <div class="entry-description">{{ custom.content }}</div>
+            </section>
+          </main>
+        </div>
+      `
+    });
+
+    // ===== TEMPLATE: CREATIVE (Two-column body) =====
+    const TemplateCreative = defineComponent({
+      props: ['resume', 'formatDesc'],
+      template: `
+        <div class="template-creative resume-content">
+          <header class="resume-header">
+            <h1 class="resume-name">{{ resume.name }}</h1>
+            <div v-if="resume.title" class="resume-title">{{ resume.title }}</div>
+            <div class="resume-contact">
+              <span v-if="resume.email">{{ resume.email }}</span>
+              <span v-if="resume.phone">{{ resume.phone }}</span>
+              <span v-if="resume.location">{{ resume.location }}</span>
+              <span v-if="resume.linkedin">{{ resume.linkedin }}</span>
+              <span v-if="resume.website">{{ resume.website }}</span>
+            </div>
+          </header>
+
+          <div class="resume-body">
+            <div class="main-col">
+              <section v-if="resume.summary" class="section">
+                <h2 class="section-title">About Me</h2>
+                <p class="summary-text">{{ resume.summary }}</p>
+              </section>
+
+              <section v-if="resume.experience?.length" class="section">
+                <h2 class="section-title">Experience</h2>
+                <div v-for="exp in resume.experience" :key="exp.company + exp.title" class="entry">
+                  <div class="entry-header">
+                    <span class="entry-title">{{ exp.title }}</span>
+                    <span class="entry-date">{{ exp.date }}</span>
+                  </div>
+                  <div class="entry-subtitle">{{ exp.company }}<span v-if="exp.location"> · {{ exp.location }}</span></div>
+                  <div class="entry-description" v-html="formatDesc(exp.description)"></div>
+                </div>
+              </section>
+
+              <section v-if="resume.projects?.length" class="section">
+                <h2 class="section-title">Projects</h2>
+                <div v-for="proj in resume.projects" :key="proj.name" class="compact-entry">
+                  <div class="entry-title">{{ proj.name }} <span v-if="proj.date" style="font-weight:400;opacity:0.7">({{ proj.date }})</span></div>
+                  <div class="entry-description">{{ typeof proj.description === 'string' ? proj.description : '' }}</div>
+                </div>
+              </section>
+            </div>
+
+            <div class="side-col">
+              <section v-if="resume.skills?.length" class="section">
+                <h2 class="section-title">Skills</h2>
+                <div class="skills-list">
+                  <span v-for="skill in resume.skills" :key="skill" class="skill-item">{{ skill }}</span>
+                </div>
+              </section>
+
+              <section v-if="resume.education?.length" class="section">
+                <h2 class="section-title">Education</h2>
+                <div v-for="edu in resume.education" :key="edu.institution + edu.degree" class="compact-entry">
+                  <div class="entry-title">{{ edu.degree }}</div>
+                  <div class="entry-subtitle">{{ edu.institution }}, {{ edu.date }}</div>
+                  <div v-if="edu.details" class="entry-description">{{ edu.details }}</div>
+                </div>
+              </section>
+
+              <section v-if="resume.certifications?.length" class="section">
+                <h2 class="section-title">Certifications</h2>
+                <div v-for="cert in resume.certifications" :key="cert.name" class="compact-entry">
+                  <div class="entry-title">{{ cert.name }}</div>
+                  <div class="entry-subtitle">{{ cert.issuer }}, {{ cert.date }}</div>
+                </div>
+              </section>
+
+              <section v-if="resume.languages?.length" class="section">
+                <h2 class="section-title">Languages</h2>
+                <div v-for="lang in resume.languages" :key="lang.language" class="compact-entry">
+                  <div class="entry-title">{{ lang.language }}</div>
+                  <div class="entry-subtitle">{{ lang.proficiency }}</div>
+                </div>
+              </section>
+
+              <section v-if="resume.publications?.length" class="section">
+                <h2 class="section-title">Publications</h2>
+                <div v-for="pub in resume.publications" :key="pub.title" class="compact-entry">
+                  <div class="entry-title">{{ pub.title }}</div>
+                  <div class="entry-subtitle">{{ pub.publisher }}, {{ pub.date }}</div>
+                </div>
+              </section>
+
+              <section v-for="custom in resume.custom" :key="custom.title" class="section">
+                <h2 class="section-title">{{ custom.title }}</h2>
+                <div class="entry-description">{{ custom.content }}</div>
+              </section>
+            </div>
+          </div>
+        </div>
+      `
+    });
+
+    // ===== APP =====
+    createApp({
+      components: { 
+        TemplateMinimalist, 
+        TemplateModern, 
+        TemplateClassic, 
+        TemplateExecutive,
+        TemplateCompact,
+        TemplateSidebar,
+        TemplateCreative
+      },
+      setup() {
+        const activeTab = ref('preview');
+        const selectedTemplate = ref('minimalist');
+        const useDemo = ref(true);
+        const fontSizePercent = ref(100);
+        const jsonError = ref('');
+        const storedJson = localStorage.getItem('resumeJson');
+        const jsonInput = ref(storedJson || JSON.stringify(defaultUserResume, null, 2));
+
+        const resume = computed(() => {
+          if (useDemo.value) return demoResume;
+          try {
+            jsonError.value = '';
+            const parsed = JSON.parse(jsonInput.value);
+            return parsed;
+          } catch (e) {
+            jsonError.value = 'JSON Parse Error: ' + e.message;
+            return defaultUserResume;
+          }
+        });
+
+        const currentTemplate = computed(() => {
+          const map = { 
+            minimalist: 'TemplateMinimalist', 
+            modern: 'TemplateModern', 
+            classic: 'TemplateClassic',
+            executive: 'TemplateExecutive',
+            compact: 'TemplateCompact',
+            sidebar: 'TemplateSidebar',
+            creative: 'TemplateCreative'
+          };
+          return map[selectedTemplate.value];
+        });
+
+        const loadTemplate = (name) => {
+          useDemo.value = false;
+          jsonInput.value = JSON.stringify(templateData[name], null, 2);
+          localStorage.setItem('resumeJson', jsonInput.value);
+        };
+
+        watch(jsonInput, (val) => { 
+          if (!useDemo.value) {
+            localStorage.setItem('resumeJson', val); 
+          }
+        });
+
+        return { 
+          activeTab, 
+          selectedTemplate, 
+          useDemo, 
+          fontSizePercent, 
+          jsonInput, 
+          jsonError, 
+          resume, 
+          currentTemplate, 
+          formatDescription,
+          loadTemplate
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
