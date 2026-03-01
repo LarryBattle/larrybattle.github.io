@@ -1,0 +1,71 @@
+name: Generate Projects JSON
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "p/**"
+      - ".github/workflows/generate-projects.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate projects.json
+        run: |
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          PROJECTS="[]"
+
+          for dir in p/*/; do
+            # Skip if not a directory or has no index.html
+            [ -f "${dir}index.html" ] || continue
+
+            # Folder name is the project slug
+            slug=$(basename "$dir")
+
+            # Extract <title> content from index.html
+            title=$(grep -ioP '(?<=<title>).*?(?=</title>)' "${dir}index.html" | head -1 || echo "")
+
+            # Fall back to folder name if no title found
+            if [ -z "$title" ]; then
+              title="$slug"
+            fi
+
+            # Append entry
+            PROJECTS=$(echo "$PROJECTS" | jq \
+              --arg name "$title" \
+              --arg path "$slug" \
+              '. += [{"name": $name, "path": $path}]'
+            )
+          done
+
+          # Sort by name (case-insensitive)
+          PROJECTS=$(echo "$PROJECTS" | jq 'sort_by(.name | ascii_downcase)')
+
+          # Write final JSON
+          jq -n \
+            --arg generated_at "$TIMESTAMP" \
+            --argjson projects "$PROJECTS" \
+            '{ generated_at: $generated_at, total: ($projects | length), projects: $projects }' \
+            > p/projects.json
+
+          echo "Generated p/projects.json with $(echo "$PROJECTS" | jq length) projects"
+          cat p/projects.json
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add p/projects.json
+          git diff --cached --quiet || git commit -m "chore: update projects.json [skip ci]"
+          git push
