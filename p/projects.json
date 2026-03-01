@@ -1,0 +1,98 @@
+{
+  "generated_at": "2026-03-01T18:00:50Z",
+  "total": 23,
+  "projects": [
+    {
+      "name": "2nd Grade Math Quiz",
+      "path": "2nd_math"
+    },
+    {
+      "name": "3D Memory Game",
+      "path": "memory"
+    },
+    {
+      "name": "Advanced Chinese Lessons",
+      "path": "learn_chinese_2"
+    },
+    {
+      "name": "Awesome Verb Learner!",
+      "path": "verbs3"
+    },
+    {
+      "name": "Bulking Meal Plan",
+      "path": "meals"
+    },
+    {
+      "name": "Division Learning App",
+      "path": "div"
+    },
+    {
+      "name": "Enhanced Charlie's Bake-Off Adventure",
+      "path": "fractions2"
+    },
+    {
+      "name": "Intermediate Chinese Lessons",
+      "path": "learn_chinese"
+    },
+    {
+      "name": "Language Pronunciation Quiz",
+      "path": "speak2"
+    },
+    {
+      "name": "Language Speech Recognition",
+      "path": "speak"
+    },
+    {
+      "name": "Learn to Count Money",
+      "path": "cash"
+    },
+    {
+      "name": "Multiplication Tables Learning Game",
+      "path": "multiply"
+    },
+    {
+      "name": "My Daily Checklist ✨",
+      "path": "daily-tasks"
+    },
+    {
+      "name": "Perry's Perimeter Path",
+      "path": "perimeter"
+    },
+    {
+      "name": "Quiz",
+      "path": "math"
+    },
+    {
+      "name": "Random Analaog Clock",
+      "path": "clock"
+    },
+    {
+      "name": "Resume Builder",
+      "path": "resume_builder"
+    },
+    {
+      "name": "Reverse Digit Span Test",
+      "path": "iq_digits"
+    },
+    {
+      "name": "Spelling Drill",
+      "path": "spell"
+    },
+    {
+      "name": "Subtraction Borrowing Tutorial",
+      "path": "borrowing"
+    },
+    {
+      "name": "Verb Quiz App",
+      "path": "verbs"
+    },
+    {
+      "name": "Verb Tense Learning App",
+      "path": "verbs2"
+    },
+    {
+      "name": "Who Wants to Be a Millionaire?",
+      "path": "game_show"
+    }
+  ]
+}
