@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-03-01T18:00:50Z",
-  "total": 23,
+  "generated_at": "2026-03-01T21:44:04Z",
+  "total": 24,
   "projects": [
     {
       "name": "2nd Grade Math Quiz",
@@ -45,6 +45,10 @@
     {
       "name": "Learn to Count Money",
       "path": "cash"
+    },
+    {
+      "name": "Monthly Todo Generator",
+      "path": "monthly-todo"
     },
     {
       "name": "Multiplication Tables Learning Game",
