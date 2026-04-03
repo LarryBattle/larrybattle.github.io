@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Story Reader — The Three Kingdoms of Matterville</title>
+<title>Story Reader</title>
 <script type="importmap">
 { "imports": { "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.prod.js" } }
 </script>
@@ -16,12 +15,13 @@
      progress:   .progress-track, .progress-fill, .progress-pct
      layout:     .app, .sidebar, .reader
      sidebar:    .sidebar-title, .para-card, .para-card.is-active, .has-image-dot
+     selector:   .story-selector, .selector-title, .story-card, .story-card:hover
      sentences:  .paragraph-block, .sentence-wrap, .sentence-wrap.is-focused,
                  .sentence-text, .img-slot
      controls:   .controls, .ctrl-btn, .ctrl-btn.is-primary
-     misc:       .sidebar-toggle, .kb-hint, .reading-stats, .theme-toggle
+     misc:       .sidebar-toggle, .kb-hint, .reading-stats, .theme-toggle, .back-btn
      STATES:     .is-active, .is-focused, .is-dimmed, .is-open
-     LAYOUTS:    sidebar + main two-col, single-col mobile
+     LAYOUTS:    sidebar + main two-col, centered selector, single-col mobile
 ═════════════════════════════════════════════════════════ -->
 <style>
 /* ── 1. :root variables ── */
@@ -41,11 +41,13 @@
   --radius-md: 8px;
   --radius-lg: 999px;
   --shadow-sm: 0 1px 4px var(--c-shadow);
+  --shadow-md: 0 4px 16px var(--c-shadow);
   --font-body: 'Literata', Georgia, serif;
   --font-ui: 'DM Sans', system-ui, sans-serif;
   --fs-sm: 0.65rem;
   --fs-base: 1.06rem;
   --fs-lg: 1.8rem;
+  --fs-xl: 1.2rem;
   --sp-xs: 2px;
   --sp-sm: 6px;
   --sp-md: 12px;
@@ -87,6 +89,8 @@ body {
 .app { display: flex; min-height: 100vh; padding-top: calc(var(--progress-h) + 2px) }
 
 /* ── 4. Components ── */
+
+/* progress */
 .progress-track {
   position: fixed; top: 0; left: 0; right: 0;
   height: var(--progress-h); background: var(--c-border); z-index: 100;
@@ -103,6 +107,55 @@ body {
   color: var(--c-accent); z-index: 101; letter-spacing: 0.03em;
 }
 
+/* story selector */
+.story-selector {
+  max-width: 640px;
+  margin: 80px auto;
+  padding: 0 var(--sp-lg);
+}
+.selector-title {
+  font-family: var(--font-body);
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: var(--sp-sm);
+}
+.selector-subtitle {
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  color: var(--c-text-dim);
+  text-align: center;
+  margin-bottom: var(--sp-xl);
+  letter-spacing: 0.02em;
+}
+.story-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  padding: var(--sp-lg);
+  margin-bottom: var(--sp-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+.story-card:hover {
+  border-color: var(--c-accent);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+.story-card-title {
+  font-family: var(--font-body);
+  font-size: var(--fs-xl);
+  font-weight: 600;
+  margin-bottom: var(--sp-sm);
+}
+.story-card-meta {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  color: var(--c-text-dim);
+}
+
+/* sidebar */
 .sidebar {
   width: var(--sidebar-w); min-width: var(--sidebar-w);
   background: var(--c-bg-sidebar); border-right: 1px solid var(--c-border);
@@ -139,6 +192,16 @@ body {
   background: var(--c-accent); flex-shrink: 0; margin-top: 5px;
 }
 
+/* back button */
+.back-btn {
+  font-family: var(--font-ui); font-size: 0.75rem; font-weight: 500;
+  color: var(--c-text-dim); background: none; border: none;
+  cursor: pointer; padding: var(--sp-sm) 0; margin-bottom: var(--sp-sm);
+  transition: color var(--transition-fast);
+}
+.back-btn:hover { color: var(--c-accent) }
+
+/* theme toggle */
 .theme-toggle {
   position: fixed; top: 10px; right: 72px; z-index: 101;
   background: var(--c-surface); border: 1px solid var(--c-border);
@@ -148,6 +211,7 @@ body {
 }
 .theme-toggle:hover { border-color: var(--c-accent) }
 
+/* reader */
 .reader { flex: 1; max-width: var(--reader-max-w); margin: 0 auto; padding: var(--sp-xl) 40px 140px }
 .story-title {
   font-family: var(--font-body); font-size: var(--fs-lg); font-weight: 600;
@@ -160,15 +224,13 @@ body {
   letter-spacing: 0.02em;
 }
 
+/* paragraphs & sentences */
 .paragraph-block { margin-bottom: 32px }
 .paragraph-block.is-dimmed .sentence-wrap:not(.is-focused) .sentence-text {
   opacity: var(--dim-opacity); filter: blur(var(--dim-blur));
 }
-
 .sentence-wrap { position: relative; display: block; margin-bottom: var(--sp-xs) }
-.sentence-wrap .img-slot {
-  margin: 10px 0; text-align: center; position: relative; display: inline-block;
-}
+.sentence-wrap .img-slot { margin: var(--sp-md) 0; text-align: center }
 .sentence-wrap .img-slot img {
   max-width: 100%; max-height: var(--img-max-h);
   border-radius: var(--radius-md); box-shadow: var(--shadow-sm); object-fit: contain;
@@ -183,6 +245,7 @@ body {
   background: var(--c-accent-light); border-radius: var(--radius-md);
 }
 
+/* controls */
 .controls {
   position: fixed; bottom: 0; left: 0; right: 0;
   background: linear-gradient(transparent, var(--c-bg) 30%);
@@ -199,6 +262,7 @@ body {
 .ctrl-btn.is-primary:hover { filter: brightness(0.9) }
 .ctrl-btn:disabled { opacity: 0.35; pointer-events: none }
 
+/* misc */
 .sidebar-toggle {
   display: none; position: fixed; top: 10px; left: 12px; z-index: 102;
   background: var(--c-surface); border: 1px solid var(--c-border);
@@ -227,166 +291,195 @@ body {
   .reader { padding: var(--sp-xl) 20px 140px }
   .kb-hint { display: none }
   .theme-toggle { right: 52px }
+  .story-selector { margin: var(--sp-xl) auto; padding: 0 20px }
 }
 </style>
 </head>
 <body>
 
 <div id="app">
-  <div class="progress-track">
-    <div class="progress-fill" :style="{ width: progressPct + '%' }"></div>
-  </div>
-  <div class="progress-pct">{{ Math.round(progressPct) }}%</div>
+  <!-- Theme toggle (always visible) -->
   <button class="theme-toggle" @click="toggleTheme"
-    :title="'Switch to ' + (darkMode ? 'light' : 'dark')">{{ darkMode ? '\u2600\uFE0F' : '\uD83C\uDF19' }}</button>
-  <button class="sidebar-toggle" @click="sidebarOpen = !sidebarOpen">\u2630</button>
+    :title="'Switch to ' + (darkMode ? 'light' : 'dark')">
+    {{ darkMode ? '&#9728;&#65039;' : '&#127769;' }}
+  </button>
 
-  <div class="app">
-    <aside class="sidebar" :class="{ 'is-open': sidebarOpen }">
-      <div class="sidebar-title">Paragraphs</div>
-      <div v-for="(para, pi) in paragraphs" :key="pi"
-        class="para-card" :class="{ 'is-active': currentParaIndex === pi }"
-        @click="jumpToParagraph(pi)">
-        <span class="para-num">{{ pi + 1 }}</span>
-        <span class="para-preview">{{ para.preview }}</span>
-        <span v-if="paraHasImage(pi)" class="has-image-dot"></span>
-      </div>
-    </aside>
-
-    <main class="reader" ref="readerEl">
-      <h1 class="story-title">{{ storyTitle }}</h1>
-      <div class="reading-stats">{{ totalSentences }} sentences · ~{{ readingTime }} min read</div>
-      <div v-for="(para, pi) in paragraphs" :key="'p' + pi"
-        class="paragraph-block" :class="{ 'is-dimmed': focusMode }" :id="'para-' + pi">
-        <div v-for="(sent, si) in para.sentences" :key="'s' + pi + '-' + si"
-          class="sentence-wrap"
-          :class="{ 'is-focused': focusMode && currentParaIndex === pi && currentSentIndex === si }"
-          :id="'sent-' + pi + '-' + si">
-          <div v-if="getImage(pi, si)" class="img-slot">
-            <img :src="getImage(pi, si)" alt="Story illustration">
-          </div>
-          <div class="sentence-line">
-            <span class="sentence-text" @click="focusOn(pi, si)">{{ sent }}</span>
-          </div>
+  <!-- ════════════ STORY SELECTOR ════════════ -->
+  <template v-if="!activeStory">
+    <div class="story-selector">
+      <h1 class="selector-title">Story Reader</h1>
+      <p class="selector-subtitle">Choose a story to begin reading</p>
+      <div v-for="s in storyList" :key="s.id" class="story-card" @click="selectStory(s.id)">
+        <div class="story-card-title">{{ s.title }}</div>
+        <div class="story-card-meta">
+          {{ s.totalSentences }} sentences &middot; ~{{ s.readingTime }} min read
         </div>
       </div>
-    </main>
-  </div>
+    </div>
+  </template>
 
-  <div class="kb-hint" v-if="focusMode">
-    <kbd>&larr;</kbd> prev &nbsp; <kbd>&rarr;</kbd> next &nbsp; <kbd>Esc</kbd> exit
-  </div>
-  <div class="controls">
-    <button class="ctrl-btn" @click="prevSentence" :disabled="!focusMode || isFirst">&larr; Prev</button>
-    <button class="ctrl-btn is-primary" @click="toggleFocus">{{ focusMode ? 'Exit Focus' : 'Focus Mode' }}</button>
-    <button class="ctrl-btn" @click="nextSentence" :disabled="!focusMode || isLast">Next &rarr;</button>
-  </div>
+  <!-- ════════════ READER ════════════ -->
+  <template v-else>
+    <div class="progress-track">
+      <div class="progress-fill" :style="{ width: progressPct + '%' }"></div>
+    </div>
+    <div class="progress-pct">{{ Math.round(progressPct) }}%</div>
 
+    <button class="sidebar-toggle" @click="sidebarOpen = !sidebarOpen">&#9776;</button>
+
+    <div class="app">
+      <aside class="sidebar" :class="{ 'is-open': sidebarOpen }">
+        <button v-if="storyList.length > 1" class="back-btn" @click="goBack">&larr; All Stories</button>
+        <div class="sidebar-title">Paragraphs</div>
+        <div v-for="(para, pi) in activeStory.paragraphs" :key="pi"
+          class="para-card" :class="{ 'is-active': currentParaIndex === pi }"
+          @click="jumpToParagraph(pi)">
+          <span class="para-num">{{ pi + 1 }}</span>
+          <span class="para-preview">{{ para.preview }}</span>
+          <span v-if="paraHasImage(pi)" class="has-image-dot"></span>
+        </div>
+      </aside>
+
+      <main class="reader">
+        <h1 class="story-title">{{ activeStory.title }}</h1>
+        <div class="reading-stats">
+          {{ activeStory.totalSentences }} sentences &middot; ~{{ activeStory.readingTime }} min read
+        </div>
+        <div v-for="(para, pi) in activeStory.paragraphs" :key="'p' + pi"
+          class="paragraph-block" :class="{ 'is-dimmed': focusMode }" :id="'para-' + pi">
+          <div v-for="(sent, si) in para.sentences" :key="'s' + pi + '-' + si"
+            class="sentence-wrap"
+            :class="{ 'is-focused': focusMode && currentParaIndex === pi && currentSentIndex === si }"
+            :id="'sent-' + pi + '-' + si">
+            <div v-for="(img, ii) in sent.images" :key="'img' + ii" class="img-slot">
+              <img :src="img.src" :alt="img.alt">
+            </div>
+            <div class="sentence-line">
+              <span class="sentence-text" @click="focusOn(pi, si)">{{ sent.text }}</span>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div class="kb-hint" v-if="focusMode">
+      <kbd>&larr;</kbd> prev &nbsp; <kbd>&rarr;</kbd> next &nbsp; <kbd>Esc</kbd> exit
+    </div>
+    <div class="controls">
+      <button class="ctrl-btn" @click="prevSentence" :disabled="!focusMode || isFirst">&larr; Prev</button>
+      <button class="ctrl-btn is-primary" @click="toggleFocus">
+        {{ focusMode ? 'Exit Focus' : 'Focus Mode' }}
+      </button>
+      <button class="ctrl-btn" @click="nextSentence" :disabled="!focusMode || isLast">Next &rarr;</button>
+    </div>
+  </template>
 </div>
 
 <script type="module">
-import { createApp, ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
+import { createApp, ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 
-/* ═══════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    CONFIG
-   ═══════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 const CONFIG = Object.freeze({
-  storageKeys: { position: 'sr-pos', theme: 'sr-theme' },
+  storageKeys: { theme: 'sr-theme', lastStory: 'sr-last' },
+  posKeyPrefix: 'sr-pos-',
   wordsPerMinute: 200,
   scrollDebounceMs: 150,
   previewLength: 80,
 });
 
-/*  IMAGE_MAP — place images before specific sentences.
- *  Key format:  "paragraphIndex-sentenceIndex"
- *  Value:       image file path (relative to index.html)
- *
- *  Paragraph/sentence indices are 0-based. To figure out which
- *  index you need, open the app, hover a sentence, and check
- *  the DOM id (e.g. sent-3-0 = paragraph 3, sentence 0).
- *
- *  Currently placed at 6 key story beats:
- */
-const IMAGE_MAP = Object.freeze({
-  '0-0':  'img/image_1.jpg',   // Opening — Solid City
-  '3-0':  'img/image_2.jpg',   // The heat arrives, Bree melts
-  '6-0':  'img/image_3.jpg',   // Liquid Lake discovery
-  '9-0':  'img/image_4.jpg',   // The freeze machine
-  '16-0': 'img/image_5.jpg',   // Marco turns off the machine
-  '19-0': 'img/image_6.jpg',   // The new sign: MATTERVILLE
-});
+/* ═══════════════════════════════════════════════════════════
+   STORIES
+   ─────────────────────────────────────────────────────────
+   Each story is a { id, text } object. The `text` field
+   uses this format:
 
-/* ═══════════════════════════════════════
-   STORAGE — defensive, injectable
-   ═══════════════════════════════════════ */
-const storage = {
-  save(key, value) {
-    try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* silent */ }
+     Story Title                         ← first block = title
+
+     First paragraph of the story.       ← text paragraphs
+
+     ![Description](img/image_1.jpg)     ← image block (its own block)
+
+     Next paragraph — the image above    ← image attaches here
+     will display before its 1st sentence.
+
+   RULES:
+   • Blocks are separated by blank lines (double newline).
+   • An image block is a line matching: ![alt text](path/to/image.jpg)
+   • Image blocks attach to the FIRST sentence of the NEXT paragraph.
+   • Multiple image blocks before one paragraph all stack above it.
+   • If only 1 story exists, it auto-selects (no picker shown).
+   ═══════════════════════════════════════════════════════════ */
+const STORIES = [
+  {
+    id: 'manystars',
+    text: `
+    Eight Hundred Thousand Stars - By Larry Battle
+
+Pria had exactly one problem with the field trip to the Rubin Observatory: it was at night. She had been afraid of the dark since she was three, and she had told no one. She prepared a plan: stay near the lights, pretend to be brave, and sneak back to the bus before the main event.
+
+![Pria at the Entrance](img/story_2_image_1.jpg)
+
+"You seem quiet," her friend Marco said on the walk in.
+
+"I am thinking," Pria replied. What she was thinking was: *Run.*
+
+![Pria Inside the Bright Display Gallery](img/story_2_image_2.jpg)
+
+The observatory was huge. Doctor Ruiz, a woman with a very quick smile, led the class through a bright display room. Screens glowed with pictures of star clusters, strange galaxies, and long streaks of light. When the telescope finds something new, an alert reaches every scientist on Earth. Pria thought they were splendid. She started to relax.
+
+Then Doctor Ruiz said, "Now we will see what the telescope discovered. Please turn off the lights."
+
+Click. Darkness.
+
+Pria's throat tightened. A cold sensation swept through her. She scrambled sideways, knocked a chair into a metal shelf, and splashed her water bottle onto the floor. The chair skidded left. The bottle bounced twice. A shrill scraping noise filled the room. Everyone turned to look.
+
+![Pria's Panic in the Darkness](img/story_2_image_3.jpg)
+
+"Wrong door!" Pria said quickly, her face hot. "I was just reaching for—nothing. I was reaching for nothing." She heard the words come out and knew they made zero sense.
+
+Marco whispered, "That was the smoothest thing I have ever seen."
+
+"Thank you," Pria replied miserably.
+
+Doctor Ruiz did not scold her. She simply said, "This is a safe place. Please stay." Then she switched on the large screen.
+
+![The 800,000 Star Reveal](img/story_2_image_4.jpg)
+
+Eight hundred thousand blue-white dots bloomed across the display. Each dot was a star or galaxy the telescope had found in just one night. The room fell into stillness.
+
+Pria had never seen anything like it. The dots swirled and glittered, spreading like a living creature from edge to edge. One blinked. Another drifted. She forgot to be afraid.
+
+"That one could be a new planet," Doctor Ruiz said, pointing to a dim, gnarly cluster of gas near the center. "That glow at the left might be a star being born. Exactly three of these objects are completely unusual—unlike anything we have ever seen."
+
+"Three?" Pria said. Her voice came out soft and small.
+
+"Three," Doctor Ruiz replied with a joyful grin. "We wrote about them this morning. We misread one at first, but we found the mistake and fixed it. Good thing we double-checked." She paused. "A measure of careful work makes all the difference."
+
+Pria reached forward and touched the screen gently with her thumb. The glass was cool and smooth. She thought of what it would mean to discover something no one had ever seen—a real treasure, hidden in the darkness she feared.
+
+"Can I look through the telescope?" she asked. "The real one?"
+
+"Of course," said Doctor Ruiz. "But we must climb the tower first. It is dark up there too."
+
+Pria took a slow breath and thought of the three unknown objects. The adventure was waiting. She had left her fear on the steps below—a wonderful, strange, splendid position to be in.
+
+![Pria Decides to Face the Dark Again](img/story_2_image_5.jpg)
+
+"Good," she said. "Let us go."
+
+![The Summit Telescope and the Deep Dark](img/story_2_image_6.jpg)
+
+At the top, the sky spread wide and black. Stars twisted through the night. Pria put her eye to the eyepiece and gasped. She was no longer afraid of the dark. She was thrilled by it. The stillness up here did not exist to frighten her. It existed to show her what had been there all along.
+
+    `
   },
-  load(key, fallback) {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw !== null ? JSON.parse(raw) : fallback;
-    } catch { return fallback; }
-  },
-};
+  {
+    id: 'matterville',
+    text: `\u201CThe Three Kingdoms of Matterville - By Larry Battle\u201D
 
-/* ═══════════════════════════════════════
-   CONTRACTS — sentence splitting
-   ═══════════════════════════════════════
-   Handles quoted dialogue properly:
-   "Bree!" Marco let out a shriek.  → keeps "Bree!" attached
-   "I'm fine, Marco," she called.   → one sentence
-   ═══════════════════════════════════════ */
-function splitSentences(text) {
-  const results = [];
-  let buf = '';
-  let inQ = false; // inside smart or straight quotes
-
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    const isOpen  = ch === '\u201C' || (ch === '"' && !inQ);
-    const isClose = ch === '\u201D' || (ch === '"' && inQ);
-
-    if (isOpen)  { inQ = true;  buf += ch; continue; }
-    if (isClose) { inQ = false; buf += ch;
-      // after closing quote, if preceded by terminal punct → possible break
-      const p = buf.length >= 2 ? buf[buf.length - 2] : '';
-      if ('.!?'.includes(p)) {
-        let j = i + 1;
-        while (j < text.length && text[j] === ' ') j++;
-        if (j >= text.length || text[j] === text[j].toUpperCase()) {
-          results.push(buf.trim()); buf = '';
-          if (text[i + 1] === ' ') i++;
-        }
-      }
-      continue;
-    }
-
-    buf += ch;
-
-    if (!inQ && '.!?'.includes(ch)) {
-      // If next char is a closing quote, let quote handler finish
-      if (i + 1 < text.length && (text[i + 1] === '\u201D' || text[i + 1] === '"')) continue;
-      // peek ahead for sentence boundary
-      let j = i + 1;
-      while (j < text.length && text[j] === ' ') j++;
-      const next = text[j];
-      if (j >= text.length || (next >= 'A' && next <= 'Z') ||
-          next === '\u201C' || next === '"') {
-        results.push(buf.trim()); buf = '';
-        if (text[i + 1] === ' ') i++;
-      }
-    }
-  }
-  if (buf.trim()) results.push(buf.trim());
-  return results.filter(s => s.length > 0);
-}
-
-/* ═══════════════════════════════════════
-   STORY DATA
-   ═══════════════════════════════════════ */
-const STORY_RAW = `\u201CThe Three Kingdoms of Matterville\u201D
+![Solid City](img/image_1.jpg)
 
 Marco lived in Solid City, where every brick and block sat in a neat stack. He liked the strict rules. Nothing moved. Nothing changed. Three kingdoms shared the land \u2014 Solid City, Liquid Lake, and Gas Galaxy \u2014 but they never mixed.
 
@@ -394,17 +487,23 @@ Marco lived in Solid City, where every brick and block sat in a neat stack. He l
 
 Then the heat came.
 
+![The heat arrives](img/image_2.jpg)
+
 It crept through the streets like a slow fire. Marco saw his neighbor Bree start to drip. Her sharp edges went soft. She splashed into a puddle on the ground.
 
 \u201CBree!\u201D Marco let out a shrill shriek. He knelt beside the puddle, but she swirled away, sliding downhill toward Liquid Lake.
 
 He scrambled after her, tripping over a gnarly tree root near the middle of the path. A gnat buzzed past his ear \u2014 annoying little thing. Marco\u2019s foot slipped on wet grass, and he grabbed a branch with his thumb and wrist to stop from falling.
 
+![Liquid Lake](img/image_3.jpg)
+
 At Liquid Lake, he found Bree floating cheerfully with the Lake citizens. \u201CI\u2019m fine, Marco,\u201D she called. \u201CIt\u2019s actually wonderful down here.\u201D
 
 \u201CThis is wrong!\u201D he shouted. \u201CYou shrank from a whole person into... splash!\u201D
 
 Bree shrugged \u2014 a ripple across her surface. \u201CI didn\u2019t disappear. I just shifted.\u201D
+
+![The freeze machine](img/image_4.jpg)
 
 But Marco knew better. He climbed the frost tower on the north cliff and cranked the huge freeze machine, prepared to blast cold across all three kingdoms. Ice cracked and split down the glass pipe. A quick blue glow swept over everything.
 
@@ -420,9 +519,13 @@ That stubborn gnat landed on his nose again. Marco squinted at it. The gnat had 
 
 He thought about Bree \u2014 still herself, just flowing. He thought about the Gas citizens \u2014 still themselves, just drifting. Slowly, a measure of boldness grew in his chest.
 
+![Marco steps outside](img/image_5.jpg)
+
 Marco turned off the machine. He took a deep breath and stepped outside into the swirling warm air. For the first time, he let the heat twist through him. His edges went soft. His feet tingled. He didn\u2019t fight it.
 
 \u201CThis is the most unusual treasure,\u201D he said quietly. \u201CWe\u2019re all the same stuff.\u201D
+
+![Matterville](img/image_6.jpg)
 
 The darkness had lifted from his face. He picked up a stick and, with great care, scratched a new sign into the ground: MATTERVILLE.
 
@@ -434,66 +537,203 @@ Bree snorted. \u201CSlight.\u201D
 
 Above them, the sky glowed gold, and a gentle breeze drifted through Matterville \u2014 not Solid, not Liquid, not Gas. Just home.
 
-A question hung in the stillness: what would he become next? Marco didn\u2019t know. For the first time, that felt like joy.`;
+A question hung in the stillness: what would he become next? Marco didn\u2019t know. For the first time, that felt like joy.`,
+  },
+
+  // ── ADD MORE STORIES HERE ──────────────────────────────
+  // { id: 'another-story', text: `Title\n\nParagraph one.\n\n![img](path.jpg)\n\nParagraph two.` },
+];
+
+/* ═══════════════════════════════════════════════════════════
+   STORAGE — defensive, injectable
+   ═══════════════════════════════════════════════════════════ */
+const storage = {
+  save(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* silent */ }
+  },
+  load(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw !== null ? JSON.parse(raw) : fallback;
+    } catch { return fallback; }
+  },
+};
+
+/* ═══════════════════════════════════════════════════════════
+   CONTRACTS — sentence splitting + story parsing
+   ═══════════════════════════════════════════════════════════ */
+const IMG_RE = /^!\[([^\]]*)\]\(([^)]+)\)$/;
+
+function splitSentences(text) {
+  const results = [];
+  let buf = '';
+  let inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const isOpen  = ch === '\u201C' || (ch === '"' && !inQ);
+    const isClose = ch === '\u201D' || (ch === '"' && inQ);
+    if (isOpen)  { inQ = true;  buf += ch; continue; }
+    if (isClose) { inQ = false; buf += ch;
+      const p = buf.length >= 2 ? buf[buf.length - 2] : '';
+      if ('.!?'.includes(p)) {
+        let j = i + 1;
+        while (j < text.length && text[j] === ' ') j++;
+        if (j >= text.length || text[j] === text[j].toUpperCase()) {
+          results.push(buf.trim()); buf = '';
+          if (text[i + 1] === ' ') i++;
+        }
+      }
+      continue;
+    }
+    buf += ch;
+    if (!inQ && '.!?'.includes(ch)) {
+      if (i + 1 < text.length && (text[i + 1] === '\u201D' || text[i + 1] === '"')) continue;
+      let j = i + 1;
+      while (j < text.length && text[j] === ' ') j++;
+      const next = text[j];
+      if (j >= text.length || (next >= 'A' && next <= 'Z') || next === '\u201C' || next === '"') {
+        results.push(buf.trim()); buf = '';
+        if (text[i + 1] === ' ') i++;
+      }
+    }
+  }
+  if (buf.trim()) results.push(buf.trim());
+  return results.filter(s => s.length > 0);
+}
 
 function parseStory(raw) {
   const blocks = raw.trim().split(/\n\n+/);
   const title = blocks[0].replace(/[\u201C\u201D"]/g, '').trim();
-  const paragraphs = blocks.slice(1).map(p => {
-    const clean = p.trim();
-    const sentences = splitSentences(clean);
-    return {
-      raw: clean,
-      sentences: sentences.length ? sentences : [clean],
-      preview: clean.slice(0, CONFIG.previewLength) + (clean.length > CONFIG.previewLength ? '\u2026' : ''),
-    };
-  });
+  const paragraphs = [];
+  let pendingImages = [];
+
+  for (let i = 1; i < blocks.length; i++) {
+    const block = blocks[i].trim();
+    const imgMatch = block.match(IMG_RE);
+    if (imgMatch) {
+      pendingImages.push({ alt: imgMatch[1], src: imgMatch[2] });
+      continue;
+    }
+    // Text paragraph — may also start with image lines
+    const lines = block.split('\n');
+    const localImages = [...pendingImages];
+    pendingImages = [];
+    const textLines = [];
+    for (const line of lines) {
+      const lm = line.trim().match(IMG_RE);
+      if (lm && textLines.length === 0) {
+        localImages.push({ alt: lm[1], src: lm[2] });
+      } else {
+        textLines.push(line);
+      }
+    }
+    const text = textLines.join(' ').trim();
+    if (!text) continue;
+    const sentTexts = splitSentences(text);
+    const sentences = sentTexts.map((s, idx) => ({
+      text: s,
+      images: idx === 0 ? localImages : [],
+    }));
+    paragraphs.push({
+      sentences,
+      preview: text.slice(0, CONFIG.previewLength) + (text.length > CONFIG.previewLength ? '\u2026' : ''),
+    });
+  }
+
   const totalSentences = paragraphs.reduce((s, p) => s + p.sentences.length, 0);
   const wordCount = raw.split(/\s+/).length;
   const readingTime = Math.max(1, Math.round(wordCount / CONFIG.wordsPerMinute));
   return { title, paragraphs, totalSentences, readingTime };
 }
 
-/* ═══════════════════════════════════════
-   APP
-   ═══════════════════════════════════════ */
-const story = parseStory(STORY_RAW);
+/* ═══════════════════════════════════════════════════════════
+   PRE-PARSE all stories (cheap, do once)
+   ═══════════════════════════════════════════════════════════ */
+const parsedStories = STORIES.map(s => ({ id: s.id, ...parseStory(s.text) }));
 
+/* ═══════════════════════════════════════════════════════════
+   APP
+   ═══════════════════════════════════════════════════════════ */
 createApp({
   setup() {
-    const { title: storyTitle, paragraphs, totalSentences, readingTime } = story;
+    // ── Story list for selector ──
+    const storyList = parsedStories.map(s => ({
+      id: s.id, title: s.title,
+      totalSentences: s.totalSentences, readingTime: s.readingTime,
+    }));
 
-    const savedPos = storage.load(CONFIG.storageKeys.position, { pi: 0, si: 0, focus: false });
+    // ── Auto-select if single story ──
+    const initialId = storyList.length === 1
+      ? storyList[0].id
+      : storage.load(CONFIG.storageKeys.lastStory, null);
+    const selectedStoryId = ref(initialId);
+
+    const activeStory = computed(() =>
+      selectedStoryId.value ? parsedStories.find(s => s.id === selectedStoryId.value) || null : null
+    );
+
+    function selectStory(id) {
+      selectedStoryId.value = id;
+      storage.save(CONFIG.storageKeys.lastStory, id);
+      resetPosition(id);
+    }
+    function goBack() {
+      selectedStoryId.value = null;
+      focusMode.value = false;
+    }
+
+    // ── Position (per-story) ──
+    function posKey(id) { return CONFIG.posKeyPrefix + (id || 'x'); }
+    function loadPos(id) {
+      return storage.load(posKey(id), { pi: 0, si: 0, focus: false });
+    }
+    function resetPosition(id) {
+      const saved = loadPos(id);
+      const story = parsedStories.find(s => s.id === id);
+      if (!story) return;
+      const maxPi = story.paragraphs.length - 1;
+      const pi = Math.min(saved.pi, maxPi);
+      const maxSi = story.paragraphs[pi].sentences.length - 1;
+      currentParaIndex.value = pi;
+      currentSentIndex.value = Math.min(saved.si, maxSi);
+      focusMode.value = saved.focus;
+      if (saved.focus) scrollToSent(pi, Math.min(saved.si, maxSi));
+    }
+
+    const savedPos = initialId ? loadPos(initialId) : { pi: 0, si: 0, focus: false };
     const focusMode = ref(savedPos.focus);
-    const currentParaIndex = ref(Math.min(savedPos.pi, paragraphs.length - 1));
-    const currentSentIndex = ref(Math.min(savedPos.si,
-      paragraphs[Math.min(savedPos.pi, paragraphs.length - 1)].sentences.length - 1));
+    const currentParaIndex = ref(savedPos.pi);
+    const currentSentIndex = ref(savedPos.si);
     const sidebarOpen = ref(false);
-    const readerEl = ref(null);
     const darkMode = ref(storage.load(CONFIG.storageKeys.theme, false));
     const scrollProgress = ref(0);
 
     if (darkMode.value) document.documentElement.setAttribute('data-theme', 'dark');
 
+    // ── Progress ──
     function flatIndex(pi, si) {
+      if (!activeStory.value) return 0;
       let idx = 0;
-      for (let i = 0; i < pi; i++) idx += paragraphs[i].sentences.length;
+      for (let i = 0; i < pi; i++) idx += activeStory.value.paragraphs[i].sentences.length;
       return idx + si;
     }
-
     const progressPct = computed(() => {
+      if (!activeStory.value) return 0;
       if (focusMode.value) {
-        return ((flatIndex(currentParaIndex.value, currentSentIndex.value) + 1) / totalSentences) * 100;
+        return ((flatIndex(currentParaIndex.value, currentSentIndex.value) + 1)
+          / activeStory.value.totalSentences) * 100;
       }
       return scrollProgress.value;
     });
-
     const isFirst = computed(() => currentParaIndex.value === 0 && currentSentIndex.value === 0);
     const isLast = computed(() => {
-      const lp = paragraphs.length - 1;
-      return currentParaIndex.value === lp && currentSentIndex.value === paragraphs[lp].sentences.length - 1;
+      if (!activeStory.value) return true;
+      const lp = activeStory.value.paragraphs.length - 1;
+      return currentParaIndex.value === lp &&
+        currentSentIndex.value === activeStory.value.paragraphs[lp].sentences.length - 1;
     });
 
+    // ── Scroll tracking ──
     let scrollTimer = null;
     function onScroll() {
       clearTimeout(scrollTimer);
@@ -503,48 +743,64 @@ createApp({
       }, CONFIG.scrollDebounceMs);
     }
 
-    function scrollTo(pi, si) {
+    // ── Navigation ──
+    function scrollToSent(pi, si) {
       nextTick(() => {
         const el = document.getElementById(`sent-${pi}-${si}`);
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       });
     }
-
-    function focusOn(pi, si) { focusMode.value = true; currentParaIndex.value = pi; currentSentIndex.value = si; scrollTo(pi, si); }
-    function toggleFocus() { focusMode.value ? (focusMode.value = false) : (focusMode.value = true, scrollTo(currentParaIndex.value, currentSentIndex.value)); }
-
+    function focusOn(pi, si) {
+      focusMode.value = true; currentParaIndex.value = pi;
+      currentSentIndex.value = si; scrollToSent(pi, si);
+    }
+    function toggleFocus() {
+      focusMode.value
+        ? (focusMode.value = false)
+        : (focusMode.value = true, scrollToSent(currentParaIndex.value, currentSentIndex.value));
+    }
     function nextSentence() {
-      if (!focusMode.value) return;
+      if (!focusMode.value || !activeStory.value) return;
+      const paras = activeStory.value.paragraphs;
       let pi = currentParaIndex.value, si = currentSentIndex.value;
-      si < paragraphs[pi].sentences.length - 1 ? si++ : pi < paragraphs.length - 1 ? (pi++, si = 0) : null;
-      currentParaIndex.value = pi; currentSentIndex.value = si; scrollTo(pi, si);
+      si < paras[pi].sentences.length - 1 ? si++ : pi < paras.length - 1 ? (pi++, si = 0) : null;
+      currentParaIndex.value = pi; currentSentIndex.value = si; scrollToSent(pi, si);
     }
     function prevSentence() {
-      if (!focusMode.value) return;
+      if (!focusMode.value || !activeStory.value) return;
+      const paras = activeStory.value.paragraphs;
       let pi = currentParaIndex.value, si = currentSentIndex.value;
-      si > 0 ? si-- : pi > 0 ? (pi--, si = paragraphs[pi].sentences.length - 1) : null;
-      currentParaIndex.value = pi; currentSentIndex.value = si; scrollTo(pi, si);
+      si > 0 ? si-- : pi > 0 ? (pi--, si = paras[pi].sentences.length - 1) : null;
+      currentParaIndex.value = pi; currentSentIndex.value = si; scrollToSent(pi, si);
     }
     function jumpToParagraph(pi) {
       currentParaIndex.value = pi; currentSentIndex.value = 0;
-      focusMode.value = true; sidebarOpen.value = false; scrollTo(pi, 0);
+      focusMode.value = true; sidebarOpen.value = false; scrollToSent(pi, 0);
     }
 
-    function getImage(pi, si) { return IMAGE_MAP[`${pi}-${si}`] || null; }
-    function paraHasImage(pi) { return Object.keys(IMAGE_MAP).some(k => k.startsWith(`${pi}-`)); }
+    // ── Image helpers ──
+    function paraHasImage(pi) {
+      if (!activeStory.value) return false;
+      return activeStory.value.paragraphs[pi].sentences.some(s => s.images.length > 0);
+    }
 
+    // ── Theme ──
     function toggleTheme() {
       darkMode.value = !darkMode.value;
       document.documentElement.setAttribute('data-theme', darkMode.value ? 'dark' : 'light');
     }
 
-    // Persistence
+    // ── Persistence ──
     watch([currentParaIndex, currentSentIndex, focusMode], ([pi, si, fm]) => {
-      storage.save(CONFIG.storageKeys.position, { pi, si, focus: fm });
+      if (selectedStoryId.value) {
+        storage.save(posKey(selectedStoryId.value), { pi, si, focus: fm });
+      }
     });
     watch(darkMode, v => storage.save(CONFIG.storageKeys.theme, v));
 
+    // ── Keyboard ──
     function onKey(e) {
+      if (!activeStory.value) return;
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); nextSentence(); }
       else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prevSentence(); }
       else if (e.key === 'Escape') focusMode.value = false;
@@ -553,7 +809,9 @@ createApp({
     onMounted(() => {
       window.addEventListener('keydown', onKey);
       window.addEventListener('scroll', onScroll, { passive: true });
-      if (focusMode.value) scrollTo(currentParaIndex.value, currentSentIndex.value);
+      if (activeStory.value && focusMode.value) {
+        scrollToSent(currentParaIndex.value, currentSentIndex.value);
+      }
     });
     onUnmounted(() => {
       window.removeEventListener('keydown', onKey);
@@ -561,12 +819,12 @@ createApp({
     });
 
     return {
-      storyTitle, paragraphs, totalSentences, readingTime,
+      storyList, activeStory, selectedStoryId,
+      selectStory, goBack,
       focusMode, currentParaIndex, currentSentIndex,
-      sidebarOpen, progressPct, isFirst, isLast,
-      readerEl, darkMode,
+      sidebarOpen, progressPct, isFirst, isLast, darkMode,
       focusOn, toggleFocus, nextSentence, prevSentence, jumpToParagraph,
-      getImage, paraHasImage, toggleTheme,
+      paraHasImage, toggleTheme,
     };
   },
 }).mount('#app');
