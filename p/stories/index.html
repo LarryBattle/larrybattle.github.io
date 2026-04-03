@@ -1,0 +1,575 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Story Reader — The Three Kingdoms of Matterville</title>
+<script type="importmap">
+{ "imports": { "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.prod.js" } }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- ═══════════════════════════════════════════════════════
+     COMPONENT MAP
+     progress:   .progress-track, .progress-fill, .progress-pct
+     layout:     .app, .sidebar, .reader
+     sidebar:    .sidebar-title, .para-card, .para-card.is-active, .has-image-dot
+     sentences:  .paragraph-block, .sentence-wrap, .sentence-wrap.is-focused,
+                 .sentence-text, .img-slot
+     controls:   .controls, .ctrl-btn, .ctrl-btn.is-primary
+     misc:       .sidebar-toggle, .kb-hint, .reading-stats, .theme-toggle
+     STATES:     .is-active, .is-focused, .is-dimmed, .is-open
+     LAYOUTS:    sidebar + main two-col, single-col mobile
+═════════════════════════════════════════════════════════ -->
+<style>
+/* ── 1. :root variables ── */
+:root {
+  --c-bg: #faf6f0;
+  --c-bg-sidebar: #f2ece4;
+  --c-surface: #ffffff;
+  --c-text: #2c2418;
+  --c-text-dim: #a89e90;
+  --c-accent: #c0573b;
+  --c-accent-light: #f5ddd6;
+  --c-accent-glow: rgba(192,87,59,.12);
+  --c-border: #e0d8cc;
+  --c-shadow: rgba(44,36,24,.08);
+  --c-gradient-end: #e88a6e;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 999px;
+  --shadow-sm: 0 1px 4px var(--c-shadow);
+  --font-body: 'Literata', Georgia, serif;
+  --font-ui: 'DM Sans', system-ui, sans-serif;
+  --fs-sm: 0.65rem;
+  --fs-base: 1.06rem;
+  --fs-lg: 1.8rem;
+  --sp-xs: 2px;
+  --sp-sm: 6px;
+  --sp-md: 12px;
+  --sp-lg: 28px;
+  --sp-xl: 48px;
+  --transition-fast: 0.2s ease;
+  --transition-med: 0.35s cubic-bezier(.4,0,.2,1);
+  --sidebar-w: 260px;
+  --reader-max-w: 720px;
+  --progress-h: 4px;
+  --img-max-h: 360px;
+  --dim-opacity: 0.18;
+  --dim-blur: 0.4px;
+}
+[data-theme="dark"] {
+  --c-bg: #1a1714;
+  --c-bg-sidebar: #22201b;
+  --c-surface: #2a2722;
+  --c-text: #e8e0d4;
+  --c-text-dim: #7a7164;
+  --c-accent: #e07a5a;
+  --c-accent-light: #3d2a22;
+  --c-accent-glow: rgba(224,122,90,.15);
+  --c-border: #3a352e;
+  --c-shadow: rgba(0,0,0,.3);
+  --c-gradient-end: #c0573b;
+}
+
+/* ── 2. Reset / base ── */
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0 }
+html { font-size: 17px; scroll-behavior: smooth }
+body {
+  background: var(--c-bg); color: var(--c-text);
+  font-family: var(--font-body); line-height: 1.75; min-height: 100vh;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+/* ── 3. Layout ── */
+.app { display: flex; min-height: 100vh; padding-top: calc(var(--progress-h) + 2px) }
+
+/* ── 4. Components ── */
+.progress-track {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--progress-h); background: var(--c-border); z-index: 100;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--c-accent), var(--c-gradient-end));
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  transition: width var(--transition-med);
+}
+.progress-pct {
+  position: fixed; top: var(--sp-sm); right: 16px;
+  font-family: var(--font-ui); font-size: var(--fs-sm); font-weight: 600;
+  color: var(--c-accent); z-index: 101; letter-spacing: 0.03em;
+}
+
+.sidebar {
+  width: var(--sidebar-w); min-width: var(--sidebar-w);
+  background: var(--c-bg-sidebar); border-right: 1px solid var(--c-border);
+  padding: var(--sp-lg) 18px; overflow-y: auto;
+  position: sticky; top: calc(var(--progress-h) + 2px);
+  height: calc(100vh - var(--progress-h) - 2px);
+  display: flex; flex-direction: column; gap: var(--sp-md);
+  transition: transform 0.3s ease, background var(--transition-fast);
+}
+.sidebar-title {
+  font-family: var(--font-ui); font-size: var(--fs-sm); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.12em; color: var(--c-text-dim);
+  margin-bottom: var(--sp-sm);
+}
+.para-card {
+  padding: 10px var(--sp-md); border-radius: var(--radius-md); cursor: pointer;
+  font-family: var(--font-ui); font-size: 0.75rem; line-height: 1.5;
+  color: var(--c-text-dim); transition: all var(--transition-fast);
+  border: 1px solid transparent; position: relative;
+  display: flex; align-items: flex-start; gap: var(--sp-sm);
+}
+.para-card:hover { background: var(--c-surface); border-color: var(--c-border); color: var(--c-text) }
+.para-card.is-active {
+  background: var(--c-surface); border-color: var(--c-accent-light);
+  color: var(--c-text); box-shadow: var(--shadow-sm);
+}
+.para-num { font-weight: 600; color: var(--c-accent); flex-shrink: 0; min-width: 18px }
+.para-preview {
+  display: -webkit-box; -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical; overflow: hidden; flex: 1;
+}
+.has-image-dot {
+  width: 6px; height: 6px; border-radius: var(--radius-lg);
+  background: var(--c-accent); flex-shrink: 0; margin-top: 5px;
+}
+
+.theme-toggle {
+  position: fixed; top: 10px; right: 72px; z-index: 101;
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: var(--radius-md); width: 34px; height: 34px; cursor: pointer;
+  font-size: 1rem; display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow-sm); transition: all var(--transition-fast); color: var(--c-text);
+}
+.theme-toggle:hover { border-color: var(--c-accent) }
+
+.reader { flex: 1; max-width: var(--reader-max-w); margin: 0 auto; padding: var(--sp-xl) 40px 140px }
+.story-title {
+  font-family: var(--font-body); font-size: var(--fs-lg); font-weight: 600;
+  text-align: center; margin-bottom: var(--sp-xl); color: var(--c-text);
+  letter-spacing: -0.01em; line-height: 1.3;
+}
+.reading-stats {
+  text-align: center; font-family: var(--font-ui); font-size: var(--fs-sm);
+  color: var(--c-text-dim); margin-top: -30px; margin-bottom: var(--sp-xl);
+  letter-spacing: 0.02em;
+}
+
+.paragraph-block { margin-bottom: 32px }
+.paragraph-block.is-dimmed .sentence-wrap:not(.is-focused) .sentence-text {
+  opacity: var(--dim-opacity); filter: blur(var(--dim-blur));
+}
+
+.sentence-wrap { position: relative; display: block; margin-bottom: var(--sp-xs) }
+.sentence-wrap .img-slot {
+  margin: 10px 0; text-align: center; position: relative; display: inline-block;
+}
+.sentence-wrap .img-slot img {
+  max-width: 100%; max-height: var(--img-max-h);
+  border-radius: var(--radius-md); box-shadow: var(--shadow-sm); object-fit: contain;
+}
+.sentence-line { display: flex; align-items: flex-start; gap: var(--sp-sm); position: relative }
+.sentence-text {
+  padding: 4px var(--sp-sm); border-radius: var(--radius-sm); cursor: pointer;
+  transition: all 0.3s ease; flex: 1;
+}
+.sentence-text:hover { background: var(--c-accent-glow) }
+.sentence-wrap.is-focused .sentence-text {
+  background: var(--c-accent-light); border-radius: var(--radius-md);
+}
+
+.controls {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: linear-gradient(transparent, var(--c-bg) 30%);
+  padding: 20px 0 24px; display: flex; justify-content: center; gap: 10px; z-index: 50;
+}
+.ctrl-btn {
+  font-family: var(--font-ui); font-size: 0.8rem; font-weight: 500;
+  padding: 10px 22px; border-radius: var(--radius-lg);
+  border: 1px solid var(--c-border); background: var(--c-surface);
+  color: var(--c-text); cursor: pointer; transition: all 0.15s ease; box-shadow: var(--shadow-sm);
+}
+.ctrl-btn:hover { border-color: var(--c-accent); color: var(--c-accent) }
+.ctrl-btn.is-primary { background: var(--c-accent); color: #fff; border-color: var(--c-accent) }
+.ctrl-btn.is-primary:hover { filter: brightness(0.9) }
+.ctrl-btn:disabled { opacity: 0.35; pointer-events: none }
+
+.sidebar-toggle {
+  display: none; position: fixed; top: 10px; left: 12px; z-index: 102;
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: var(--radius-md); width: 34px; height: 34px; cursor: pointer;
+  font-size: 1rem; box-shadow: var(--shadow-sm); color: var(--c-text);
+}
+.kb-hint {
+  position: fixed; bottom: 76px; left: 50%; transform: translateX(-50%);
+  font-family: var(--font-ui); font-size: var(--fs-sm);
+  color: var(--c-text-dim); letter-spacing: 0.04em; opacity: 0.7;
+}
+.kb-hint kbd {
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm); padding: 1px 5px;
+  font-family: inherit; font-size: 0.6rem; margin: 0 1px;
+}
+
+/* ── 6. @media ── */
+@media (max-width: 800px) {
+  .sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; z-index: 90;
+    transform: translateX(-100%); padding-top: var(--sp-xl);
+  }
+  .sidebar.is-open { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,.12) }
+  .sidebar-toggle { display: flex; align-items: center; justify-content: center }
+  .reader { padding: var(--sp-xl) 20px 140px }
+  .kb-hint { display: none }
+  .theme-toggle { right: 52px }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="progress-track">
+    <div class="progress-fill" :style="{ width: progressPct + '%' }"></div>
+  </div>
+  <div class="progress-pct">{{ Math.round(progressPct) }}%</div>
+  <button class="theme-toggle" @click="toggleTheme"
+    :title="'Switch to ' + (darkMode ? 'light' : 'dark')">{{ darkMode ? '\u2600\uFE0F' : '\uD83C\uDF19' }}</button>
+  <button class="sidebar-toggle" @click="sidebarOpen = !sidebarOpen">\u2630</button>
+
+  <div class="app">
+    <aside class="sidebar" :class="{ 'is-open': sidebarOpen }">
+      <div class="sidebar-title">Paragraphs</div>
+      <div v-for="(para, pi) in paragraphs" :key="pi"
+        class="para-card" :class="{ 'is-active': currentParaIndex === pi }"
+        @click="jumpToParagraph(pi)">
+        <span class="para-num">{{ pi + 1 }}</span>
+        <span class="para-preview">{{ para.preview }}</span>
+        <span v-if="paraHasImage(pi)" class="has-image-dot"></span>
+      </div>
+    </aside>
+
+    <main class="reader" ref="readerEl">
+      <h1 class="story-title">{{ storyTitle }}</h1>
+      <div class="reading-stats">{{ totalSentences }} sentences · ~{{ readingTime }} min read</div>
+      <div v-for="(para, pi) in paragraphs" :key="'p' + pi"
+        class="paragraph-block" :class="{ 'is-dimmed': focusMode }" :id="'para-' + pi">
+        <div v-for="(sent, si) in para.sentences" :key="'s' + pi + '-' + si"
+          class="sentence-wrap"
+          :class="{ 'is-focused': focusMode && currentParaIndex === pi && currentSentIndex === si }"
+          :id="'sent-' + pi + '-' + si">
+          <div v-if="getImage(pi, si)" class="img-slot">
+            <img :src="getImage(pi, si)" alt="Story illustration">
+          </div>
+          <div class="sentence-line">
+            <span class="sentence-text" @click="focusOn(pi, si)">{{ sent }}</span>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="kb-hint" v-if="focusMode">
+    <kbd>&larr;</kbd> prev &nbsp; <kbd>&rarr;</kbd> next &nbsp; <kbd>Esc</kbd> exit
+  </div>
+  <div class="controls">
+    <button class="ctrl-btn" @click="prevSentence" :disabled="!focusMode || isFirst">&larr; Prev</button>
+    <button class="ctrl-btn is-primary" @click="toggleFocus">{{ focusMode ? 'Exit Focus' : 'Focus Mode' }}</button>
+    <button class="ctrl-btn" @click="nextSentence" :disabled="!focusMode || isLast">Next &rarr;</button>
+  </div>
+
+</div>
+
+<script type="module">
+import { createApp, ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
+
+/* ═══════════════════════════════════════
+   CONFIG
+   ═══════════════════════════════════════ */
+const CONFIG = Object.freeze({
+  storageKeys: { position: 'sr-pos', theme: 'sr-theme' },
+  wordsPerMinute: 200,
+  scrollDebounceMs: 150,
+  previewLength: 80,
+});
+
+/*  IMAGE_MAP — place images before specific sentences.
+ *  Key format:  "paragraphIndex-sentenceIndex"
+ *  Value:       image file path (relative to index.html)
+ *
+ *  Paragraph/sentence indices are 0-based. To figure out which
+ *  index you need, open the app, hover a sentence, and check
+ *  the DOM id (e.g. sent-3-0 = paragraph 3, sentence 0).
+ *
+ *  Currently placed at 6 key story beats:
+ */
+const IMAGE_MAP = Object.freeze({
+  '0-0':  'img/image_1.jpg',   // Opening — Solid City
+  '3-0':  'img/image_2.jpg',   // The heat arrives, Bree melts
+  '6-0':  'img/image_3.jpg',   // Liquid Lake discovery
+  '9-0':  'img/image_4.jpg',   // The freeze machine
+  '16-0': 'img/image_5.jpg',   // Marco turns off the machine
+  '19-0': 'img/image_6.jpg',   // The new sign: MATTERVILLE
+});
+
+/* ═══════════════════════════════════════
+   STORAGE — defensive, injectable
+   ═══════════════════════════════════════ */
+const storage = {
+  save(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* silent */ }
+  },
+  load(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw !== null ? JSON.parse(raw) : fallback;
+    } catch { return fallback; }
+  },
+};
+
+/* ═══════════════════════════════════════
+   CONTRACTS — sentence splitting
+   ═══════════════════════════════════════
+   Handles quoted dialogue properly:
+   "Bree!" Marco let out a shriek.  → keeps "Bree!" attached
+   "I'm fine, Marco," she called.   → one sentence
+   ═══════════════════════════════════════ */
+function splitSentences(text) {
+  const results = [];
+  let buf = '';
+  let inQ = false; // inside smart or straight quotes
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const isOpen  = ch === '\u201C' || (ch === '"' && !inQ);
+    const isClose = ch === '\u201D' || (ch === '"' && inQ);
+
+    if (isOpen)  { inQ = true;  buf += ch; continue; }
+    if (isClose) { inQ = false; buf += ch;
+      // after closing quote, if preceded by terminal punct → possible break
+      const p = buf.length >= 2 ? buf[buf.length - 2] : '';
+      if ('.!?'.includes(p)) {
+        let j = i + 1;
+        while (j < text.length && text[j] === ' ') j++;
+        if (j >= text.length || text[j] === text[j].toUpperCase()) {
+          results.push(buf.trim()); buf = '';
+          if (text[i + 1] === ' ') i++;
+        }
+      }
+      continue;
+    }
+
+    buf += ch;
+
+    if (!inQ && '.!?'.includes(ch)) {
+      // If next char is a closing quote, let quote handler finish
+      if (i + 1 < text.length && (text[i + 1] === '\u201D' || text[i + 1] === '"')) continue;
+      // peek ahead for sentence boundary
+      let j = i + 1;
+      while (j < text.length && text[j] === ' ') j++;
+      const next = text[j];
+      if (j >= text.length || (next >= 'A' && next <= 'Z') ||
+          next === '\u201C' || next === '"') {
+        results.push(buf.trim()); buf = '';
+        if (text[i + 1] === ' ') i++;
+      }
+    }
+  }
+  if (buf.trim()) results.push(buf.trim());
+  return results.filter(s => s.length > 0);
+}
+
+/* ═══════════════════════════════════════
+   STORY DATA
+   ═══════════════════════════════════════ */
+const STORY_RAW = `\u201CThe Three Kingdoms of Matterville\u201D
+
+Marco lived in Solid City, where every brick and block sat in a neat stack. He liked the strict rules. Nothing moved. Nothing changed. Three kingdoms shared the land \u2014 Solid City, Liquid Lake, and Gas Galaxy \u2014 but they never mixed.
+
+\u201CThings should stay exactly how they are,\u201D Marco said each morning. He stood at his window, looked at the still rows of houses, and felt good.
+
+Then the heat came.
+
+It crept through the streets like a slow fire. Marco saw his neighbor Bree start to drip. Her sharp edges went soft. She splashed into a puddle on the ground.
+
+\u201CBree!\u201D Marco let out a shrill shriek. He knelt beside the puddle, but she swirled away, sliding downhill toward Liquid Lake.
+
+He scrambled after her, tripping over a gnarly tree root near the middle of the path. A gnat buzzed past his ear \u2014 annoying little thing. Marco\u2019s foot slipped on wet grass, and he grabbed a branch with his thumb and wrist to stop from falling.
+
+At Liquid Lake, he found Bree floating cheerfully with the Lake citizens. \u201CI\u2019m fine, Marco,\u201D she called. \u201CIt\u2019s actually wonderful down here.\u201D
+
+\u201CThis is wrong!\u201D he shouted. \u201CYou shrank from a whole person into... splash!\u201D
+
+Bree shrugged \u2014 a ripple across her surface. \u201CI didn\u2019t disappear. I just shifted.\u201D
+
+But Marco knew better. He climbed the frost tower on the north cliff and cranked the huge freeze machine, prepared to blast cold across all three kingdoms. Ice cracked and split down the glass pipe. A quick blue glow swept over everything.
+
+The freeze hit Gas Galaxy first. Citizens who had been drifting freely through the sky sank like stones. Twelve of them crashed onto the ground with a thud. One stumbled into a blank wall and went numb.
+
+\u201CMake that stop!\u201D a Gas citizen screamed. \u201CWe can\u2019t exist as blocks!\u201D
+
+Marco stared. He had made a terrible mistake. The point wasn\u2019t to freeze or boil \u2014 it was to understand.
+
+That stubborn gnat landed on his nose again. Marco squinted at it. The gnat had flown through fire, swum through mist, and now sat calmly on his skin. It didn\u2019t care about kingdoms.
+
+\u201CYou pretended this whole time,\u201D Marco whispered. \u201CYou can be anything.\u201D
+
+He thought about Bree \u2014 still herself, just flowing. He thought about the Gas citizens \u2014 still themselves, just drifting. Slowly, a measure of boldness grew in his chest.
+
+Marco turned off the machine. He took a deep breath and stepped outside into the swirling warm air. For the first time, he let the heat twist through him. His edges went soft. His feet tingled. He didn\u2019t fight it.
+
+\u201CThis is the most unusual treasure,\u201D he said quietly. \u201CWe\u2019re all the same stuff.\u201D
+
+The darkness had lifted from his face. He picked up a stick and, with great care, scratched a new sign into the ground: MATTERVILLE.
+
+Bree bubbled up beside him. \u201CGlad you finally discovered that,\u201D she said, smiling. \u201CI was starting to think you\u2019d stay stiff forever.\u201D
+
+Marco grinned. \u201CI misread the situation. Just a small error.\u201D He knew it was more than that \u2014 a change in direction.
+
+Bree snorted. \u201CSlight.\u201D
+
+Above them, the sky glowed gold, and a gentle breeze drifted through Matterville \u2014 not Solid, not Liquid, not Gas. Just home.
+
+A question hung in the stillness: what would he become next? Marco didn\u2019t know. For the first time, that felt like joy.`;
+
+function parseStory(raw) {
+  const blocks = raw.trim().split(/\n\n+/);
+  const title = blocks[0].replace(/[\u201C\u201D"]/g, '').trim();
+  const paragraphs = blocks.slice(1).map(p => {
+    const clean = p.trim();
+    const sentences = splitSentences(clean);
+    return {
+      raw: clean,
+      sentences: sentences.length ? sentences : [clean],
+      preview: clean.slice(0, CONFIG.previewLength) + (clean.length > CONFIG.previewLength ? '\u2026' : ''),
+    };
+  });
+  const totalSentences = paragraphs.reduce((s, p) => s + p.sentences.length, 0);
+  const wordCount = raw.split(/\s+/).length;
+  const readingTime = Math.max(1, Math.round(wordCount / CONFIG.wordsPerMinute));
+  return { title, paragraphs, totalSentences, readingTime };
+}
+
+/* ═══════════════════════════════════════
+   APP
+   ═══════════════════════════════════════ */
+const story = parseStory(STORY_RAW);
+
+createApp({
+  setup() {
+    const { title: storyTitle, paragraphs, totalSentences, readingTime } = story;
+
+    const savedPos = storage.load(CONFIG.storageKeys.position, { pi: 0, si: 0, focus: false });
+    const focusMode = ref(savedPos.focus);
+    const currentParaIndex = ref(Math.min(savedPos.pi, paragraphs.length - 1));
+    const currentSentIndex = ref(Math.min(savedPos.si,
+      paragraphs[Math.min(savedPos.pi, paragraphs.length - 1)].sentences.length - 1));
+    const sidebarOpen = ref(false);
+    const readerEl = ref(null);
+    const darkMode = ref(storage.load(CONFIG.storageKeys.theme, false));
+    const scrollProgress = ref(0);
+
+    if (darkMode.value) document.documentElement.setAttribute('data-theme', 'dark');
+
+    function flatIndex(pi, si) {
+      let idx = 0;
+      for (let i = 0; i < pi; i++) idx += paragraphs[i].sentences.length;
+      return idx + si;
+    }
+
+    const progressPct = computed(() => {
+      if (focusMode.value) {
+        return ((flatIndex(currentParaIndex.value, currentSentIndex.value) + 1) / totalSentences) * 100;
+      }
+      return scrollProgress.value;
+    });
+
+    const isFirst = computed(() => currentParaIndex.value === 0 && currentSentIndex.value === 0);
+    const isLast = computed(() => {
+      const lp = paragraphs.length - 1;
+      return currentParaIndex.value === lp && currentSentIndex.value === paragraphs[lp].sentences.length - 1;
+    });
+
+    let scrollTimer = null;
+    function onScroll() {
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(() => {
+        const docH = document.documentElement.scrollHeight - window.innerHeight;
+        if (docH > 0) scrollProgress.value = Math.min(100, (window.scrollY / docH) * 100);
+      }, CONFIG.scrollDebounceMs);
+    }
+
+    function scrollTo(pi, si) {
+      nextTick(() => {
+        const el = document.getElementById(`sent-${pi}-${si}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    }
+
+    function focusOn(pi, si) { focusMode.value = true; currentParaIndex.value = pi; currentSentIndex.value = si; scrollTo(pi, si); }
+    function toggleFocus() { focusMode.value ? (focusMode.value = false) : (focusMode.value = true, scrollTo(currentParaIndex.value, currentSentIndex.value)); }
+
+    function nextSentence() {
+      if (!focusMode.value) return;
+      let pi = currentParaIndex.value, si = currentSentIndex.value;
+      si < paragraphs[pi].sentences.length - 1 ? si++ : pi < paragraphs.length - 1 ? (pi++, si = 0) : null;
+      currentParaIndex.value = pi; currentSentIndex.value = si; scrollTo(pi, si);
+    }
+    function prevSentence() {
+      if (!focusMode.value) return;
+      let pi = currentParaIndex.value, si = currentSentIndex.value;
+      si > 0 ? si-- : pi > 0 ? (pi--, si = paragraphs[pi].sentences.length - 1) : null;
+      currentParaIndex.value = pi; currentSentIndex.value = si; scrollTo(pi, si);
+    }
+    function jumpToParagraph(pi) {
+      currentParaIndex.value = pi; currentSentIndex.value = 0;
+      focusMode.value = true; sidebarOpen.value = false; scrollTo(pi, 0);
+    }
+
+    function getImage(pi, si) { return IMAGE_MAP[`${pi}-${si}`] || null; }
+    function paraHasImage(pi) { return Object.keys(IMAGE_MAP).some(k => k.startsWith(`${pi}-`)); }
+
+    function toggleTheme() {
+      darkMode.value = !darkMode.value;
+      document.documentElement.setAttribute('data-theme', darkMode.value ? 'dark' : 'light');
+    }
+
+    // Persistence
+    watch([currentParaIndex, currentSentIndex, focusMode], ([pi, si, fm]) => {
+      storage.save(CONFIG.storageKeys.position, { pi, si, focus: fm });
+    });
+    watch(darkMode, v => storage.save(CONFIG.storageKeys.theme, v));
+
+    function onKey(e) {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); nextSentence(); }
+      else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prevSentence(); }
+      else if (e.key === 'Escape') focusMode.value = false;
+    }
+
+    onMounted(() => {
+      window.addEventListener('keydown', onKey);
+      window.addEventListener('scroll', onScroll, { passive: true });
+      if (focusMode.value) scrollTo(currentParaIndex.value, currentSentIndex.value);
+    });
+    onUnmounted(() => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('scroll', onScroll);
+    });
+
+    return {
+      storyTitle, paragraphs, totalSentences, readingTime,
+      focusMode, currentParaIndex, currentSentIndex,
+      sidebarOpen, progressPct, isFirst, isLast,
+      readerEl, darkMode,
+      focusOn, toggleFocus, nextSentence, prevSentence, jumpToParagraph,
+      getImage, paraHasImage, toggleTheme,
+    };
+  },
+}).mount('#app');
+</script>
+</body>
+</html>
