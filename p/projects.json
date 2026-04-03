@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-03-23T14:55:30Z",
-  "total": 25,
+  "generated_at": "2026-04-03T00:13:25Z",
+  "total": 26,
   "projects": [
     {
       "name": "2nd Grade Math Quiz",
@@ -85,6 +85,10 @@
     {
       "name": "Spelling Drill",
       "path": "spell"
+    },
+    {
+      "name": "Story Reader — The Three Kingdoms of Matterville",
+      "path": "stories"
     },
     {
       "name": "Subtraction Borrowing Tutorial",
