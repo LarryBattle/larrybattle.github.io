@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-04-03T00:57:56Z",
-  "total": 26,
+  "generated_at": "2026-04-10T14:35:24Z",
+  "total": 27,
   "projects": [
     {
       "name": "2nd Grade Math Quiz",
@@ -65,6 +65,10 @@
     {
       "name": "Perry's Perimeter Path",
       "path": "perimeter"
+    },
+    {
+      "name": "PPL Tracker",
+      "path": "weights"
     },
     {
       "name": "Quiz",
