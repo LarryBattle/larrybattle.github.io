@@ -1,0 +1,763 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PPL Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --surface: #131318;
+    --surface2: #1a1a22;
+    --border: #2a2a35;
+    --text: #e8e8ed;
+    --text-dim: #6e6e80;
+    --pull: #4ecdc4;
+    --push: #ff6b6b;
+    --legs: #ffd93d;
+    --pull-bg: #4ecdc410;
+    --push-bg: #ff6b6b10;
+    --legs-bg: #ffd93d10;
+    --accent: #7c5cfc;
+    --success: #4ecdc4;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .app-shell {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 16px;
+    padding-bottom: 100px;
+  }
+
+  header {
+    text-align: center;
+    padding: 24px 0 20px;
+  }
+
+  header h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--pull), var(--push), var(--legs));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  header p {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    margin-top: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Day selector tabs */
+  .day-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .day-tab {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .day-tab:hover { border-color: var(--text-dim); }
+  .day-tab.active-pull { border-color: var(--pull); background: var(--pull-bg); }
+  .day-tab.active-push { border-color: var(--push); background: var(--push-bg); }
+  .day-tab.active-legs { border-color: var(--legs); background: var(--legs-bg); }
+
+  .day-tab .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .day-tab.active-pull .label { color: var(--pull); }
+  .day-tab.active-push .label { color: var(--push); }
+  .day-tab.active-legs .label { color: var(--legs); }
+
+  .day-tab .sub {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    margin-top: 3px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Variant toggle */
+  .variant-toggle {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    justify-content: center;
+  }
+
+  .variant-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 6px 20px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .variant-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* Exercise card */
+  .exercise-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 10px;
+    transition: all 0.2s;
+  }
+
+  .exercise-card:hover { border-color: var(--text-dim); }
+
+  .exercise-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+
+  .exercise-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    line-height: 1.3;
+  }
+
+  .exercise-target {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+    margin-left: 10px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: var(--surface2);
+  }
+
+  /* Set rows */
+  .sets-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .set-row {
+    display: grid;
+    grid-template-columns: 32px 1fr 1fr 40px;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .set-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-align: center;
+    font-weight: 600;
+  }
+
+  .set-input {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    text-align: center;
+    width: 100%;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+
+  .set-input:focus { border-color: var(--accent); }
+  .set-input::placeholder { color: var(--text-dim); opacity: 0.5; }
+
+  .set-check {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--surface2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    color: transparent;
+    font-size: 0.9rem;
+  }
+
+  .set-check.done {
+    background: var(--success);
+    border-color: var(--success);
+    color: #0a0a0c;
+  }
+
+  .input-labels {
+    display: grid;
+    grid-template-columns: 32px 1fr 1fr 40px;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .input-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Last time box */
+  .last-time {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: var(--surface2);
+    border-radius: 8px;
+    border-left: 3px solid var(--accent);
+  }
+
+  .last-time-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+
+  .last-time-data {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  .last-time-data .set-line { opacity: 0.85; }
+
+  .no-history {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  /* Save button */
+  .save-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 16px;
+    background: linear-gradient(transparent, var(--bg) 30%);
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .save-btn {
+    pointer-events: all;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 14px 48px;
+    border-radius: 14px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 4px 24px #7c5cfc40;
+  }
+
+  .save-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 30px #7c5cfc60; }
+  .save-btn:active { transform: scale(0.97); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    background: var(--success);
+    color: #0a0a0c;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 12px 28px;
+    border-radius: 12px;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 999;
+    pointer-events: none;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* History modal */
+  .history-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 14px;
+    cursor: pointer;
+    display: block;
+    margin: 0 auto 16px;
+    transition: all 0.2s;
+  }
+
+  .history-btn:hover { border-color: var(--text-dim); color: var(--text); }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: #0008;
+    backdrop-filter: blur(6px);
+    z-index: 900;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    max-width: 520px;
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 24px 16px;
+  }
+
+  .modal h3 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  .history-entry {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 8px;
+  }
+
+  .history-date {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+
+  .history-exercise {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+
+  .history-sets {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+  }
+
+  .modal-close {
+    display: block;
+    margin: 16px auto 0;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    padding: 10px 32px;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+
+  .delete-btn {
+    background: none;
+    border: 1px solid #ff6b6b30;
+    color: #ff6b6b;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    padding: 3px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    float: right;
+    transition: all 0.2s;
+  }
+
+  .delete-btn:hover { background: #ff6b6b20; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="app-shell">
+    <header>
+      <h1>PPL TRACKER</h1>
+      <p>push · pull · legs</p>
+    </header>
+
+    <!-- Day selector -->
+    <div class="day-tabs">
+      <div class="day-tab" :class="{'active-pull': selectedDay === 'pull'}" @click="selectedDay = 'pull'">
+        <div class="label">Pull</div>
+        <div class="sub">back · biceps</div>
+      </div>
+      <div class="day-tab" :class="{'active-push': selectedDay === 'push'}" @click="selectedDay = 'push'">
+        <div class="label">Push</div>
+        <div class="sub">chest · shoulders · triceps</div>
+      </div>
+      <div class="day-tab" :class="{'active-legs': selectedDay === 'legs'}" @click="selectedDay = 'legs'">
+        <div class="label">Legs</div>
+        <div class="sub">quads · hams · calves</div>
+      </div>
+    </div>
+
+    <!-- Variant toggle -->
+    <div class="variant-toggle">
+      <button class="variant-btn" :class="{active: variant === 'A'}" @click="variant = 'A'">Workout A</button>
+      <button class="variant-btn" :class="{active: variant === 'B'}" @click="variant = 'B'">Workout B</button>
+    </div>
+
+    <button class="history-btn" @click="showHistory = true">📋 View Full History</button>
+
+    <!-- Exercise cards -->
+    <div v-for="(ex, ei) in currentExercises" :key="selectedDay + variant + ei" class="exercise-card">
+      <div class="exercise-header">
+        <div class="exercise-name">{{ ex.name }}</div>
+        <div class="exercise-target">{{ ex.sets }}×{{ ex.reps }}</div>
+      </div>
+
+      <div class="input-labels">
+        <div></div>
+        <div class="input-label">Weight</div>
+        <div class="input-label">Reps</div>
+        <div></div>
+      </div>
+
+      <div class="sets-grid">
+        <div class="set-row" v-for="s in ex.sets" :key="s">
+          <div class="set-num">{{ s }}</div>
+          <input class="set-input" type="number" inputmode="decimal" placeholder="lbs"
+            :value="getLog(ei, s-1, 'weight')"
+            @input="setLog(ei, s-1, 'weight', $event.target.value)">
+          <input class="set-input" type="number" inputmode="numeric" placeholder="reps"
+            :value="getLog(ei, s-1, 'reps')"
+            @input="setLog(ei, s-1, 'reps', $event.target.value)">
+          <div class="set-check" :class="{done: getLog(ei, s-1, 'done')}" @click="toggleDone(ei, s-1)">✓</div>
+        </div>
+      </div>
+
+      <!-- Last time -->
+      <div class="last-time" v-if="getLastSession(ex.name)">
+        <div class="last-time-label">Last time — {{ formatDate(getLastSession(ex.name).date) }}</div>
+        <div class="last-time-data">
+          <div class="set-line" v-for="(set, si) in getLastSession(ex.name).sets" :key="si">
+            Set {{ si+1 }}: {{ set.weight || '—' }} lbs × {{ set.reps || '—' }}
+          </div>
+        </div>
+      </div>
+      <div class="last-time" v-else>
+        <div class="no-history">No previous data</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Save bar -->
+  <div class="save-bar">
+    <button class="save-btn" @click="saveWorkout">Save Workout</button>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" :class="{show: toastVisible}">{{ toastMsg }}</div>
+
+  <!-- History modal -->
+  <div class="modal-overlay" v-if="showHistory" @click.self="showHistory = false">
+    <div class="modal">
+      <h3>Workout History</h3>
+      <div v-if="historyEntries.length === 0" style="text-align:center;color:var(--text-dim);font-size:0.85rem;">No workouts logged yet.</div>
+      <div v-for="(entry, hi) in historyEntries" :key="hi" class="history-entry">
+        <div class="history-date">
+          {{ formatDate(entry.date) }} — {{ entry.day.toUpperCase() }} {{ entry.variant }}
+          <button class="delete-btn" @click="deleteEntry(entry.id)">delete</button>
+        </div>
+        <div v-for="(ex, exi) in entry.exercises" :key="exi">
+          <div class="history-exercise">{{ ex.name }}</div>
+          <div class="history-sets">
+            <span v-for="(set, si) in ex.sets" :key="si">
+              S{{ si+1 }}: {{ set.weight || '—' }}×{{ set.reps || '—' }}<span v-if="si < ex.sets.length -1"> · </span>
+            </span>
+          </div>
+        </div>
+      </div>
+      <button class="modal-close" @click="showHistory = false">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script>
+const WORKOUTS = {
+  pull: {
+    A: [
+      { name: 'Deadlift (Conventional)', sets: 3, reps: '5' },
+      { name: 'Weighted Pull-ups', sets: 3, reps: '6-8' },
+      { name: 'Cable Row (Close Grip)', sets: 3, reps: '10-12' },
+      { name: 'Face Pulls', sets: 3, reps: '15-20' },
+      { name: 'Dumbbell Shrugs', sets: 3, reps: '12-15' },
+      { name: 'Barbell Curl', sets: 3, reps: '10-12' },
+      { name: 'Hammer Curl', sets: 2, reps: '12' },
+    ],
+    B: [
+      { name: 'Barbell Row', sets: 4, reps: '6' },
+      { name: 'Weighted Pull-ups', sets: 3, reps: '6-8' },
+      { name: 'Cable Row (Close Grip)', sets: 3, reps: '10-12' },
+      { name: 'Face Pulls', sets: 3, reps: '15-20' },
+      { name: 'Dumbbell Shrugs', sets: 3, reps: '12-15' },
+      { name: 'Dumbbell Curl', sets: 3, reps: '10-12' },
+      { name: 'Hammer Curl', sets: 2, reps: '12' },
+    ],
+  },
+  push: {
+    A: [
+      { name: 'Barbell Bench Press', sets: 4, reps: '5' },
+      { name: 'Overhead Press', sets: 3, reps: '6-8' },
+      { name: 'Incline DB Press', sets: 3, reps: '8-12' },
+      { name: 'Cable Lateral Raise', sets: 3, reps: '15-20' },
+      { name: 'Tricep Pushdown', sets: 3, reps: '10-12' },
+      { name: 'Overhead Tricep Extension', sets: 2, reps: '12-15' },
+    ],
+    B: [
+      { name: 'Incline DB Press', sets: 3, reps: '8-10' },
+      { name: 'DB Overhead Press', sets: 3, reps: '10' },
+      { name: 'Dips (Weighted)', sets: 3, reps: '8-12' },
+      { name: 'Cable Lateral Raise', sets: 3, reps: '15-20' },
+      { name: 'Tricep Pushdown', sets: 3, reps: '10-12' },
+      { name: 'Overhead Tricep Extension', sets: 2, reps: '12-15' },
+    ],
+  },
+  legs: {
+    A: [
+      { name: 'Barbell Back Squat', sets: 4, reps: '5' },
+      { name: 'Romanian Deadlift', sets: 3, reps: '8-10' },
+      { name: 'Bulgarian Split Squat', sets: 3, reps: '8/leg' },
+      { name: 'Leg Curl (Seated)', sets: 3, reps: '10-12' },
+      { name: 'Standing Calf Raise', sets: 4, reps: '10-15' },
+      { name: 'Ab Wheel Rollout', sets: 3, reps: '10-15' },
+    ],
+    B: [
+      { name: 'Front Squat', sets: 3, reps: '6' },
+      { name: 'Romanian Deadlift', sets: 3, reps: '8-10' },
+      { name: 'Bulgarian Split Squat', sets: 3, reps: '8/leg' },
+      { name: 'Leg Curl (Lying)', sets: 3, reps: '10-12' },
+      { name: 'Standing Calf Raise', sets: 4, reps: '10-15' },
+      { name: 'Hanging Leg Raise', sets: 3, reps: '10-15' },
+    ],
+  },
+};
+
+const DB_NAME = 'PPLTracker';
+const DB_VERSION = 1;
+const STORE = 'workouts';
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE)) {
+        const store = db.createObjectStore(STORE, { keyPath: 'id', autoIncrement: true });
+        store.createIndex('day', 'day');
+        store.createIndex('date', 'date');
+        store.createIndex('exerciseName', 'exerciseName', { multiEntry: false });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function getAllWorkouts() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readonly');
+    const store = tx.objectStore(STORE);
+    const req = store.getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function addWorkout(entry) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    const store = tx.objectStore(STORE);
+    const req = store.add(entry);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function deleteWorkout(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    const store = tx.objectStore(STORE);
+    const req = store.delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+const { createApp, ref, computed, watch, reactive, onMounted } = Vue;
+
+createApp({
+  setup() {
+    const selectedDay = ref('pull');
+    const variant = ref('A');
+    const currentLog = reactive({});
+    const allHistory = ref([]);
+    const toastVisible = ref(false);
+    const toastMsg = ref('');
+    const showHistory = ref(false);
+
+    const currentExercises = computed(() => WORKOUTS[selectedDay.value][variant.value]);
+
+    function logKey(ei, si, field) {
+      return `${selectedDay.value}_${variant.value}_${ei}_${si}_${field}`;
+    }
+
+    function getLog(ei, si, field) {
+      return currentLog[logKey(ei, si, field)] || '';
+    }
+
+    function setLog(ei, si, field, val) {
+      currentLog[logKey(ei, si, field)] = val;
+    }
+
+    function toggleDone(ei, si) {
+      const k = logKey(ei, si, 'done');
+      currentLog[k] = !currentLog[k];
+    }
+
+    function getLastSession(exerciseName) {
+      const entries = allHistory.value
+        .filter(e => e.exercises && e.exercises.some(ex => ex.name === exerciseName))
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+      if (!entries.length) return null;
+      const entry = entries[0];
+      const ex = entry.exercises.find(e => e.name === exerciseName);
+      return { date: entry.date, sets: ex.sets };
+    }
+
+    function formatDate(d) {
+      return new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    }
+
+    async function loadHistory() {
+      allHistory.value = await getAllWorkouts();
+    }
+
+    function showToast(msg) {
+      toastMsg.value = msg;
+      toastVisible.value = true;
+      setTimeout(() => toastVisible.value = false, 2000);
+    }
+
+    async function saveWorkout() {
+      const exercises = currentExercises.value.map((ex, ei) => {
+        const sets = [];
+        for (let si = 0; si < ex.sets; si++) {
+          sets.push({
+            weight: getLog(ei, si, 'weight'),
+            reps: getLog(ei, si, 'reps'),
+            done: !!getLog(ei, si, 'done'),
+          });
+        }
+        return { name: ex.name, sets };
+      });
+
+      const entry = {
+        day: selectedDay.value,
+        variant: variant.value,
+        date: new Date().toISOString(),
+        exercises,
+      };
+
+      await addWorkout(entry);
+      // Clear current log for this day/variant
+      const prefix = `${selectedDay.value}_${variant.value}_`;
+      Object.keys(currentLog).forEach(k => { if (k.startsWith(prefix)) delete currentLog[k]; });
+      await loadHistory();
+      showToast('Workout saved!');
+    }
+
+    async function deleteEntry(id) {
+      await deleteWorkout(id);
+      await loadHistory();
+      showToast('Entry deleted');
+    }
+
+    const historyEntries = computed(() => {
+      return [...allHistory.value].sort((a, b) => new Date(b.date) - new Date(a.date));
+    });
+
+    onMounted(loadHistory);
+
+    return {
+      selectedDay, variant, currentExercises, currentLog,
+      getLog, setLog, toggleDone, getLastSession, formatDate,
+      saveWorkout, toastVisible, toastMsg,
+      showHistory, historyEntries, deleteEntry,
+    };
+  },
+}).mount('#app');
+</script>
+</body>
+</html>
